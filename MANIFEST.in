@@ -1,0 +1,6 @@
+include .flake8
+include *.cfg
+include *.ini
+include Makefile
+include README.md
+include requirements*.txt

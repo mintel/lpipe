@@ -1,0 +1,48 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+url = "https://devpi-backup.int.everest-shared.aws.mintel.com/simple"
+verify_ssl = true
+name = "devpi"
+
+[packages]
+attrs = "~=17.4"
+boto3 = "*"
+click = "~=6.7"
+everest-sentry = {version = "*", index="devpi"}
+frozendict = "~=1.2"
+jsondiff = "~=1.1"
+jsonschema = "*"
+marshmallow = "~=2.15"
+marshmallow_enum = "~=1.4"
+mintel-logging = {version = "*", index="devpi"}
+networkx = "~=2.1"
+python-decouple = "*"
+PyYAML = "~=3.12"
+raven = "*"
+six = ">=1.9.0"
+
+[dev-packages]
+advbumpversion = "*"
+devpi-client = "*"
+flake8 = "*"
+flake8-debugger = "*"
+flake8-docstrings = "*"
+flake8-isort = "*"
+hypothesis = "*"
+isort = "*"
+pipenv = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-docker = "*"
+pytest-localstack = "*"
+pytest-mock = "*"
+recommonmark = "*"
+sphinx = "*"
+wheel = "*"
+
+[requires]
+python_version = "3.6"
