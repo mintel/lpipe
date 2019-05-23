@@ -1,10 +1,3 @@
-#!/usr/bin/env groovy
-def projectProperties = [
-    gitLabConnection('Gitlab'),
-]
-
-properties(projectProperties)
-
 @Library('everest-shared') _
 node('docker&&virtualenv') {
     gitlabCommitStatus("jenkins-pipeline"){
