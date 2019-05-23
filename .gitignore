@@ -12,6 +12,7 @@ env/
 venv
 .venv
 build/
+*build.zip
 develop-eggs/
 dist/
 downloads/

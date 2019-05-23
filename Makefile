@@ -28,7 +28,7 @@ test: pytest/test
 PYTHON_VERSION ?= 3.6
 MAGIC_DATE := 19700101
 DUMMY_LAMBDA_PATH:=$(CURDIR)/tests/integration/dummy_lambda
-build_test_lambda: pipenv
+build-test-lambda: pipenv
 	mkdir -p $(DUMMY_LAMBDA_PATH)/package
 	# differing timestamps give us different hashes for repeated builds, so set everything the same
 	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
@@ -38,7 +38,8 @@ build_test_lambda: pipenv
 	cd $(DUMMY_LAMBDA_PATH) && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *py
 	touch -d "$(MAGIC_DATE)" $(DUMMY_LAMBDA_PATH)/package/build.zip
 
-test-post-build: build_dummy_lambda pytest/test-post-build
+test-post-build: build-test-lambda pytest/test-post-build
+	rm -rf $(DUMMY_LAMBDA_PATH)/package
 .PHONY: test-post-build
 
 ftest: pipenv
