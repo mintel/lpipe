@@ -74,3 +74,5 @@ target/
 .ropeproject/
 
 activate
+
+*build-harness
