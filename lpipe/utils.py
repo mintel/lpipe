@@ -14,8 +14,10 @@ from kinesis import put_record
 
 def check_sentry(sentry):
     if not isinstance(sentry, LambdaClient):
-        raise TypeError('sentry isn\'t instance of LambdaClient. It might be a \
-            raven.base.DummyClient if the SENTRY_DSN env var isn\'t set.')
+        raise TypeError(
+            "sentry isn't instance of LambdaClient. It might be a \
+            raven.base.DummyClient if the SENTRY_DSN env var isn't set."
+        )
 
 
 def batch(iterable, n=1):
@@ -26,7 +28,7 @@ def batch(iterable, n=1):
     """
     iter_len = len(iterable)
     for ndx in range(0, iter_len, n):
-        yield iterable[ndx:min(ndx + n, iter_len)]
+        yield iterable[ndx : min(ndx + n, iter_len)]
 
 
 def get_nested(d, keys):
@@ -40,6 +42,6 @@ def get_nested(d, keys):
 
 
 def get_module_attr(import_path):
-    frag = import_path.split('.')
-    module = importlib.import_module('.'.join(frag[:-1]))
+    frag = import_path.split(".")
+    module = importlib.import_module(".".join(frag[:-1]))
     return getattr(module, frag[-1])

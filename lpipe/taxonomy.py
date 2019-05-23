@@ -5,23 +5,24 @@ from exceptions import InvalidTaxonomyURI
 
 def query_graphql(raw_query, endpoint):
     """Query a graphql API handle errors."""
-    query = ' '.join(shlex.split(raw_query, posix=False))
-    r = requests.get(
-        endpoint,
-        params={'query': query}
-    )
+    query = " ".join(shlex.split(raw_query, posix=False))
+    r = requests.get(endpoint, params={"query": query})
     if r.status_code == 200:
         return r.json()
     elif r.status_code == 400:
         response = r.json()
-        assert 'errors' in response
-        raise GraphQLException(''.join([e['message'] for e in response['errors']]))
+        assert "errors" in response
+        raise GraphQLException("".join([e["message"] for e in response["errors"]]))
     else:
-        raise requests.exceptions.RequestException(f'HTTP Status: {r.status_code}, Response Body: {r.text}')
+        raise requests.exceptions.RequestException(
+            f"HTTP Status: {r.status_code}, Response Body: {r.text}"
+        )
 
 
 class TaxonomyURI:
-    pattern = re.compile(r'taxonomy-v(?P<version>[0-9]+)/(?P<type>[a-z,\-]+)/(?P<id>[0-9]+)')
+    pattern = re.compile(
+        r"taxonomy-v(?P<version>[0-9]+)/(?P<type>[a-z,\-]+)/(?P<id>[0-9]+)"
+    )
 
     def __init__(self, version, type, id):
         self.version = version
@@ -33,16 +34,14 @@ class TaxonomyURI:
         try:
             m = TaxonomyURI.pattern.search(raw)
             return TaxonomyURI(
-                version=m.group('version'),
-                type=m.group('type'),
-                id=m.group('id')
+                version=m.group("version"), type=m.group("type"), id=m.group("id")
             )
         except Exception as e:
             raise InvalidTaxonomyURI() from e
 
     @property
     def encoded(self):
-        return f'taxonomy-v{self.version}/{self.type}/{self.id}'
+        return f"taxonomy-v{self.version}/{self.type}/{self.id}"
 
     def __repr__(self):
         return self.encoded
@@ -50,6 +49,7 @@ class TaxonomyURI:
 
 class Company:
     """Barebones representation of a taxonomy company for this module only."""
+
     def __init__(self, uri, industry=None, products={}):
         self.uri = uri
         if industry:
@@ -80,6 +80,7 @@ class Company:
 
 class Brand:
     """Barebones representation of a taxonomy brand for this module only."""
+
     def __init__(self, uri, company=None, products={}):
         self.uri = uri
         if company:
@@ -110,6 +111,7 @@ class Brand:
 
 class Product:
     """Barebones representation of a taxonomy product for this module only."""
+
     def __init__(self, uri, branded=None, product_type=None, company=None):
         self.uri = uri
         self.branded = branded
