@@ -1,6 +1,6 @@
-site_name: pypedream
-repo_url: https://bitbucket.org/mintel/pypedream
-repo_name: pypedream
+site_name: lpipe
+repo_url: https://bitbucket.org/mintel/lpipe
+repo_name: lpipe
 site_description: "Data processing via distributed directed graph."
 theme: simplex
 pages:

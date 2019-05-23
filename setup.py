@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Read title, version etc from _version.py and put them into local scope
-exec(open("pypedream/_version.py").read())
+exec(open("lpipe/_version.py").read())
 
 
 def read(fname):

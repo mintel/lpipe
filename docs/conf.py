@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# pypedream documentation build configuration file, created by
+# lpipe documentation build configuration file, created by
 # sphinx-quickstart on Wed Aug  9 10:27:33 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -36,7 +36,7 @@ def chdir(new_dir):
         os.chdir(old_dir)
 
 
-with io.open(os.path.join(root, "pypedream", "_version.py"), encoding="utf8") as f:
+with io.open(os.path.join(root, "lpipe", "_version.py"), encoding="utf8") as f:
     about = {}
     exec(f.read(), about)
 

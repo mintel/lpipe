@@ -89,7 +89,7 @@ build-docs: $(VIRTUALENV)  ## Build HTML docs into the `docs/_build/html` dir
 .PHONY: build-docs
 
 isort: env ## automatically sort Python imports
-	$(WITH_PIPENV) isort --recursive pypedream tests conftest.py setup.py
+	$(WITH_PIPENV) isort --recursive lpipe tests conftest.py setup.py
 .PHONY: isort
 
 fmt: env

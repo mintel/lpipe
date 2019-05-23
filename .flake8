@@ -28,4 +28,4 @@ ignore =
     H501
 max-line-length = 79
 import-order-style = edited
-application-import-names = pypedream
+application-import-names = lpipe

@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=pypedream
+set SPHINXPROJ=lpipe
 
 if "%1" == "" goto help
 

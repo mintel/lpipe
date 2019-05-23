@@ -1,8 +1,8 @@
 """
-pypedream
+lpipe
 ~~~~~~~~~
 
-Data processing via distributed directed graph.
+Lambda toolkit and message pipeline.
 """
 
 from lpipe._version import __version__  # noqa
