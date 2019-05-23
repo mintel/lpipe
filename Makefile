@@ -1,7 +1,7 @@
 -include $(shell curl -sSL -o .build-harness "https://raw.githubusercontent.com/mintel/build-harness/master/templates/Makefile.build-harness"; echo .build-harness)
 
 init: init-build-harness
-	@make python/env
+	@make pipenv
 .PHONY: init
 
 #$(VENV_WORKDIR)/activate: pipenv
@@ -42,4 +42,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean clean-build-harness
+	@exit 0
 .PHONY: clean
