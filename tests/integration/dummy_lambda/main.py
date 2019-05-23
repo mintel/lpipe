@@ -6,6 +6,7 @@ from decouple import config
 from lpipe.pipeline import Action, process_records
 from lpipe.utils import check_sentry
 
+
 class Path(Enum):
     TEST_FUNC = 1
     TEST_PATH = 2
@@ -17,51 +18,25 @@ class Path(Enum):
 
 PATHS = {
     Path.TEST_FUNC: [
-        Action(
-            required_params=["foo"],
-            functions=["test_func"],
-            paths=[],
-        ),
+        Action(required_params=["foo"], functions=["test_func"], paths=[])
     ],
-    Path.TEST_PATH: [
-        Action(
-            required_params=["foo"],
-            functions=[],
-            paths=[Path.FUNC],
-        )
-    ],
+    Path.TEST_PATH: [Action(required_params=["foo"], functions=[], paths=[Path.FUNC])],
     Path.TEST_FUNC_AND_PATH: [
-        Action(
-            required_params=["foo"],
-            functions=["test_func"],
-            paths=[Path.FUNC],
-        )
+        Action(required_params=["foo"], functions=["test_func"], paths=[Path.FUNC])
     ],
     Path.TEST_KINESIS_PATH: [
         Action(
             required_params=["uri"],
             functions=[],
-            paths=[
-                (config("SECOND_TEST_KINESIS_STREAM"), "TEST_FUNC")
-            ],
+            paths=[(config("SECOND_TEST_KINESIS_STREAM"), "TEST_FUNC")],
         )
     ],
     Path.TEST_FUNC_NO_PARAMS: [
+        Action(required_params=[], functions=["test_func_no_params"], paths=[]),
         Action(
-            required_params=[],
-            functions=["test_func_no_params"],
-            paths=[],
+            required_params=[], functions=["test_func_no_params"], paths=[Path.FUNC]
         ),
-        Action(
-            required_params=[],
-            functions=["test_func_no_params"],
-            paths=[Path.FUNC],
-        ),
-        Action(
-            required_params=[],
-            functions=[],
-            paths=[Path.FUNC],
-        ),
+        Action(required_params=[], functions=[], paths=[Path.FUNC]),
     ],
     Path.TEST_RENAME_PARAM: [
         Action(
@@ -70,7 +45,7 @@ PATHS = {
             ],  # Tuples indicate the param should be mapped to a different name.
             functions=["test_func"],
             paths=[],
-        ),
+        )
     ],
 }
 
