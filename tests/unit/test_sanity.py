@@ -1,3 +1,10 @@
+import pytest
+
+
 def test_sanity():
-    """Show tests framework works."""
+    pass
+
+
+@pytest.mark.postbuild
+def test_sanity_post_build():
     pass
