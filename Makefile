@@ -22,7 +22,20 @@ fmt: python/fmt
 lint: python/lint
 .PHONY: lint
 
-test: pytest/test
+PYTHON_VERSION ?= 3.6
+MAGIC_DATE := 19700101
+DUMMY_LAMBDA_PATH:=$(CURDIR)/tests/integration/dummy_lambda
+build_test_lambda: pipenv
+	mkdir -p $(DUMMY_LAMBDA_PATH)/package
+	# differing timestamps give us different hashes for repeated builds, so set everything the same
+	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
+	find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
+	zip $(DUMMY_LAMBDA_PATH)/package/build.zip lpipe -rvX
+	cd $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *
+	cd $(DUMMY_LAMBDA_PATH) && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *py
+	touch -d "$(MAGIC_DATE)" $(DUMMY_LAMBDA_PATH)/package/build.zip
+
+test: build_dummy_lambda pytest/test
 .PHONY: test
 
 ftest: pipenv
@@ -42,5 +55,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean clean-build-harness
-	@exit 0
+	rm -rf $(DUMMY_LAMBDA_PATH)/package
 .PHONY: clean
