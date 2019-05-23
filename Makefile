@@ -22,6 +22,9 @@ fmt: python/fmt
 lint: python/lint
 .PHONY: lint
 
+test: pytest/test
+.PHONY: test
+
 PYTHON_VERSION ?= 3.6
 MAGIC_DATE := 19700101
 DUMMY_LAMBDA_PATH:=$(CURDIR)/tests/integration/dummy_lambda
@@ -35,8 +38,8 @@ build_test_lambda: pipenv
 	cd $(DUMMY_LAMBDA_PATH) && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *py
 	touch -d "$(MAGIC_DATE)" $(DUMMY_LAMBDA_PATH)/package/build.zip
 
-test: build_dummy_lambda pytest/test
-.PHONY: test
+test-post-build: build_dummy_lambda pytest/test-post-build
+.PHONY: test-post-build
 
 ftest: pipenv
 	$(WITH_PIPENV) pytest --no-localstack
