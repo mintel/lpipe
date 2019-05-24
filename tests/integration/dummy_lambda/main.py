@@ -3,7 +3,7 @@ from enum import Enum
 
 from decouple import config
 
-from lpipe.pipeline import Action, process_records
+from lpipe.pipeline import Action, Queue, Input, process_records
 from lpipe.utils import check_sentry
 
 
@@ -28,9 +28,16 @@ PATHS = {
         Action(
             required_params=["uri"],
             functions=[],
-            paths=[(config("SECOND_TEST_KINESIS_STREAM"), "TEST_FUNC")],
+            paths=[Queue(name=config("SECOND_TEST_KINESIS_STREAM"), type=Input.KINESIS, path="TEST_FUNC")],
         )
     ],
+#    Path.TEST_SQS_PATH: [
+#        Action(
+#            required_params=["uri"],
+#            functions=[],
+#            paths=[Queue(name=config("TEST_SQS_STREAM"), type=Input.SQS, path="TEST_FUNC")],
+#        )
+#    ],
     Path.TEST_FUNC_NO_PARAMS: [
         Action(required_params=[], functions=["test_func_no_params"], paths=[]),
         Action(

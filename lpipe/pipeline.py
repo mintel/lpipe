@@ -9,27 +9,32 @@ import requests
 from decouple import config
 from raven.contrib.awslambda import LambdaClient
 
+from lpipe import kinesis
 from lpipe.exceptions import InvalidInput, InvalidPathException, GraphQLException
-from lpipe.kinesis import put_record
 from lpipe.utils import get_module_attr, get_nested, batch
 
 
-INPUT_TYPE = config("INPUT_TYPE", "kinesis")
+class Input(Enum):
+    KINESIS = 1
+    SQS = 2
+
+
+INPUT_TYPE = config("INPUT_TYPE", Input.KINESIS)
 
 Action = namedtuple("Action", "required_params functions paths")
-Queue = namedtuple("Queue", "type name")
+Queue = namedtuple("Queue", "type name path")
 
 
 def process_records(records, logger, path_enum, paths):
     successes = 0
     for record in records:
         try:
-            if INPUT_TYPE == "kinesis":
+            assert INPUT_TYPE in Input
+            if INPUT_TYPE == Input.KINESIS:
                 payload = get_kinesis_payload(record)
-            if INPUT_TYPE == "sqs":
+            if INPUT_TYPE == Input.SQS:
                 raise Exception("SQS not yet implemented.")
-            else:
-                raise Exception(f"Unsupported INPUT_TYPE: {INPUT_TYPE}")
+
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
             execute_path(
@@ -69,6 +74,8 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         except KeyError as e:
             raise InvalidPathException(e)
         for action in paths[path]:
+            assert isinstance(action, Action)
+
             # Build action kwargs
             action_kwargs = {}
 
@@ -100,15 +107,19 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                     logger.log(f"Skipped {path.name} {function} because: {e}")
 
             # Run action paths / shortcuts
-            for path_name in action.paths:
-                execute_path(path_name, action_kwargs, logger, path_enum, paths)
-    elif isinstance(path, tuple):  # SHORTCUT
-        stream_name = path[0]
-        path = path[1]
+            for path_descriptor in action.paths:
+                execute_path(path_descriptor, action_kwargs, logger, path_enum, paths)
+    elif isinstance(path, Queue):  # SHORTCUT
+        q = path
+        assert q.type in Input
+
         with logger.context(
-            bind={"path": path, "stream_name": stream_name, "kwargs": kwargs}
+            bind={"path": q.path, "queue_type": q.type, "queue_name": q.name, "kwargs": kwargs}
         ):
-            logger.log(f"Pushing record to stream.")
-        put_record(stream_name=stream_name, data={"path": path, "kwargs": kwargs})
+            logger.log(f"Pushing record.")
+            if q.type == Input.KINESIS:
+                kinesis.put_record(stream_name=q.name, data={"path": q.path, "kwargs": kwargs})
+            elif q.type == Input.SQS:
+                raise Exception("SQS not yet implemented.")
     else:
-        logger.log(f"Invalid tuple, str, or enum value. (path: {path})")
+        logger.error(f"Path should be a string, Path, or Queue {path})")
