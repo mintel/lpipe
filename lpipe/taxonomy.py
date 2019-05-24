@@ -1,6 +1,6 @@
 import re
 
-from exceptions import InvalidTaxonomyURI
+from lpipe.exceptions import InvalidTaxonomyURI, GraphQLException
 
 
 def query_graphql(raw_query, endpoint):

@@ -8,8 +8,7 @@ from enum import Enum
 import requests
 from raven.contrib.awslambda import LambdaClient
 
-from exceptions import InvalidInput, InvalidPathException, GraphQLException
-from kinesis import put_record
+from lpipe.exceptions import InvalidInput, InvalidPathException
 
 
 def check_sentry(sentry):

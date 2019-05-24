@@ -4,10 +4,6 @@ init: init-build-harness
 	@make pipenv
 .PHONY: init
 
-#$(VENV_WORKDIR)/activate: pipenv
-#	if [[ "$(VENV_WORKDIR)" == "." ]]; then touch "$$($(PIPENV) --venv 2> /dev/null)/bin/activate"; fi
-#	ln -fs "$$($(PIPENV) --venv 2> /dev/null)/bin/activate" $(VENV_WORKDIR)/activate
-
 build-docs: pipenv  ## Build HTML docs into the `docs/_build/html` dir
 	$(WITH_PIPENV) $(MAKE) -C docs clean html
 .PHONY: build-docs
@@ -23,6 +19,18 @@ lint: python/lint
 .PHONY: lint
 
 test: pytest/test
+.PHONY: test
+
+testall: pipenv reports/
+	$(WITH_PIPENV) pytest
+.PHONY: test
+
+testall-lf: pipenv reports/
+	$(WITH_PIPENV) pytest -s -v --lf
+.PHONY: test
+
+testall-verbose: pipenv reports/
+	$(WITH_PIPENV) pytest -s -v
 .PHONY: test
 
 PYTHON_VERSION ?= 3.6

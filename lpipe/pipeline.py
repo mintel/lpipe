@@ -9,14 +9,15 @@ import requests
 from decouple import config
 from raven.contrib.awslambda import LambdaClient
 
-from exceptions import InvalidInput, InvalidPathException, GraphQLException
-from kinesis import put_record
-from utils import get_module_attr, get_nested, batch
+from lpipe.exceptions import InvalidInput, InvalidPathException, GraphQLException
+from lpipe.kinesis import put_record
+from lpipe.utils import get_module_attr, get_nested, batch
 
 
 INPUT_TYPE = config("INPUT_TYPE", "kinesis")
 
 Action = namedtuple("Action", "required_params functions paths")
+Queue = namedtuple("Queue", "type name")
 
 
 def process_records(records, logger, path_enum, paths):
