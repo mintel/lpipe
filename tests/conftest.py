@@ -8,13 +8,6 @@ localstack = pytest_localstack.patch_fixture(
     services=["kinesis", "sqs"], scope="session", autouse=True
 )
 
-
-@pytest.fixture(scope="session", autouse=True)
-def silence_resource_warnings():
-    warnings.filterwarnings(
-        action="ignore", message="unclosed", category=ResourceWarning
-    )
-
 @pytest.fixture(scope="class")
 def kinesis_streams():
     return ["test_stream"]
