@@ -18,5 +18,5 @@ class TestSanityMockKinesis:
         )
 
 
-#class TestSanityMockSQS:
+# class TestSanityMockSQS:
 #    test_mock_sqs(self):

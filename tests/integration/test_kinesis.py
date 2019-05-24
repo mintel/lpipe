@@ -11,13 +11,14 @@ class TestPutRecords:
     def test_batch_put_records_single(self, kinesis_client, kinesis_streams):
         responses = kinesis.batch_put_records(
             stream_name=kinesis_streams[0],
-            records=[
-                {"foo": "bar", "wiz": "bang"},
-            ],
+            records=[{"foo": "bar", "wiz": "bang"}],
             batch_size=2,
         )
         assert len(responses) == 1
-        assert all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses]) == True
+        assert (
+            all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses])
+            == True
+        )
 
     def test_batch_put_records_many(self, kinesis_client, kinesis_streams):
         responses = kinesis.batch_put_records(
@@ -31,12 +32,17 @@ class TestPutRecords:
             batch_size=2,
         )
         assert len(responses) == 2
-        assert all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses]) == True
+        assert (
+            all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses])
+            == True
+        )
 
     def test_batch_put_record(self, kinesis_client, kinesis_streams):
         responses = kinesis.put_record(
-            stream_name=kinesis_streams[0],
-            data={"foo": "bar", "wiz": "bang"}
+            stream_name=kinesis_streams[0], data={"foo": "bar", "wiz": "bang"}
         )
         assert len(responses) == 1
-        assert all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses]) == True
+        assert (
+            all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses])
+            == True
+        )

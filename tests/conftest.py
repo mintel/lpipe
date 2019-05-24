@@ -8,13 +8,16 @@ localstack = pytest_localstack.patch_fixture(
     services=["kinesis", "sqs"], scope="session", autouse=True
 )
 
+
 @pytest.fixture(scope="class")
 def kinesis_streams():
     return ["test_stream"]
 
+
 @pytest.fixture(scope="class")
 def kinesis_client():
     return boto3.client("kinesis")
+
 
 @pytest.fixture(scope="class")
 def kinesis(request, kinesis_client, kinesis_streams):
