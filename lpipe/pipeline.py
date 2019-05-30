@@ -61,10 +61,7 @@ def process_event(event, logger, path_enum, paths):
     n_records = len(records)
     return {
         "event": "Finished.",
-        "stats": {
-            "received": n_records,
-            "successes": successes,
-        },
+        "stats": {"received": n_records, "successes": successes},
     }
 
 
@@ -134,11 +131,18 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         assert q.type in Input
 
         with logger.context(
-            bind={"path": q.path, "queue_type": q.type, "queue_name": q.name, "kwargs": kwargs}
+            bind={
+                "path": q.path,
+                "queue_type": q.type,
+                "queue_name": q.name,
+                "kwargs": kwargs,
+            }
         ):
             logger.log(f"Pushing record.")
             if q.type == Input.KINESIS:
-                kinesis.put_record(stream_name=q.name, data={"path": q.path, "kwargs": kwargs})
+                kinesis.put_record(
+                    stream_name=q.name, data={"path": q.path, "kwargs": kwargs}
+                )
             elif q.type == Input.SQS:
                 raise Exception("SQS not yet implemented.")
     else:

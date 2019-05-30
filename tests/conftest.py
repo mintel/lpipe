@@ -17,7 +17,6 @@ localstack = pytest_localstack.patch_fixture(
 REGION = config("DEFAULT_AWS_REGION", "us-east-1")
 
 
-
 @pytest.fixture(scope="class")
 def kinesis_streams():
     return ["test_stream"]
@@ -44,15 +43,18 @@ def kinesis(request, kinesis_streams):
 
 @pytest.fixture(scope="class")
 def dummy_lambda():
-    lambda_client = boto3.client('lambda')
+    lambda_client = boto3.client("lambda")
     env = {}
-    with open(str(Path().absolute() / "tests/integration/dummy_lambda/package/build.zip"), 'rb') as f:
+    with open(
+        str(Path().absolute() / "tests/integration/dummy_lambda/package/build.zip"),
+        "rb",
+    ) as f:
         zipped_code = f.read()
         lambda_client.create_function(
-            FunctionName='dummy_lambda',
-            Runtime='python3.6',
+            FunctionName="dummy_lambda",
+            Runtime="python3.6",
             Role="foobar",
-            Handler='main.lambda_handler',
+            Handler="main.lambda_handler",
             Code=dict(ZipFile=zipped_code),
             Timeout=300,
             Environment=env,
@@ -61,27 +63,33 @@ def dummy_lambda():
 
 @pytest.fixture
 def invoke_lambda():
-    def inv(name='dummy_lambda', payload={}):
-        client = boto3.client('lambda')
+    def inv(name="dummy_lambda", payload={}):
+        client = boto3.client("lambda")
         return client.invoke(
             FunctionName=name,
-            InvocationType='RequestResponse',
-            LogType='Tail',
+            InvocationType="RequestResponse",
+            LogType="Tail",
             Payload=json.dumps(payload).encode(),
         )
+
     return inv
+
 
 @pytest.fixture
 def kinesis_payload():
     def kin(payloads):
         def fmt(p):
-            return { "kinesis": { "data": base64.b64encode(json.dumps(p).encode()) } }
+            return {"kinesis": {"data": base64.b64encode(json.dumps(p).encode())}}
+
         records = [fmt(p) for p in payloads]
-        return { "Records": records }
+        return {"Records": records}
+
     return kin
+
 
 @pytest.fixture
 def sqs_payload():
     def sqs(payloads):
         return {}
+
     return sqs

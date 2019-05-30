@@ -159,6 +159,6 @@ class Product:
         return str(self.uri.id)
 
 
-#def build_taxonomy_uri(uri):
+# def build_taxonomy_uri(uri):
 #    """Given a URI (string or object), return a TaxonomyURI"""
 #    return uri if type(uri) is TaxonomyURI else TaxonomyURI.from_str(uri)
