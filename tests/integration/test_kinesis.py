@@ -8,7 +8,7 @@ KINESIS_STREAMS = ["test_stream"]
 @pytest.mark.postbuild
 @pytest.mark.usefixtures("kinesis")
 class TestPutRecords:
-    def test_batch_put_records_single(self, kinesis_client, kinesis_streams):
+    def test_batch_put_records_single(self, kinesis_streams):
         responses = kinesis.batch_put_records(
             stream_name=kinesis_streams[0],
             records=[{"foo": "bar", "wiz": "bang"}],
@@ -20,7 +20,7 @@ class TestPutRecords:
             == True
         )
 
-    def test_batch_put_records_many(self, kinesis_client, kinesis_streams):
+    def test_batch_put_records_many(self, kinesis_streams):
         responses = kinesis.batch_put_records(
             stream_name=kinesis_streams[0],
             records=[
@@ -37,7 +37,7 @@ class TestPutRecords:
             == True
         )
 
-    def test_batch_put_record(self, kinesis_client, kinesis_streams):
+    def test_batch_put_record(self, kinesis_streams):
         responses = kinesis.put_record(
             stream_name=kinesis_streams[0], data={"foo": "bar", "wiz": "bang"}
         )

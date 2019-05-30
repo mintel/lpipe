@@ -39,6 +39,11 @@ class TaxonomyURI:
         except Exception as e:
             raise InvalidTaxonomyURI() from e
 
+    @staticmethod
+    def build(uri):
+        """Given a URI (string or object), return a TaxonomyURI"""
+        return uri if type(uri) is TaxonomyURI else TaxonomyURI.from_str(uri)
+
     @property
     def encoded(self):
         return f"taxonomy-v{self.version}/{self.type}/{self.id}"
@@ -154,6 +159,6 @@ class Product:
         return str(self.uri.id)
 
 
-def build_taxonomy_uri(uri):
-    """Given a URI (string or object), return a TaxonomyURI"""
-    return uri if type(uri) is TaxonomyURI else TaxonomyURI.from_str(uri)
+#def build_taxonomy_uri(uri):
+#    """Given a URI (string or object), return a TaxonomyURI"""
+#    return uri if type(uri) is TaxonomyURI else TaxonomyURI.from_str(uri)

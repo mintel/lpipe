@@ -25,15 +25,18 @@ Action = namedtuple("Action", "required_params functions paths")
 Queue = namedtuple("Queue", "type name path")
 
 
-def process_records(records, logger, path_enum, paths):
+def process_event(event, logger, path_enum, paths):
     successes = 0
+    records = event["Records"]
+    logger.info(f"{records}")
     for record in records:
         try:
             assert INPUT_TYPE in Input
+            logger.info(f"{record}")
             if INPUT_TYPE == Input.KINESIS:
                 payload = get_kinesis_payload(record)
             if INPUT_TYPE == Input.SQS:
-                raise Exception("SQS not yet implemented.")
+                payload = get_sqs_payload(record)
 
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
@@ -54,13 +57,30 @@ def process_records(records, logger, path_enum, paths):
         except json.JSONDecodeError as e:
             logger.log(f"Payload contained invalid json. {e}")
             continue
-    return "Successfully processed {}/{} records.".format(successes, len(records))
+
+    n_records = len(records)
+    return {
+        "event": "Finished.",
+        "stats": {
+            "received": n_records,
+            "successes": successes,
+        },
+    }
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
-    """Decode and validate record payload."""
+    """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
     payload = json.loads(base64.b64decode(record["kinesis"]["data"]))
+    for field in required_fields:
+        assert field in payload
+    return payload
+
+
+def get_sqs_payload(record, required_fields=["path", "kwargs"]):
+    """Decode and validate an sqs record."""
+    assert record["body"] is not None
+    payload = json.loads(record["body"])
     for field in required_fields:
         assert field in payload
     return payload
