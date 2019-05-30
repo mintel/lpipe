@@ -79,7 +79,7 @@ def invoke_lambda():
 def kinesis_payload():
     def kin(payloads):
         def fmt(p):
-            return {"kinesis": {"data": base64.b64encode(json.dumps(p).encode())}}
+            return {"kinesis": {"data": str(base64.b64encode(json.dumps(p).encode()), "utf-8")}}
 
         records = [fmt(p) for p in payloads]
         return {"Records": records}

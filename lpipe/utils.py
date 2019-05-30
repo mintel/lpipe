@@ -41,6 +41,9 @@ def get_nested(d, keys):
 
 
 def get_module_attr(import_path):
-    frag = import_path.split(".")
-    module = importlib.import_module(".".join(frag[:-1]))
-    return getattr(module, frag[-1])
+    try:
+        frag = import_path.split(".")
+        module = importlib.import_module(".".join(frag[:-1]))
+        return getattr(module, frag[-1])
+    except Exception as e:
+        raise Exception(f"Failed to import {import_path}") from e

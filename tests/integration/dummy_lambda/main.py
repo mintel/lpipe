@@ -1,7 +1,7 @@
-import logging
 from enum import Enum
 
 from decouple import config
+from mintel_logging.logger import get_logger
 
 from lpipe.pipeline import Action, Queue, Input, process_event
 from lpipe.utils import check_sentry
@@ -66,7 +66,7 @@ PATHS = {
 
 
 def lambda_handler(event, context):
-    logger = logging.getLogger()
+    logger = get_logger("", "dummy-lambda")
     return process_event(event, logger, Path, PATHS)
 
 

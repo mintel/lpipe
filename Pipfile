@@ -3,9 +3,15 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+url = "https://devpi-backup.int.everest-shared.aws.mintel.com/simple"
+verify_ssl = true
+name = "devpi"
+
 [packages]
 boto3 = "*"
 jsonschema = "*"
+mintel-logging = {version = "*",index = "devpi"}
 python-decouple = "*"
 raven = "*"
 

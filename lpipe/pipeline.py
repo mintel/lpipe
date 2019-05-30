@@ -68,7 +68,7 @@ def process_event(event, logger, path_enum, paths):
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
     """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
-    payload = json.loads(base64.b64decode(record["kinesis"]["data"]))
+    payload = json.loads(base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8")))
     for field in required_fields:
         assert field in payload
     return payload

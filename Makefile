@@ -21,38 +21,28 @@ lint: python/lint
 test: pytest/test
 .PHONY: test
 
-testall: pipenv reports/
+testall: pipenv reports/ build-test-lambda
 	$(WITH_PIPENV) pytest
 .PHONY: test
 
-testall-lf: pipenv reports/
+testall-lf: pipenv reports/ build-test-lambda
 	$(WITH_PIPENV) pytest -s -v --lf
 .PHONY: test
 
-testall-verbose: pipenv reports/
+testall-verbose: pipenv reports/ build-test-lambda
 	$(WITH_PIPENV) pytest -s -v
 .PHONY: test
 
-PYTHON_VERSION ?= 3.6
-MAGIC_DATE := 19700101
-DUMMY_LAMBDA_PATH:=$(CURDIR)/tests/integration/dummy_lambda
-build-test-lambda: pipenv
-	mkdir -p $(DUMMY_LAMBDA_PATH)/package
-	# differing timestamps give us different hashes for repeated builds, so set everything the same
-	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
-	find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
-	zip $(DUMMY_LAMBDA_PATH)/package/build.zip lpipe -rvX
-	cd $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *
-	cd $(DUMMY_LAMBDA_PATH) && zip $(DUMMY_LAMBDA_PATH)/package/build.zip -rq *py
-	touch -d "$(MAGIC_DATE)" $(DUMMY_LAMBDA_PATH)/package/build.zip
+BUILD_PATH:=$(CURDIR)/tests/integration/dummy_lambda
+build-test-lambda: dist/
+	cp Pipfile Pipfile.lock $(BUILD_PATH)
+	cp dist/lpipe* $(BUILD_PATH)/lpipe.tar.gz
+	cd $(BUILD_PATH) && make build
+.PHONY: build-test-lambda
 
 test-post-build: build-test-lambda pytest/test-post-build
-	rm -rf $(DUMMY_LAMBDA_PATH)/package
+	rm -rf $(BUILD_PATH)/package
 .PHONY: test-post-build
-
-ftest: pipenv
-	$(WITH_PIPENV) pytest --no-localstack
-.PHONY: ftest
 
 dist: python/dist
 .PHONY: dist
@@ -67,5 +57,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean clean-build-harness
-	rm -rf $(DUMMY_LAMBDA_PATH)/package
+	rm -rf $(BUILD_PATH)/package
 .PHONY: clean

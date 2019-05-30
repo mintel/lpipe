@@ -77,3 +77,4 @@ target/
 activate
 
 *build-harness
+.DS_Store
