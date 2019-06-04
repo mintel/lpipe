@@ -57,5 +57,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean clean-build-harness
-	rm -rf $(BUILD_PATH)/package
+	cd $(BUILD_PATH) && make clean
 .PHONY: clean

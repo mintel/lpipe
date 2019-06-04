@@ -67,7 +67,18 @@ PATHS = {
 
 def lambda_handler(event, context):
     logger = get_logger("", "dummy-lambda")
-    return process_event(event, logger, Path, PATHS)
+    #return process_event(event, logger, Path, PATHS)
+    #import importlib
+    #from lpipe.utils import get_module_attr
+    logger.info([dist.project_name.replace('Python', '') for dist in __import__('pkg_resources').working_set])
+    #import_path = "main.test_func"
+    #frag = import_path.split(".")
+    #module = importlib.import_module(".".join(frag[:-1]))
+    #get_module_attr("main.test_func")(
+    #    foo="asdf",
+    #    logger=logger
+    #)
+    return True
 
 
 def test_func(foo, logger, **kwargs):

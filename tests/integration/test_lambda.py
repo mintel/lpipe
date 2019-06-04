@@ -20,7 +20,7 @@ class TestDummyLambda:
         response = invoke_lambda(name="dummy_lambda", payload=kinesis_payload(payload))
         body = response["Payload"].read()
         print(body)
-        assert response["StatusCode"] // 100 == 200
+        assert response["StatusCode"] // 100 == 2
 
     def test_lambda_func(self, invoke_lambda, kinesis_payload):
         payload = [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}]
