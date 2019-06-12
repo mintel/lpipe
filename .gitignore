@@ -79,4 +79,4 @@ activate
 *build-harness
 .DS_Store
 *.tar.gz
-*dummy_lambda/Pipfile*
+tests/integration/dummy_lambda/Pipfile*
