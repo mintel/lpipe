@@ -1,8 +1,9 @@
 from enum import Enum
 
 from decouple import config
-from mintel_logging.logger import get_logger
+#from mintel_logging.logger import get_logger
 
+from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, Input, process_event
 from lpipe.utils import check_sentry
 
@@ -66,11 +67,20 @@ PATHS = {
 
 
 def lambda_handler(event, context):
-    logger = get_logger("", "dummy-lambda")
-    #return process_event(event, logger, Path, PATHS)
+    logger = ServerlessLogger(process="dummy-lambda")
+    return process_event(
+        event=event,
+        path_enum=Path,
+        paths=PATHS,
+        logger=logger,
+    )
+
+    #logger=logger,
+    #log_handler=_log_handler,
+
     #import importlib
     #from lpipe.utils import get_module_attr
-    logger.info([dist.project_name.replace('Python', '') for dist in __import__('pkg_resources').working_set])
+
     #import_path = "main.test_func"
     #frag = import_path.split(".")
     #module = importlib.import_module(".".join(frag[:-1]))
@@ -78,7 +88,8 @@ def lambda_handler(event, context):
     #    foo="asdf",
     #    logger=logger
     #)
-    return True
+
+    #return True
 
 
 def test_func(foo, logger, **kwargs):

@@ -30,10 +30,9 @@ setup(
     maintainer_email=__author_email__,
     license="MIT",
     url=__uri__,
-    packages=find_packages(where=HERE, exclude=["tests"]),
+    packages=find_packages(where=HERE, exclude=["tests", "tests.*"]),
     description=__summary__,
     long_description=read("README.md"),
-    py_modules=["pytest_everest"],
     setup_requires=["pytest-runner"],
     tests_require=list_requirements("requirements-dev.txt"),
     python_requires=">=3.4",
@@ -54,5 +53,4 @@ setup(
         "Operating System :: OS Independent",
         "License :: OSI Approved :: MIT License",
     ],
-    entry_points={"pytest11": ["everest = pytest_everest"]},
 )

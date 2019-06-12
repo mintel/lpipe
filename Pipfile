@@ -3,17 +3,18 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[[source]]
-url = "https://devpi-backup.int.everest-shared.aws.mintel.com/simple"
-verify_ssl = true
-name = "devpi"
+#[[source]]
+#url = "https://devpi-backup.int.everest-shared.aws.mintel.com/simple"
+#verify_ssl = true
+#name = "devpi"
 
 [packages]
 boto3 = "*"
 jsonschema = "*"
-mintel-logging = {version = "*",index = "devpi"}
+#mintel-logging = {version = "*",index = "devpi"}
 python-decouple = "*"
 raven = "*"
+structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
@@ -29,6 +30,7 @@ pytest-cov = "*"
 pytest-docker = "*"
 pytest-localstack = "*"
 pytest-mock = "*"
+pytest-xdist = "*"
 recommonmark = "*"
 sphinx = "*"
 wheel = "*"

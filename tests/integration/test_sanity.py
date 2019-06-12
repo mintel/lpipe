@@ -7,7 +7,7 @@ KINESIS_STREAMS = ["test_stream"]
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("kinesis")
+@pytest.mark.usefixtures("localstack", "kinesis")
 class TestSanityMockKinesis:
     def test_mock_kinesis(self, kinesis_streams):
         client = boto3.client("kinesis")

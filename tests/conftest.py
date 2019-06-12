@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import warnings
 from pathlib import Path
 
@@ -9,8 +10,11 @@ import pytest_localstack
 from decouple import config
 
 
+LOGGER = logging.getLogger()
+
+
 localstack = pytest_localstack.patch_fixture(
-    services=["kinesis", "lambda"], scope="session", autouse=True
+    services=["kinesis", "lambda"], scope="module", autouse=False
 )
 
 
@@ -65,13 +69,20 @@ def dummy_lambda():
 def invoke_lambda():
     def inv(name="dummy_lambda", payload={}):
         client = boto3.client("lambda")
-        return client.invoke(
+        response = client.invoke(
             FunctionName=name,
             InvocationType="RequestResponse",
             LogType="Tail",
             Payload=json.dumps(payload).encode(),
         )
-
+        body = response["Payload"].read()
+        try:
+            body = json.loads(body)
+        except:
+            pass
+        LOGGER.debug(response)
+        LOGGER.debug(body)
+        return response, body
     return inv
 
 

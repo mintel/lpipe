@@ -13,5 +13,5 @@ build:
 	cd $(CURDIR) && zip $(CURDIR)/package/build.zip -rq *py
 	touch -d "$(MAGIC_DATE)" $(CURDIR)/package/build.zip
 
-clean:
+clean: pipenv/clean python/clean
 	rm -rf package/ Pipfile* lpipe.tar.gz

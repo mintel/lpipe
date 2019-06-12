@@ -1,6 +1,7 @@
 import base64
 import importlib
 import json
+import logging
 import shlex
 from collections import namedtuple
 from enum import Enum
@@ -11,6 +12,7 @@ from raven.contrib.awslambda import LambdaClient
 
 from lpipe import kinesis
 from lpipe.exceptions import InvalidInput, InvalidPathException, GraphQLException
+from lpipe.logging import ServerlessLogger
 from lpipe.utils import get_module_attr, get_nested, batch
 
 
@@ -19,20 +21,27 @@ class Input(Enum):
     SQS = 2
 
 
-INPUT_TYPE = config("INPUT_TYPE", Input.KINESIS)
-
 Action = namedtuple("Action", "required_params functions paths")
 Queue = namedtuple("Queue", "type name path")
 
 
-def process_event(event, logger, path_enum, paths):
+def process_event(event, path_enum, paths, logger=None):
+    if not logger:
+        logger = ServerlessLogger()
+
+    #lc = LogCatcher(logger, log_handler)
+    #_log = lc._log
+
+    INPUT_TYPE = config("INPUT_TYPE", Input.KINESIS)
     successes = 0
+
+    # TODO: get records differently based on queue
+    # Maybe combine get_QUEUE_payload() funcs and this into a generator
     records = event["Records"]
-    logger.info(f"{records}")
+
     for record in records:
         try:
             assert INPUT_TYPE in Input
-            logger.info(f"{record}")
             if INPUT_TYPE == Input.KINESIS:
                 payload = get_kinesis_payload(record)
             if INPUT_TYPE == Input.SQS:
@@ -49,20 +58,23 @@ def process_event(event, logger, path_enum, paths):
             )
             successes += 1
         except AssertionError as e:
-            logger.log(f"Payload was missing an expected param. {e}")
+            logger.warning(f"Payload was missing an expected param. {e}")
             continue  # Drop poisoned records on the floor.
         except InvalidPathException as e:
-            logger.log(f"Payload specified an invalid path. {e}")
+            logger.warning(f"Payload specified an invalid path. {e}")
             continue
         except json.JSONDecodeError as e:
-            logger.log(f"Payload contained invalid json. {e}")
+            logger.warning(f"Payload contained invalid json. {e}")
             continue
 
     n_records = len(records)
-    return {
+    response = {
         "event": "Finished.",
         "stats": {"received": n_records, "successes": successes},
     }
+    #if lc.messages:
+    #    response["logs"] = lc.messages
+    return response
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
@@ -138,12 +150,13 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                 "kwargs": kwargs,
             }
         ):
-            logger.log(f"Pushing record.")
-            if q.type == Input.KINESIS:
-                kinesis.put_record(
-                    stream_name=q.name, data={"path": q.path, "kwargs": kwargs}
-                )
-            elif q.type == Input.SQS:
-                raise Exception("SQS not yet implemented.")
+            logger.log("Pushing record.")
+
+        if q.type == Input.KINESIS:
+            kinesis.put_record(
+                stream_name=q.name, data={"path": q.path, "kwargs": kwargs}
+            )
+        elif q.type == Input.SQS:
+            raise Exception("SQS not yet implemented.")
     else:
         logger.error(f"Path should be a string, Path, or Queue {path})")

@@ -6,7 +6,7 @@ KINESIS_STREAMS = ["test_stream"]
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("kinesis")
+@pytest.mark.usefixtures("localstack", "kinesis")
 class TestPutRecords:
     def test_batch_put_records_single(self, kinesis_streams):
         responses = kinesis.batch_put_records(

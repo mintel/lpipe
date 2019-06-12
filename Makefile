@@ -22,25 +22,25 @@ test: pytest/test
 .PHONY: test
 
 testall: pipenv reports/ build-test-lambda
-	$(WITH_PIPENV) pytest
+	$(WITH_PIPENV) pytest -n4 --dist=loadscope
 .PHONY: test
 
-testall-lf: pipenv reports/ build-test-lambda
-	$(WITH_PIPENV) pytest -s -v --lf
+testall-lf: pipenv reports/ python/dist build-test-lambda
+	$(WITH_PIPENV) pytest -s -v --log-cli-level=info --lf
 .PHONY: test
 
-testall-verbose: pipenv reports/ build-test-lambda
-	$(WITH_PIPENV) pytest -s -v
+testall-verbose: pipenv reports/ python/dist build-test-lambda
+	$(WITH_PIPENV) pytest -s -v -n4 --dist=loadscope --log-cli-level=info
 .PHONY: test
 
 BUILD_PATH:=$(CURDIR)/tests/integration/dummy_lambda
-build-test-lambda: dist/
+build-test-lambda: python/dist
 	cp Pipfile Pipfile.lock $(BUILD_PATH)
 	cp dist/lpipe* $(BUILD_PATH)/lpipe.tar.gz
 	cd $(BUILD_PATH) && make build
 .PHONY: build-test-lambda
 
-test-post-build: build-test-lambda pytest/test-post-build
+test-post-build: python/dist build-test-lambda pytest/test-post-build
 	rm -rf $(BUILD_PATH)/package
 .PHONY: test-post-build
 

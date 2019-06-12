@@ -1,6 +1,7 @@
 import base64
 import importlib
 import json
+import os
 import shlex
 from collections import namedtuple
 from enum import Enum
@@ -46,4 +47,8 @@ def get_module_attr(import_path):
         module = importlib.import_module(".".join(frag[:-1]))
         return getattr(module, frag[-1])
     except Exception as e:
-        raise Exception(f"Failed to import {import_path}") from e
+        script = os.path.dirname(os.path.abspath(__file__))
+        mods = sorted([dist.project_name.replace('Python', '') for dist in __import__('pkg_resources').working_set])
+        path = os.environ['PYTHONPATH'].split(os.pathsep)
+        asdf = os.listdir("/opt/code/localstack/")
+        raise Exception(f"Failed to import {import_path}. Running {script} with {mods} in {path} ... {asdf}") from e
