@@ -78,3 +78,4 @@ activate
 
 *build-harness
 .DS_Store
+*.tar.gz
