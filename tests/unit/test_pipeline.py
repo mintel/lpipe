@@ -2,16 +2,7 @@ from lpipe import pipeline
 
 
 def test_kinesis_payload(kinesis_payload):
-    records = [
-        {
-            "path": "foo",
-            "kwargs": {},
-        },
-        {
-            "path": "foo",
-            "kwargs": {},
-        }
-    ]
+    records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
     payload = kinesis_payload(records)
     assert "Records" in payload
     decoded_records = [pipeline.get_kinesis_payload(r) for r in payload["Records"]]

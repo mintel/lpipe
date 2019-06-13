@@ -9,19 +9,18 @@ from lpipe.pipeline import Action, QueueType, process_event
 
 LOGGER = logging.getLogger()
 
+
 def _emit_logs(body):
     if "logs" in body:
         for log in body["logs"]:
             LOGGER.log(level=logging.INFO, msg=log["event"])
 
+
 class Path(Enum):
     TEST_FUNC = 1
 
-PATHS = {
-    Path.TEST_FUNC: [
-        Action(required_params=["foo"], functions=[], paths=[])
-    ],
-}
+
+PATHS = {Path.TEST_FUNC: [Action(required_params=["foo"], functions=[], paths=[])]}
 
 
 def test_process_event_empty(kinesis_payload):
@@ -59,7 +58,7 @@ def test_process_event_empty_payload(kinesis_payload):
     _emit_logs(response)
     assert response["stats"]["received"] == 1
     assert response["stats"]["successes"] == 0
-    #assert 1==2
+    # assert 1==2
 
 
 def test_process_event_valid_payload(kinesis_payload):

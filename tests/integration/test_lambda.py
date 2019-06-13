@@ -13,6 +13,7 @@ import lpipe
 
 LOGGER = logging.getLogger()
 
+
 def _emit_logs(body):
     if "logs" in body:
         for log in body["logs"]:
@@ -27,7 +28,9 @@ class TestDummyLambda:
 
     def test_lambda_empty_no_payload(self, invoke_lambda, kinesis_payload):
         payload = []
-        response, body = invoke_lambda(name="dummy_lambda", payload=kinesis_payload(payload))
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
         _emit_logs(body)
         assert response["StatusCode"] // 100 == 2
         assert body["stats"]["received"] == 0
@@ -35,7 +38,9 @@ class TestDummyLambda:
 
     def test_lambda_empty_payload(self, invoke_lambda, kinesis_payload):
         payload = [{}]
-        response, body = invoke_lambda(name="dummy_lambda", payload=kinesis_payload(payload))
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
         _emit_logs(body)
         assert response["StatusCode"] // 100 == 2
         assert body["stats"]["received"] == 1
@@ -43,7 +48,9 @@ class TestDummyLambda:
 
     def test_lambda_func(self, invoke_lambda, kinesis_payload):
         payload = [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}]
-        response, body = invoke_lambda(name="dummy_lambda", payload=kinesis_payload(payload))
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
         _emit_logs(body)
         assert response["StatusCode"] // 100 == 2
         assert body["stats"]["received"] == 1

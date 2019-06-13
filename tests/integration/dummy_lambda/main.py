@@ -1,7 +1,8 @@
 from enum import Enum
 
 from decouple import config
-#from mintel_logging.logger import get_logger
+
+# from mintel_logging.logger import get_logger
 
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
@@ -31,7 +32,9 @@ PATHS = {
         Action(required_params=["foo"], functions=[], paths=[Path.TEST_FUNC])
     ],
     Path.TEST_FUNC_AND_PATH: [
-        Action(required_params=["foo"], functions=[src.test_func], paths=[Path.TEST_FUNC])
+        Action(
+            required_params=["foo"], functions=[src.test_func], paths=[Path.TEST_FUNC]
+        )
     ],
     # Path.TEST_KINESIS_PATH: [
     #    Action(

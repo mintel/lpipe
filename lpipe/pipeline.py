@@ -58,9 +58,13 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
             try:
                 payload = get_payload_from_record(queue_type, record)
             except AssertionError as e:
-                raise InvalidInputError("'path' or 'kwargs' missing from payload.") from e
+                raise InvalidInputError(
+                    "'path' or 'kwargs' missing from payload."
+                ) from e
             except TypeError as e:
-                raise InvalidInputError(f"Bad record provided for queue type {queue_type}. {record}") from e
+                raise InvalidInputError(
+                    f"Bad record provided for queue type {queue_type}. {record}"
+                ) from e
 
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
@@ -82,11 +86,7 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
             logger.error(f"Payload contained invalid json. {e}")
             continue
 
-    return build_response(
-        n_records=len(records),
-        n_ok=successes,
-        logger=logger,
-    )
+    return build_response(n_records=len(records), n_ok=successes, logger=logger)
 
 
 def execute_path(path, kwargs, logger, path_enum, paths):
@@ -154,7 +154,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
     """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
-    payload = json.loads(base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8")))
+    payload = json.loads(
+        base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8"))
+    )
     for field in required_fields:
         assert field in payload
     return payload
@@ -181,7 +183,7 @@ def get_payload_from_record(queue_type, record):
         return get_kinesis_payload(record)
     if queue_type == QueueType.SQS:
         raise Exception("SQS not yet implemented.")
-        #return get_sqs_payload(record)
+        # return get_sqs_payload(record)
 
 
 def put_record(queue, record):

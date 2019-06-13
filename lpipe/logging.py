@@ -4,10 +4,7 @@ from contextlib import ContextDecorator
 
 import structlog
 from structlog import PrintLogger, wrap_logger
-from structlog.processors import (
-    JSONRenderer,
-    TimeStamper,
-)
+from structlog.processors import JSONRenderer, TimeStamper
 
 
 class ServerlessLogger:
@@ -17,10 +14,7 @@ class ServerlessLogger:
     def __init__(self, level=logging.INFO, **kwargs):
         self._logger = wrap_logger(
             structlog.get_logger(),
-            processors=[
-                TimeStamper(fmt="iso"),
-                JSONRenderer(sort_keys=True)
-            ]
+            processors=[TimeStamper(fmt="iso"), JSONRenderer(sort_keys=True)],
         )
         self.level = level
         self.bind(**kwargs)
