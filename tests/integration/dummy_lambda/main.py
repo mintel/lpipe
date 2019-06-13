@@ -4,7 +4,6 @@ from decouple import config
 
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
-from lpipe.utils import check_sentry
 
 import src
 
