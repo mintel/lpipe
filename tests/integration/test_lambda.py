@@ -55,3 +55,53 @@ class TestDummyLambda:
         assert response["StatusCode"] // 100 == 2
         assert body["stats"]["received"] == 1
         assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_func_no_params(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "TEST_FUNC_NO_PARAMS", "kwargs": {}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_path(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "TEST_PATH", "kwargs": {"foo": "bar"}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_func_and_path(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "TEST_FUNC_AND_PATH", "kwargs": {"foo": "bar"}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_multi_func_no_params(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "MULTI_TEST_FUNC_NO_PARAMS", "kwargs": {}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_rename_param(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "TEST_RENAME_PARAM", "kwargs": {"bar": "bar"}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
