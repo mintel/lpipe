@@ -18,9 +18,6 @@ localstack = pytest_localstack.patch_fixture(
 )
 
 
-REGION = config("DEFAULT_AWS_REGION", "us-east-1")
-
-
 @pytest.fixture(scope="class")
 def kinesis_streams():
     return ["test_stream"]
