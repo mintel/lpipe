@@ -5,7 +5,7 @@ MAGIC_DATE := 19700101
 build:
 	mkdir -p package
 	$(PIPENV) install --deploy
-	pip install lpipe.tar.gz --target=$(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ --upgrade --no-deps
+	pip install lpipe.tar.gz --target=$(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ --upgrade --no-deps --ignore-requires-python
 	# differing timestamps give us different hashes for repeated builds, so set everything the same
 	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
 	find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
