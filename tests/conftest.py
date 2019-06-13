@@ -106,6 +106,6 @@ def kinesis_payload():
 @pytest.fixture
 def sqs_payload():
     def sqs(payloads):
-        return {}
+        return payloads
 
     return sqs

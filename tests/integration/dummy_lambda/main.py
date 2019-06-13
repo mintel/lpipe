@@ -18,8 +18,8 @@ class Path(Enum):
     TEST_FUNC_AND_PATH = 4
     MULTI_TEST_FUNC_NO_PARAMS = 5
     TEST_RENAME_PARAM = 6
-    #TEST_KINESIS_PATH = 7
-    #TEST_SQS_PATH = 8
+    # TEST_KINESIS_PATH = 7
+    # TEST_SQS_PATH = 8
 
 
 PATHS = {

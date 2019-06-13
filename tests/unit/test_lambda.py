@@ -177,6 +177,7 @@ def test_process_event_multi_func_no_params(kinesis_payload):
     assert response["stats"]["received"] == 1
     assert response["stats"]["successes"] == 1
 
+
 def test_process_event_rename_param(kinesis_payload):
     logger = ServerlessLogger(level=logging.DEBUG, process="dummy-lambda")
     logger.persist = True
