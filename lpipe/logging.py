@@ -11,8 +11,8 @@ from structlog.processors import (
 
 
 class ServerlessLogger:
-    #persist = False
-    #events = []
+    persist = False
+    events = []
 
     def __init__(self, level=logging.INFO, **kwargs):
         self._logger = wrap_logger(
@@ -79,8 +79,8 @@ class ServerlessLogger:
         if level < self.level:
             return
         else:
-            #if self.persist:
-            #    self.events.append({"level": level, "event": event})
+            if self.persist:
+                self.events.append({"level": level, "event": event})
             return self._log(event, level=level, **kwargs)
 
     def debug(self, event, **kwargs):

@@ -3,13 +3,15 @@ import importlib
 import json
 import os
 import shlex
+import sys
 from collections import namedtuple
 from enum import Enum
+from pathlib import Path
 
 import requests
 from raven.contrib.awslambda import LambdaClient
 
-from lpipe.exceptions import InvalidInput, InvalidPathException
+from lpipe.exceptions import InvalidInputError, InvalidPathError
 
 
 def check_sentry(sentry):
@@ -39,16 +41,3 @@ def get_nested(d, keys):
         if not head:
             return head
     return head
-
-
-def get_module_attr(import_path):
-    try:
-        frag = import_path.split(".")
-        module = importlib.import_module(".".join(frag[:-1]))
-        return getattr(module, frag[-1])
-    except Exception as e:
-        script = os.path.dirname(os.path.abspath(__file__))
-        mods = sorted([dist.project_name.replace('Python', '') for dist in __import__('pkg_resources').working_set])
-        path = os.environ['PYTHONPATH'].split(os.pathsep)
-        asdf = os.listdir("/opt/code/localstack/")
-        raise Exception(f"Failed to import {import_path}. Running {script} with {mods} in {path} ... {asdf}") from e

@@ -40,7 +40,7 @@ build-test-lambda: python/dist
 	cd $(BUILD_PATH) && make build
 .PHONY: build-test-lambda
 
-test-post-build: python/dist build-test-lambda pytest/test-post-build
+test-post-build: build-test-lambda pytest/test-post-build
 	rm -rf $(BUILD_PATH)/package
 .PHONY: test-post-build
 

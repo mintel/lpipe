@@ -2,13 +2,13 @@ class InvalidTaxonomyURI(Exception):
     pass
 
 
-class InvalidInput(Exception):
+class InvalidInputError(Exception):
     pass
 
 
-class InvalidPathException(Exception):
+class InvalidPathError(Exception):
     pass
 
 
-class GraphQLException(Exception):
+class GraphQLError(Exception):
     pass

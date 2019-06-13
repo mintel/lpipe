@@ -11,12 +11,12 @@ from decouple import config
 from raven.contrib.awslambda import LambdaClient
 
 from lpipe import kinesis
-from lpipe.exceptions import InvalidInput, InvalidPathException, GraphQLException
+from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import get_module_attr, get_nested, batch
+from lpipe.utils import get_nested, batch
 
 
-class Input(Enum):
+class QueueType(Enum):
     KINESIS = 1
     SQS = 2
 
@@ -25,27 +25,42 @@ Action = namedtuple("Action", "required_params functions paths")
 Queue = namedtuple("Queue", "type name path")
 
 
-def process_event(event, path_enum, paths, logger=None):
+def build_response(n_records, n_ok, logger):
+    response = {
+        "event": "Finished.",
+        "stats": {"received": n_records, "successes": n_ok},
+    }
+    if logger.events:
+        response["logs"] = logger.events
+    return response
+
+
+def process_event(event, path_enum, paths, queue_type, logger=None):
     if not logger:
         logger = ServerlessLogger()
 
-    #lc = LogCatcher(logger, log_handler)
-    #_log = lc._log
+    logger.debug(f"Event received. queue: {queue_type}, event: {event}")
+    try:
+        assert isinstance(queue_type, QueueType)
+    except AssertionError as e:
+        raise InvalidInputError(f"Invalid queue type '{queue_type}'") from e
 
-    INPUT_TYPE = config("INPUT_TYPE", Input.KINESIS)
     successes = 0
-
-    # TODO: get records differently based on queue
-    # Maybe combine get_QUEUE_payload() funcs and this into a generator
-    records = event["Records"]
+    records = get_records_from_event(queue_type, event)
+    try:
+        assert isinstance(records, list)
+    except AssertionError as e:
+        logger.error(f"'records' is not a list {e}")
+        return build_response(0, 0, logger)
 
     for record in records:
         try:
-            assert INPUT_TYPE in Input
-            if INPUT_TYPE == Input.KINESIS:
-                payload = get_kinesis_payload(record)
-            if INPUT_TYPE == Input.SQS:
-                payload = get_sqs_payload(record)
+            try:
+                payload = get_payload_from_record(queue_type, record)
+            except AssertionError as e:
+                raise InvalidInputError("'path' or 'kwargs' missing from payload.") from e
+            except TypeError as e:
+                raise InvalidInputError(f"Bad record provided for queue type {queue_type}. {record}") from e
 
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
@@ -57,24 +72,83 @@ def process_event(event, path_enum, paths, logger=None):
                 paths=paths,
             )
             successes += 1
-        except AssertionError as e:
-            logger.warning(f"Payload was missing an expected param. {e}")
+        except InvalidInputError as e:
+            logger.error(str(e))
             continue  # Drop poisoned records on the floor.
-        except InvalidPathException as e:
-            logger.warning(f"Payload specified an invalid path. {e}")
+        except InvalidPathError as e:
+            logger.error(f"Payload specified an invalid path. {e}")
             continue
         except json.JSONDecodeError as e:
-            logger.warning(f"Payload contained invalid json. {e}")
+            logger.error(f"Payload contained invalid json. {e}")
             continue
 
-    n_records = len(records)
-    response = {
-        "event": "Finished.",
-        "stats": {"received": n_records, "successes": successes},
-    }
-    #if lc.messages:
-    #    response["logs"] = lc.messages
-    return response
+    return build_response(
+        n_records=len(records),
+        n_ok=successes,
+        logger=logger,
+    )
+
+
+def execute_path(path, kwargs, logger, path_enum, paths):
+    """Execute functions, paths, and shortcuts in a Path."""
+    if isinstance(path, Enum) or isinstance(path, str):  # PATH
+        try:
+            path = path_enum[str(path).split(".")[-1]]
+        except KeyError as e:
+            raise InvalidPathError(e)
+
+        for action in paths[path]:
+            assert isinstance(action, Action)
+
+            # Build action kwargs
+            action_kwargs = {}
+            for param in action.required_params:
+                param_name = param[0] if isinstance(param, tuple) else param
+                try:
+                    # Assert required field was provided.
+                    assert param_name in kwargs
+                except AssertionError as e:
+                    raise InvalidInputError(f"Missing param '{param_name}'") from e
+
+                # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
+                if isinstance(param, tuple) and len(param) == 2:
+                    action_kwargs[param[1]] = kwargs[param[0]]
+                else:
+                    action_kwargs[param] = kwargs[param]
+
+            # Run action functions
+            for f in action.functions:
+                try:
+                    with logger.context(
+                        bind={
+                            "kwargs": action_kwargs,
+                            "path": path.name,
+                            "function": f.__name__,
+                        }
+                    ):
+                        logger.log("Executing function.")
+                        f(logger=logger, **action_kwargs)
+                except Exception as e:
+                    logger.error(f"Skipped {path.name} {f.__name__} because: {e}")
+
+            # Run action paths / shortcuts
+            for path_descriptor in action.paths:
+                execute_path(path_descriptor, action_kwargs, logger, path_enum, paths)
+    elif isinstance(path, Queue):  # SHORTCUT
+        queue = path
+        assert isinstance(queue.type, QueueType)
+        with logger.context(
+            bind={
+                "path": queue.path,
+                "queue_type": queue.type,
+                "queue_name": queue.name,
+                "kwargs": kwargs,
+            }
+        ):
+            logger.log("Pushing record.")
+        put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
+    else:
+        logger.info(f"Path should be a string, Path, or Queue {path})")
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
@@ -95,68 +169,23 @@ def get_sqs_payload(record, required_fields=["path", "kwargs"]):
     return payload
 
 
-def execute_path(path, kwargs, logger, path_enum, paths):
-    """Execute functions, paths, and shortcuts in a Path."""
-    if isinstance(path, Enum) or isinstance(path, str):  # PATH
-        try:
-            path = path_enum[str(path).split(".")[-1]]
-        except KeyError as e:
-            raise InvalidPathException(e)
-        for action in paths[path]:
-            assert isinstance(action, Action)
+def get_records_from_event(queue_type, event):
+    if queue_type == QueueType.KINESIS:
+        return event["Records"]
+    if queue_type == QueueType.SQS:
+        raise Exception("SQS not yet implemented.")
 
-            # Build action kwargs
-            action_kwargs = {}
 
-            for param in action.required_params:
-                # Assert required field was provided.
-                assert (param[0] if isinstance(param, tuple) else param) in kwargs
+def get_payload_from_record(queue_type, record):
+    if queue_type == QueueType.KINESIS:
+        return get_kinesis_payload(record)
+    if queue_type == QueueType.SQS:
+        raise Exception("SQS not yet implemented.")
+        #return get_sqs_payload(record)
 
-                # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
-                if isinstance(param, tuple) and len(param) == 2:
-                    action_kwargs[param[1]] = kwargs[param[0]]
-                else:
-                    action_kwargs[param] = kwargs[param]
 
-            # Run action functions
-            for function in action.functions:
-                try:
-                    with logger.context(
-                        bind={
-                            "kwargs": action_kwargs,
-                            "path": path.name,
-                            "function": function,
-                        }
-                    ):
-                        logger.log(f"Executing function.")
-                        get_module_attr(f"main.{function}")(
-                            logger=logger, **action_kwargs
-                        )
-                except InvalidInput as e:
-                    logger.log(f"Skipped {path.name} {function} because: {e}")
-
-            # Run action paths / shortcuts
-            for path_descriptor in action.paths:
-                execute_path(path_descriptor, action_kwargs, logger, path_enum, paths)
-    elif isinstance(path, Queue):  # SHORTCUT
-        q = path
-        assert q.type in Input
-
-        with logger.context(
-            bind={
-                "path": q.path,
-                "queue_type": q.type,
-                "queue_name": q.name,
-                "kwargs": kwargs,
-            }
-        ):
-            logger.log("Pushing record.")
-
-        if q.type == Input.KINESIS:
-            kinesis.put_record(
-                stream_name=q.name, data={"path": q.path, "kwargs": kwargs}
-            )
-        elif q.type == Input.SQS:
-            raise Exception("SQS not yet implemented.")
-    else:
-        logger.error(f"Path should be a string, Path, or Queue {path})")
+def put_record(queue, record):
+    if queue.type == QueueType.KINESIS:
+        kinesis.put_record(stream_name=queue.name, data=record)
+    elif queue.type == QueueType.SQS:
+        raise Exception("SQS not yet implemented.")

@@ -1,6 +1,6 @@
 import re
 
-from lpipe.exceptions import InvalidTaxonomyURI, GraphQLException
+from lpipe.exceptions import InvalidTaxonomyURI, GraphQLError
 
 
 def query_graphql(raw_query, endpoint):
@@ -12,7 +12,7 @@ def query_graphql(raw_query, endpoint):
     elif r.status_code == 400:
         response = r.json()
         assert "errors" in response
-        raise GraphQLException("".join([e["message"] for e in response["errors"]]))
+        raise GraphQLError("".join([e["message"] for e in response["errors"]]))
     else:
         raise requests.exceptions.RequestException(
             f"HTTP Status: {r.status_code}, Response Body: {r.text}"

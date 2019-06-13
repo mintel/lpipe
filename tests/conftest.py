@@ -80,8 +80,8 @@ def invoke_lambda():
             body = json.loads(body)
         except:
             pass
-        LOGGER.debug(response)
-        LOGGER.debug(body)
+        print(response)
+        print(body)
         return response, body
     return inv
 

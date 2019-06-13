@@ -10,7 +10,7 @@ build:
 	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
 	find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
 	cd $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ && zip $(CURDIR)/package/build.zip -rq *
-	cd $(CURDIR) && zip $(CURDIR)/package/build.zip -rq *py
+	cd $(CURDIR) && zip $(CURDIR)/package/build.zip -r *py
 	touch -d "$(MAGIC_DATE)" $(CURDIR)/package/build.zip
 
 clean: pipenv/clean python/clean
