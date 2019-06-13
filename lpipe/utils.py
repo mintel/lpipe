@@ -9,17 +9,8 @@ from enum import Enum
 from pathlib import Path
 
 import requests
-from raven.contrib.awslambda import LambdaClient
 
 from lpipe.exceptions import InvalidInputError, InvalidPathError
-
-
-def check_sentry(sentry):
-    if not isinstance(sentry, LambdaClient):
-        raise TypeError(
-            "sentry isn't instance of LambdaClient. It might be a \
-            raven.base.DummyClient if the SENTRY_DSN env var isn't set."
-        )
 
 
 def batch(iterable, n=1):

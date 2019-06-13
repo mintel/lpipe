@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 import warnings
 from pathlib import Path
 
@@ -8,9 +7,6 @@ import boto3
 import pytest
 import pytest_localstack
 from decouple import config
-
-
-LOGGER = logging.getLogger()
 
 
 localstack = pytest_localstack.patch_fixture(

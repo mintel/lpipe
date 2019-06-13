@@ -2,8 +2,6 @@ from enum import Enum
 
 from decouple import config
 
-# from mintel_logging.logger import get_logger
-
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
 from lpipe.utils import check_sentry
