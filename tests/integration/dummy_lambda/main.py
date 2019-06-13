@@ -4,8 +4,10 @@ from decouple import config
 #from mintel_logging.logger import get_logger
 
 from lpipe.logging import ServerlessLogger
-from lpipe.pipeline import Action, Queue, Input, process_event
+from lpipe.pipeline import Action, Queue, QueueType, process_event
 from lpipe.utils import check_sentry
+
+import src
 
 
 class Path(Enum):
@@ -20,16 +22,16 @@ class Path(Enum):
 
 PATHS = {
     Path.TEST_FUNC: [
-        Action(required_params=["foo"], functions=["test_func"], paths=[])
+        Action(required_params=["foo"], functions=[src.test_func], paths=[])
     ],
     Path.TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=["test_func_no_params"], paths=[])
+        Action(required_params=[], functions=[src.test_func_no_params], paths=[])
     ],
     Path.TEST_PATH: [
         Action(required_params=["foo"], functions=[], paths=[Path.TEST_FUNC])
     ],
     Path.TEST_FUNC_AND_PATH: [
-        Action(required_params=["foo"], functions=["test_func"], paths=[Path.TEST_FUNC])
+        Action(required_params=["foo"], functions=[src.test_func], paths=[Path.TEST_FUNC])
     ],
     # Path.TEST_KINESIS_PATH: [
     #    Action(
@@ -39,10 +41,10 @@ PATHS = {
     #    )
     # ],
     Path.TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=["test_func_no_params"], paths=[]),
+        Action(required_params=[], functions=[src.test_func_no_params], paths=[]),
         Action(
             required_params=[],
-            functions=["test_func_no_params"],
+            functions=[src.test_func_no_params],
             paths=[Path.TEST_FUNC_NO_PARAMS],
         ),
         Action(required_params=[], functions=[], paths=[Path.TEST_FUNC_NO_PARAMS]),
@@ -52,7 +54,7 @@ PATHS = {
             required_params=[
                 ("bar", "foo")
             ],  # Tuples indicate the param should be mapped to a different name.
-            functions=["test_func"],
+            functions=[src.test_func],
             paths=[],
         )
     ],
@@ -68,37 +70,15 @@ PATHS = {
 
 def lambda_handler(event, context):
     logger = ServerlessLogger(process="dummy-lambda")
+
+    # Designed for debug use.
+    # Stores all logs in the logger and adds them to the function response.
+    logger.persist = True
+
     return process_event(
         event=event,
         path_enum=Path,
         paths=PATHS,
+        queue_type=QueueType.KINESIS,
         logger=logger,
     )
-
-    #logger=logger,
-    #log_handler=_log_handler,
-
-    #import importlib
-    #from lpipe.utils import get_module_attr
-
-    #import_path = "main.test_func"
-    #frag = import_path.split(".")
-    #module = importlib.import_module(".".join(frag[:-1]))
-    #get_module_attr("main.test_func")(
-    #    foo="asdf",
-    #    logger=logger
-    #)
-
-    #return True
-
-
-def test_func(foo, logger, **kwargs):
-    if not foo:
-        raise Exception("Missing required parameter 'foo'")
-    logger.log("test_func success")
-    return True
-
-
-def test_func_no_params(logger, **kwargs):
-    logger.log("test_func_no_params success")
-    return True
