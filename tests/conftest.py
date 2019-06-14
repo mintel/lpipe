@@ -16,7 +16,7 @@ localstack = pytest_localstack.patch_fixture(
 
 @pytest.fixture(scope="class")
 def kinesis_streams():
-    return ["test_stream"]
+    return ["TEST_KINESIS_STREAM"]
 
 
 @pytest.fixture(scope="class")
@@ -39,9 +39,13 @@ def kinesis(request, kinesis_streams):
 
 
 @pytest.fixture(scope="class")
-def dummy_lambda():
+def dummy_lambda(kinesis_streams):
     lambda_client = boto3.client("lambda")
-    env = {}
+    env = {
+        "MOCK_AWS": "true",
+    }
+    for s in kinesis_streams:
+        env[s] = s
     with open(
         str(Path().absolute() / "tests/integration/dummy_lambda/package/build.zip"),
         "rb",
@@ -54,7 +58,7 @@ def dummy_lambda():
             Handler="main.lambda_handler",
             Code=dict(ZipFile=zipped_code),
             Timeout=300,
-            Environment=env,
+            Environment={"Variables": env} if env else {},
         )
 
 

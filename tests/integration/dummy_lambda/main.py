@@ -15,7 +15,7 @@ class Path(Enum):
     TEST_FUNC_AND_PATH = 4
     MULTI_TEST_FUNC_NO_PARAMS = 5
     TEST_RENAME_PARAM = 6
-    # TEST_KINESIS_PATH = 7
+    TEST_KINESIS_PATH = 7
     # TEST_SQS_PATH = 8
 
 
@@ -52,18 +52,18 @@ PATHS = {
             paths=[],
         )
     ],
-    # Path.TEST_KINESIS_PATH: [
-    #    Action(
-    #        required_params=["uri"],
-    #        functions=[],
-    #        paths=[Queue(name=config("SECOND_TEST_KINESIS_STREAM"), type=Input.KINESIS, path="TEST_FUNC")],
-    #    )
-    # ],
+    Path.TEST_KINESIS_PATH: [
+        Action(
+            required_params=["uri"],
+            functions=[],
+            paths=[Queue(name=config("TEST_KINESIS_STREAM"), type=QueueType.KINESIS, path="TEST_FUNC")],
+        )
+    ],
     #    Path.TEST_SQS_PATH: [
     #        Action(
     #            required_params=["uri"],
     #            functions=[],
-    #            paths=[Queue(name=config("TEST_SQS_STREAM"), type=Input.SQS, path="TEST_FUNC")],
+    #            paths=[Queue(name=config("TEST_SQS_STREAM"), type=QueueType.SQS, path="TEST_FUNC")],
     #        )
     #    ],
 }

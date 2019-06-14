@@ -22,7 +22,7 @@ test: pytest/test
 .PHONY: test
 
 testall: pipenv reports/ build-test-lambda
-	$(WITH_PIPENV) pytest -n4 --dist=loadscope
+	$(WITH_PIPENV) pytest -n2 --dist=loadscope
 .PHONY: test
 
 testall-lf: pipenv reports/ python/dist build-test-lambda
@@ -30,7 +30,7 @@ testall-lf: pipenv reports/ python/dist build-test-lambda
 .PHONY: test
 
 testall-verbose: pipenv reports/ python/dist build-test-lambda
-	$(WITH_PIPENV) pytest -s -v -n4 --dist=loadscope --log-cli-level=info
+	$(WITH_PIPENV) pytest -s -v -n2 --dist=loadscope --log-cli-level=info
 .PHONY: test
 
 TEST_BUILD_PATH:=$(CURDIR)/tests/integration/dummy_lambda

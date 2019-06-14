@@ -3,8 +3,6 @@ import json
 import pytest
 import boto3
 
-KINESIS_STREAMS = ["test_stream"]
-
 
 @pytest.mark.postbuild
 @pytest.mark.usefixtures("localstack", "kinesis")

@@ -105,3 +105,13 @@ class TestDummyLambda:
         assert response["StatusCode"] // 100 == 2
         assert body["stats"]["received"] == 1
         assert body["stats"]["received"] == body["stats"]["successes"]
+
+    def test_lambda_kinesis(self, invoke_lambda, kinesis_payload):
+        payload = [{"path": "TEST_KINESIS_PATH", "kwargs": {"uri": "foo"}}]
+        response, body = invoke_lambda(
+            name="dummy_lambda", payload=kinesis_payload(payload)
+        )
+        _emit_logs(body)
+        assert response["StatusCode"] // 100 == 2
+        assert body["stats"]["received"] == 1
+        assert body["stats"]["received"] == body["stats"]["successes"]
