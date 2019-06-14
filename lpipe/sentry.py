@@ -21,5 +21,7 @@ def push_context(context):
                 for k, v in context.items():
                     scope.set_tag(k, v)
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
