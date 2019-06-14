@@ -3,15 +3,14 @@
 PYTHON_VERSION ?= 3.6
 MAGIC_DATE := 19700101
 build:
-	mkdir -p package
+	@mkdir -p package
 	$(PIPENV) install --deploy
 	pip install lpipe.tar.gz --target=$(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ --upgrade --no-deps --ignore-requires-python
-	# differing timestamps give us different hashes for repeated builds, so set everything the same
-	find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
-	find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
+	@find -L . -path $(VIRTUALENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
+	@find -L $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ -exec touch -d "$(MAGIC_DATE)" {} +
 	cd $(VIRTUALENV)/lib/python$(PYTHON_VERSION)/site-packages/ && zip $(CURDIR)/package/build.zip -rq *
 	cd $(CURDIR) && zip $(CURDIR)/package/build.zip -r *py
-	touch -d "$(MAGIC_DATE)" $(CURDIR)/package/build.zip
+	@touch -d "$(MAGIC_DATE)" $(CURDIR)/package/build.zip
 
 clean: pipenv/clean python/clean
 	rm -rf package/ Pipfile* lpipe.tar.gz

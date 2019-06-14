@@ -33,15 +33,16 @@ testall-verbose: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v -n4 --dist=loadscope --log-cli-level=info
 .PHONY: test
 
-BUILD_PATH:=$(CURDIR)/tests/integration/dummy_lambda
-build-test-lambda: python/dist
-	cp Pipfile Pipfile.lock $(BUILD_PATH)
-	cp dist/lpipe* $(BUILD_PATH)/lpipe.tar.gz
-	cd $(BUILD_PATH) && make build
+TEST_BUILD_PATH:=$(CURDIR)/tests/integration/dummy_lambda
+build-test-lambda:
+	@test -f dist/lpipe-*.tar.gz || (echo "Package didn't exist yet. Building now..." && make python/dist)
+	cp Pipfile Pipfile.lock $(TEST_BUILD_PATH)
+	cp dist/lpipe-*.tar.gz $(TEST_BUILD_PATH)/lpipe.tar.gz
+	cd $(TEST_BUILD_PATH) && make build
 .PHONY: build-test-lambda
 
 test-post-build: build-test-lambda pytest/test-post-build
-	rm -rf $(BUILD_PATH)/package
+	rm -rf $(TEST_BUILD_PATH)/package
 .PHONY: test-post-build
 
 dist: python/dist
@@ -57,5 +58,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean clean-build-harness
-	cd $(BUILD_PATH) && make clean
+	cd $(TEST_BUILD_PATH) && make clean
 .PHONY: clean
