@@ -1,10 +1,12 @@
 import base64
 import importlib
 import json
+import logging
 import os
 import shlex
 import sys
 from collections import namedtuple
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 
@@ -32,3 +34,27 @@ def get_nested(d, keys):
         if not head:
             return head
     return head
+
+
+@contextmanager
+def set_env(env):
+    state = {}
+    try:
+        for k, v in env.items():
+            state[k] = os.environ[k] if k in os.environ else None
+            os.environ[k] = str(v)
+            print(f"os.environ[{k}] = {v}")
+        yield
+    finally:
+        for k, v in env.items():
+            if k in state and state[k]:
+                os.environ[k] = str(state[k])
+            elif k in os.environ:
+                del os.environ[k]
+
+
+def emit_logs(body, logger=None):
+    logger = logger if logger else logging.getLogger()
+    if "logs" in body:
+        for log in body["logs"]:
+            LOGGER.log(level=logging.INFO, msg=log["event"])
