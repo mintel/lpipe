@@ -41,9 +41,7 @@ def kinesis(request, kinesis_streams):
 @pytest.fixture(scope="class")
 def dummy_lambda(kinesis_streams):
     lambda_client = boto3.client("lambda")
-    env = {
-        "MOCK_AWS": "true",
-    }
+    env = {"MOCK_AWS": "true"}
     for s in kinesis_streams:
         env[s] = s
     with open(

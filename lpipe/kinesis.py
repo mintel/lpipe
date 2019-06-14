@@ -9,6 +9,7 @@ from decouple import config
 
 from lpipe.utils import batch
 
+
 def hash(encoded_data):
     return hashlib.sha1(encoded_data.encode("utf-8")).hexdigest()
 

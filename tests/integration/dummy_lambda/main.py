@@ -56,7 +56,13 @@ PATHS = {
         Action(
             required_params=["uri"],
             functions=[],
-            paths=[Queue(name=config("TEST_KINESIS_STREAM"), type=QueueType.KINESIS, path="TEST_FUNC")],
+            paths=[
+                Queue(
+                    name=config("TEST_KINESIS_STREAM"),
+                    type=QueueType.KINESIS,
+                    path="TEST_FUNC",
+                )
+            ],
         )
     ],
     #    Path.TEST_SQS_PATH: [
