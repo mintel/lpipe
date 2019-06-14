@@ -8,110 +8,48 @@ import hashlib
 import functools
 from botocore.exceptions import ClientError
 
-import lpipe
-
-
-LOGGER = logging.getLogger()
-
-
-def _emit_logs(body):
-    if "logs" in body:
-        for log in body["logs"]:
-            LOGGER.log(level=logging.INFO, msg=log["event"])
+from lpipe import utils
+from tests import fixtures
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("localstack", "dummy_lambda")
-class TestDummyLambda:
-    def test_lambda_sanity(self):
-        pass
+@pytest.mark.usefixtures("localstack", "kinesis")
+class TestProcessEvents:
+    @pytest.mark.parametrize(
+        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
+    )
+    def test_process_event_fixtures(self, kinesis_payload, fixture_name, fixture):
+        with utils.set_env(fixtures.ENV):
+            logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
+            logger.persist = True
+            from func.main import Path, PATHS
 
-    def test_lambda_empty_no_payload(self, invoke_lambda, kinesis_payload):
-        payload = []
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 0
-        assert body["stats"]["received"] == body["stats"]["successes"]
+            response = process_event(
+                event=kinesis_payload(fixture["payload"]),
+                path_enum=Path,
+                paths=PATHS,
+                queue_type=QueueType.KINESIS,
+                logger=logger,
+            )
+            utils.emit_logs(response)
+            assert fixture["response"]["stats"] == response["stats"]
 
-    def test_lambda_empty_payload(self, invoke_lambda, kinesis_payload):
-        payload = [{}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["successes"] == 0
 
-    def test_lambda_func(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
+@pytest.mark.postbuild
+@pytest.mark.usefixtures("localstack", "kinesis", "mock_lambda")
+class TestMockLambda:
+    @pytest.mark.parametrize(
+        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
+    )
+    def test_lambda_fixtures(
+        self, invoke_lambda, kinesis_payload, fixture_name, fixture
+    ):
+        logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
+        logger.persist = True
+        with utils.set_env(fixtures.ENV):
+            response, body = invoke_lambda(
+                name="my_lambda", payload=kinesis_payload(fixture["payload"])
+            )
+        utils.emit_logs(body)
         assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_func_no_params(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_FUNC_NO_PARAMS", "kwargs": {}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_path(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_PATH", "kwargs": {"foo": "bar"}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_func_and_path(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_FUNC_AND_PATH", "kwargs": {"foo": "bar"}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_multi_func_no_params(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "MULTI_TEST_FUNC_NO_PARAMS", "kwargs": {}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_rename_param(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_RENAME_PARAM", "kwargs": {"bar": "bar"}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
-
-    def test_lambda_kinesis(self, invoke_lambda, kinesis_payload):
-        payload = [{"path": "TEST_KINESIS_PATH", "kwargs": {"uri": "foo"}}]
-        response, body = invoke_lambda(
-            name="dummy_lambda", payload=kinesis_payload(payload)
-        )
-        _emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
-        assert body["stats"]["received"] == 1
-        assert body["stats"]["received"] == body["stats"]["successes"]
+        assert fixture["response"]["stats"] == body["stats"]
