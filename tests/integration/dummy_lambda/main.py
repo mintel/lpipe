@@ -1,6 +1,8 @@
 from enum import Enum
 
+import sentry_sdk
 from decouple import config
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
@@ -76,6 +78,8 @@ PATHS = {
 
 
 def lambda_handler(event, context):
+    sentry_sdk.init(dsn=config("SENTRY_DSN"), integrations=[AwsLambdaIntegration()])
+
     logger = ServerlessLogger(process="dummy-lambda")
 
     # Designed for debug use.
