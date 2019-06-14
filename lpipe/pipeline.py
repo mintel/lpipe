@@ -30,7 +30,7 @@ def build_response(n_records, n_ok, logger):
         "event": "Finished.",
         "stats": {"received": n_records, "successes": n_ok},
     }
-    if logger.events:
+    if hasattr(logger, "events") and logger.events:
         response["logs"] = logger.events
     return response
 
