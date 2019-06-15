@@ -17,7 +17,7 @@ dist-if:
 
 build-test-lambda: dist-if
 	make $(FAAS_BUILD_VENV)
-	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python
+	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python --ignore-installed
 	make faas/build/python
 .PHONY: build-test-lambda
 
