@@ -12,12 +12,12 @@ dist: python/dist
 .PHONY: dist
 
 dist-if:
-	@test -f dist/lpipe-*.tar.gz || make python/dist
+	test -f dist/lpipe-*.tar.gz || make python/dist
 .PHONY: dist-if
 
 build-test-lambda: dist-if
 	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python
-	@make faas/build/python
+	make faas/build/python
 .PHONY: build-test-lambda
 
 isort: env
