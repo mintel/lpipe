@@ -11,12 +11,13 @@ build-docs: pipenv
 dist: python/dist
 .PHONY: dist
 
-install-dist-test-lambda: $(FAAS_BUILD_VENV)
-	@test -f dist/lpipe-*.tar.gz || (echo "Package didn't exist yet. Building now..." && make python/dist)
-	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python
-.PHONY: install-dist-test-lambda
+dist-if:
+	@test -f dist/lpipe-*.tar.gz || make python/dist
+.PHONY: dist-if
 
-build-test-lambda: install-dist-test-lambda faas/build/python
+build-test-lambda: dist-if
+	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python
+	@make faas/build/python
 .PHONY: build-test-lambda
 
 isort: env
@@ -32,7 +33,10 @@ lint: python/lint
 test: pytest/test
 .PHONY: test
 
-testall: pipenv reports/ build-test-lambda
+test-post-build: build-test-lambda pytest/test-post-build
+.PHONY: test-post-build
+
+testall: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -n2 --dist=loadscope
 .PHONY: testall
 
@@ -43,9 +47,6 @@ testall-lf: pipenv reports/ python/dist build-test-lambda
 testall-verbose: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v -n2 --dist=loadscope --log-cli-level=info
 .PHONY: testall-verbose
-
-test-post-build: build-test-lambda pytest/test-post-build
-.PHONY: test-post-build
 
 release_patch: bumpversion/release_patch
 .PHONY: release_patch
