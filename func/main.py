@@ -7,7 +7,17 @@ from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
 
-import src
+
+def test_func(foo, logger, **kwargs):
+    if not foo:
+        raise Exception("Missing required parameter 'foo'")
+    logger.log("test_func success")
+    return True
+
+
+def test_func_no_params(logger, **kwargs):
+    logger.log("test_func_no_params success")
+    return True
 
 
 class Path(Enum):
@@ -23,24 +33,24 @@ class Path(Enum):
 
 PATHS = {
     Path.TEST_FUNC: [
-        Action(required_params=["foo"], functions=[src.test_func], paths=[])
+        Action(required_params=["foo"], functions=[test_func], paths=[])
     ],
     Path.TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=[src.test_func_no_params], paths=[])
+        Action(required_params=[], functions=[test_func_no_params], paths=[])
     ],
     Path.TEST_PATH: [
         Action(required_params=["foo"], functions=[], paths=[Path.TEST_FUNC])
     ],
     Path.TEST_FUNC_AND_PATH: [
         Action(
-            required_params=["foo"], functions=[src.test_func], paths=[Path.TEST_FUNC]
+            required_params=["foo"], functions=[test_func], paths=[Path.TEST_FUNC]
         )
     ],
     Path.MULTI_TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=[src.test_func_no_params], paths=[]),
+        Action(required_params=[], functions=[test_func_no_params], paths=[]),
         Action(
             required_params=[],
-            functions=[src.test_func_no_params],
+            functions=[test_func_no_params],
             paths=[Path.TEST_FUNC_NO_PARAMS],
         ),
         Action(required_params=[], functions=[], paths=[Path.TEST_FUNC_NO_PARAMS]),
@@ -50,7 +60,7 @@ PATHS = {
             required_params=[
                 ("bar", "foo")
             ],  # Tuples indicate the param should be mapped to a different name.
-            functions=[src.test_func],
+            functions=[test_func],
             paths=[],
         )
     ],
@@ -80,10 +90,9 @@ PATHS = {
 def lambda_handler(event, context):
     sentry_sdk.init(dsn=config("SENTRY_DSN"), integrations=[AwsLambdaIntegration()])
 
-    logger = ServerlessLogger(process="dummy-lambda")
-
-    # Designed for debug use.
+    # logger.persist is designed for debug use.
     # Stores all logs in the logger and adds them to the function response.
+    logger = ServerlessLogger(process="dummy-lambda")
     logger.persist = True
 
     return process_event(

@@ -1,8 +1,4 @@
-ENV = {
-    "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
-    "TEST_KINESIS_STREAM": "TEST_KINESIS_STREAM",
-    "MOCK_AWS": "true",
-}
+ENV = {}
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {"payload": [], "response": {"stats": {"received": 0, "successes": 0}}},

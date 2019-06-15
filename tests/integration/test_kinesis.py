@@ -2,8 +2,6 @@ import pytest
 
 from lpipe import kinesis
 
-KINESIS_STREAMS = ["test_stream"]
-
 
 @pytest.mark.postbuild
 @pytest.mark.usefixtures("localstack", "kinesis")

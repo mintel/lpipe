@@ -8,7 +8,6 @@ from enum import Enum
 
 import requests
 from decouple import config
-from raven.contrib.awslambda import LambdaClient
 
 from lpipe import kinesis
 from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError

@@ -57,4 +57,4 @@ def emit_logs(body, logger=None):
     logger = logger if logger else logging.getLogger()
     if "logs" in body:
         for log in body["logs"]:
-            LOGGER.log(level=logging.INFO, msg=log["event"])
+            logger.log(level=logging.INFO, msg=log["event"])

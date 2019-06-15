@@ -8,6 +8,8 @@ import pytest
 import pytest_localstack
 from decouple import config
 
+from tests import fixtures
+
 
 localstack = pytest_localstack.patch_fixture(
     services=["kinesis", "lambda"], scope="module", autouse=False
@@ -20,8 +22,23 @@ def kinesis_streams():
 
 
 @pytest.fixture(scope="class")
-def kinesis(request, kinesis_streams):
-    print(f"Creating kinesis streams: {kinesis_streams}")
+def environment(kinesis_streams):
+    def env(**kwargs):
+        vars = {
+            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
+        }
+        vars.update(fixtures.ENV)
+        for s in kinesis_streams:
+            vars[s] = s
+        for k, v in kwargs.items():
+            vars[k] = v
+        return vars
+
+    return env
+
+
+@pytest.fixture(scope="class")
+def kinesis(kinesis_streams):
     client = boto3.client("kinesis")
     try:
         for stream_name in kinesis_streams:
@@ -39,30 +56,27 @@ def kinesis(request, kinesis_streams):
 
 
 @pytest.fixture(scope="class")
-def dummy_lambda(kinesis_streams):
+def mock_lambda(environment):
     lambda_client = boto3.client("lambda")
-    env = {"MOCK_AWS": "true"}
-    for s in kinesis_streams:
-        env[s] = s
     with open(
-        str(Path().absolute() / "tests/integration/dummy_lambda/package/build.zip"),
+        str(Path().absolute() / "dist/build.zip"),
         "rb",
     ) as f:
         zipped_code = f.read()
         lambda_client.create_function(
-            FunctionName="dummy_lambda",
+            FunctionName="my_lambda",
             Runtime="python3.6",
             Role="foobar",
             Handler="main.lambda_handler",
             Code=dict(ZipFile=zipped_code),
             Timeout=300,
-            Environment={"Variables": env} if env else {},
+            Environment={"Variables": environment(MOCK_AWS="true")},
         )
 
 
 @pytest.fixture
 def invoke_lambda():
-    def inv(name="dummy_lambda", payload={}):
+    def inv(name, payload):
         client = boto3.client("lambda")
         response = client.invoke(
             FunctionName=name,
