@@ -7,7 +7,7 @@ name = "pypi"
 boto3 = "*"
 jsonschema = "*"
 python-decouple = "*"
-raven = "*"
+sentry-sdk = "*"
 structlog = "*"
 
 [dev-packages]
