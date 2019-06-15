@@ -4,35 +4,22 @@ init: init-build-harness
 	@make pipenv
 .PHONY: init
 
-build-docs: pipenv  ## Build HTML docs into the `docs/_build/html` dir
+build-docs: pipenv
 	$(WITH_PIPENV) $(MAKE) -C docs clean html
 .PHONY: build-docs
 
 dist: python/dist
 .PHONY: dist
 
-PYTHON_VERSION ?= 3.6
-MAGIC_DATE := 19700101
-FAAS_BUILD_DIST:=$(CURDIR)/dist
-FAAS_BUILD_VENV:=$(FAAS_BUILD_DIST)/.venv
-
-$(FAAS_BUILD_DIST):
-	mkdir -p $(FAAS_BUILD_DIST)
-
-$(FAAS_BUILD_VENV):
-	pipenv run pip install -r <(pipenv lock -r) --upgrade --target $(FAAS_BUILD_VENV)
+install-dist-test-lambda: $(FAAS_BUILD_VENV)
 	@test -f dist/lpipe-*.tar.gz || (echo "Package didn't exist yet. Building now..." && make python/dist)
 	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python
+.PHONY: install-dist-test-lambda
 
-build-test-lambda: pipenv $(FAAS_BUILD_DIST) $(FAAS_BUILD_VENV)
-	find -L . -path $(FAAS_BUILD_VENV) -prune -exec touch -d "$(MAGIC_DATE)" {} +
-	find -L $(FAAS_BUILD_VENV) -exec touch -d "$(MAGIC_DATE)" {} +
-	cd $(FAAS_BUILD_VENV) && zip $(FAAS_BUILD_DIST)/build.zip -rq *
-	cd $(CURDIR)/func && zip $(FAAS_BUILD_DIST)/build.zip -r *py
-	touch -d "$(MAGIC_DATE)" $(FAAS_BUILD_DIST)/build.zip
-.PHONY: build
+build-test-lambda: install-dist-test-lambda faas/build/python
+.PHONY: build-test-lambda
 
-isort: env ## automatically sort Python imports
+isort: env
 	$(WITH_PIPENV) isort --recursive lpipe tests conftest.py setup.py
 .PHONY: isort
 
@@ -47,15 +34,15 @@ test: pytest/test
 
 testall: pipenv reports/ build-test-lambda
 	$(WITH_PIPENV) pytest -n2 --dist=loadscope
-.PHONY: test
+.PHONY: testall
 
 testall-lf: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v --log-cli-level=info --lf
-.PHONY: test
+.PHONY: testall-lf
 
 testall-verbose: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v -n2 --dist=loadscope --log-cli-level=info
-.PHONY: test
+.PHONY: testall-verbose
 
 test-post-build: build-test-lambda pytest/test-post-build
 .PHONY: test-post-build
@@ -69,6 +56,5 @@ release_minor: bumpversion/release_minor
 release_major: bumpversion/release_major
 .PHONY: release_major
 
-clean: pipenv/clean python/clean clean-build-harness
-	rm -rf $(FAAS_BUILD_DIST)
+clean: pipenv/clean python/clean faas/clean clean-build-harness
 .PHONY: clean

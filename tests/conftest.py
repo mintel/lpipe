@@ -24,9 +24,7 @@ def kinesis_streams():
 @pytest.fixture(scope="class")
 def environment(kinesis_streams):
     def env(**kwargs):
-        vars = {
-            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
-        }
+        vars = {"SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"}
         vars.update(fixtures.ENV)
         for s in kinesis_streams:
             vars[s] = s
@@ -58,10 +56,7 @@ def kinesis(kinesis_streams):
 @pytest.fixture(scope="class")
 def mock_lambda(environment):
     lambda_client = boto3.client("lambda")
-    with open(
-        str(Path().absolute() / "dist/build.zip"),
-        "rb",
-    ) as f:
+    with open(str(Path().absolute() / "dist/build.zip"), "rb") as f:
         zipped_code = f.read()
         lambda_client.create_function(
             FunctionName="my_lambda",

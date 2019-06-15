@@ -18,7 +18,9 @@ class TestProcessEvents:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
     )
-    def test_process_event_fixtures(self, kinesis_payload, environment, fixture_name, fixture):
+    def test_process_event_fixtures(
+        self, kinesis_payload, environment, fixture_name, fixture
+    ):
         with utils.set_env(environment()):
             logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
             logger.persist = True

@@ -32,9 +32,7 @@ class Path(Enum):
 
 
 PATHS = {
-    Path.TEST_FUNC: [
-        Action(required_params=["foo"], functions=[test_func], paths=[])
-    ],
+    Path.TEST_FUNC: [Action(required_params=["foo"], functions=[test_func], paths=[])],
     Path.TEST_FUNC_NO_PARAMS: [
         Action(required_params=[], functions=[test_func_no_params], paths=[])
     ],
@@ -42,9 +40,7 @@ PATHS = {
         Action(required_params=["foo"], functions=[], paths=[Path.TEST_FUNC])
     ],
     Path.TEST_FUNC_AND_PATH: [
-        Action(
-            required_params=["foo"], functions=[test_func], paths=[Path.TEST_FUNC]
-        )
+        Action(required_params=["foo"], functions=[test_func], paths=[Path.TEST_FUNC])
     ],
     Path.MULTI_TEST_FUNC_NO_PARAMS: [
         Action(required_params=[], functions=[test_func_no_params], paths=[]),
