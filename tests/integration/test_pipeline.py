@@ -1,10 +1,6 @@
 import logging
 
 import pytest
-import boto3
-import hashlib
-import functools
-from botocore.exceptions import ClientError
 
 from lpipe import utils
 from lpipe.logging import ServerlessLogger
@@ -22,7 +18,7 @@ class TestProcessEvents:
         self, kinesis_payload, environment, fixture_name, fixture
     ):
         with utils.set_env(environment()):
-            logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
+            logger = ServerlessLogger(level=logging.DEBUG, process="my_lambda")
             logger.persist = True
             from dummy_lambda.func.main import Path, PATHS
 

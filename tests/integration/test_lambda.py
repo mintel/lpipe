@@ -1,10 +1,6 @@
 import logging
 
 import pytest
-import boto3
-import hashlib
-import functools
-from botocore.exceptions import ClientError
 
 from lpipe import utils
 from lpipe.logging import ServerlessLogger
@@ -21,7 +17,7 @@ class TestMockLambda:
     def test_lambda_fixtures(
         self, invoke_lambda, kinesis_payload, fixture_name, fixture
     ):
-        logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
+        logger = ServerlessLogger(level=logging.DEBUG, process="my_lambda")
         logger.persist = True
         response, body = invoke_lambda(
             name="my_lambda", payload=kinesis_payload(fixture["payload"])
