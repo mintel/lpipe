@@ -174,15 +174,14 @@ def get_records_from_event(queue_type, event):
     if queue_type == QueueType.KINESIS:
         return event["Records"]
     if queue_type == QueueType.SQS:
-        raise Exception("SQS not yet implemented.")
+        return event["Records"]
 
 
 def get_payload_from_record(queue_type, record):
     if queue_type == QueueType.KINESIS:
         return get_kinesis_payload(record)
     if queue_type == QueueType.SQS:
-        raise Exception("SQS not yet implemented.")
-        # return get_sqs_payload(record)
+        return get_sqs_payload(record)
 
 
 def put_record(queue, record):

@@ -38,7 +38,6 @@ test: pytest/test
 .PHONY: test
 
 test-post-build: build-test-lambda pytest/test-post-build
-	@cd dummy_lambda; make clean
 .PHONY: test-post-build
 
 testall: pipenv reports/ python/dist build-test-lambda

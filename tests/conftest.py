@@ -113,6 +113,10 @@ def kinesis_payload():
 @pytest.fixture
 def sqs_payload():
     def sqs(payloads):
-        return payloads
+        def fmt(p):
+            return { "body": json.dumps(p).encode() }
+
+        records = [fmt(p) for p in payloads]
+        return {"Records": records}
 
     return sqs
