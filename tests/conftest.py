@@ -12,7 +12,7 @@ from tests import fixtures
 
 
 localstack = pytest_localstack.patch_fixture(
-    services=["kinesis", "lambda"], scope="module", autouse=False
+    services=["kinesis", "lambda"], scope="module", autouse=False, localstack_version="0.9.4"
 )
 
 
