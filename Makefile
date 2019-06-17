@@ -20,6 +20,7 @@ dummy_lambda/dist/.venv:
 
 build-test-lambda: dist-if
 	@make dummy_lambda/dist/.venv
+	pip install dist/lpipe-*.tar.gz --target=dummy_lambda/dist/.venv --upgrade --no-deps --ignore-requires-python
 	@cd dummy_lambda; make build
 .PHONY: build-test-lambda
 
