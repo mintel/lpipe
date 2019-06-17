@@ -16,7 +16,7 @@ from enum import Enum
 from lpipe.pipeline import Action, Queue, QueueType, process_event
 
 def test_func(foo, **kwargs):
-		pass
+	pass
 
 class Path(Enum):
     EXAMPLE = 1
