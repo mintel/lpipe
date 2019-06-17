@@ -83,14 +83,14 @@ PATHS = {
 lpipe.pipeline.Action(required_params, functions, paths)
 ```
 
-| Argument          | Description                     |
-| ----------------- | ------------------------------- |
-| `required_params` | A list of kwarg keys to expect. |
-| `functions` | A list of functions to run with the provided kwargs. |
-| `paths` | A list of path names (to be run in the current lambda instance) or Queues to push messages to. |
-
+| Argument          | Type | Description                     |
+| ----------------- | ---- | ------------------------------- |
+| `required_params` | `list` | A list of kwarg keys to expect. |
+| `functions` | `list` | A list of functions to run with the provided kwargs. |
+| `paths` | `list` | A list of path names (to be run in the current lambda instance) or Queues to push messages to. |
 
 ##### Example
+
 ```python
 from lpipe.pipeline import Action
 
@@ -111,11 +111,11 @@ Using this action would first call `subscribe_to_pewdiepie(name, email)` then tr
 lpipe.pipeline.Queue(type, name, path)
 ```
 
-| Argument          | Description                     |
-| ----------------- | ------------------------------- |
-| `type` | Instance of `lpipe.pipeline.QueueType`                       |
-| `name` | Name/identifier/ARN of the queue                             |
-| `path` | A path name, usually to trigger a path in the lambda feeding off of this queue. |
+| Argument          | Type | Description                     |
+| ----------------- | ---- | ------------------------------- |
+| `type` | `lpipe.pipeline.QueueType` | |
+| `name` | `str` | Name/identifier/ARN of the queue |
+| `path` | `str` | A path name, usually to trigger a path in the lambda feeding off of this queue. |
 
 ##### Example
 
