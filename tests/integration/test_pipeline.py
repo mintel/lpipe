@@ -24,7 +24,7 @@ class TestProcessEvents:
         with utils.set_env(environment()):
             logger = ServerlessLogger(level=logging.DEBUG, process="shepherd")
             logger.persist = True
-            from func.main import Path, PATHS
+            from dummy_lambda.func.main import Path, PATHS
 
             response = process_event(
                 event=kinesis_payload(fixture["payload"]),

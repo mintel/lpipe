@@ -61,6 +61,6 @@ release_minor: bumpversion/release_minor
 release_major: bumpversion/release_major
 .PHONY: release_major
 
-clean: pipenv/clean python/clean faas/clean clean-build-harness
-	cd dummy_lambda && make clean
+clean: pipenv/clean python/clean python/clean/dist clean-build-harness
+	@cd dummy_lambda; make clean
 .PHONY: clean
