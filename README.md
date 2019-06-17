@@ -1,6 +1,6 @@
 # lpipe
 
-**lpipe** provides a simple set of tools for writing well defined, multi-function AWS Lambdas in Python.
+**lpipe** provides a simple set of tools for writing clearly defined, multi-function AWS Lambdas in Python.
 
 
 
@@ -113,7 +113,7 @@ lpipe.pipeline.Queue(type, name, path)
 
 | Argument          | Description                     |
 | ----------------- | ------------------------------- |
-| `type` | Instance of lpipe.pipeline.QueueType                         |
+| `type` | Instance of `lpipe.pipeline.QueueType`                       |
 | `name` | Name/identifier/ARN of the queue                             |
 | `path` | A path name, usually to trigger a path in the lambda feeding off of this queue. |
 
