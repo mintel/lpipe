@@ -114,7 +114,7 @@ def kinesis_payload():
 def sqs_payload():
     def sqs(payloads):
         def fmt(p):
-            return { "body": json.dumps(p).encode() }
+            return {"body": json.dumps(p).encode()}
 
         records = [fmt(p) for p in payloads]
         return {"Records": records}
