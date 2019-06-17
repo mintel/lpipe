@@ -25,20 +25,6 @@ def kinesis_streams():
 
 
 @pytest.fixture(scope="class")
-def environment(kinesis_streams):
-    def env(**kwargs):
-        vars = {"SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"}
-        vars.update(fixtures.ENV)
-        for s in kinesis_streams:
-            vars[s] = s
-        for k, v in kwargs.items():
-            vars[k] = v
-        return vars
-
-    return env
-
-
-@pytest.fixture(scope="class")
 def kinesis(kinesis_streams):
     client = boto3.client("kinesis")
     try:
@@ -54,6 +40,20 @@ def kinesis(kinesis_streams):
             client.get_waiter("stream_not_exists").wait(
                 StreamName=stream_name, WaiterConfig={"Delay": 2, "MaxAttempts": 2}
             )
+
+
+@pytest.fixture(scope="class")
+def environment(kinesis_streams):
+    def env(**kwargs):
+        vars = {"SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"}
+        vars.update(fixtures.ENV)
+        for s in kinesis_streams:
+            vars[s] = s
+        for k, v in kwargs.items():
+            vars[k] = v
+        return vars
+
+    return env
 
 
 @pytest.fixture(scope="class")
