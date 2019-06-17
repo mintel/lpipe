@@ -66,7 +66,7 @@ from lpipe.pipeline import Action
 
 class Path(Enum):
 	DO_THING = 1
-	
+
 PATHS = {
     Path.DO_THING: [
         Action(required_params=[], functions=[], paths=[]),
@@ -95,7 +95,7 @@ lpipe.pipeline.Action(required_params, functions, paths)
 from lpipe.pipeline import Action
 
 Action(
-    required_params=["name", "email"], 
+    required_params=["name", "email"],
     functions=[subscribe_to_pewdiepie],
     paths=[SEND_MERCH]
 )
@@ -123,9 +123,8 @@ lpipe.pipeline.Queue(type, name, path)
 from lpipe.pipeline import Queue, QueueType
 
 Queue(
-		type=QueueType.KINESIS,
+	type=QueueType.KINESIS,
   	name="my-stream-name",
   	path="DO_THING"
 )
 ```
-
