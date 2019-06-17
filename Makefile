@@ -12,13 +12,15 @@ dist: python/dist
 .PHONY: dist
 
 dist-if:
-	test -f dist/lpipe-*.tar.gz || make python/dist
+	test -f dist/lpipe-*.tar.gz || make dist
 .PHONY: dist-if
 
+dummy_lambda/dist/.venv:
+	$(WITH_PIPENV) pip install -r <(pipenv lock -r) --upgrade --target dummy_lambda/dist/.venv --ignore-installed
+
 build-test-lambda: dist-if
-	make $(FAAS_BUILD_VENV)
-	pip install dist/lpipe-*.tar.gz --target=$(FAAS_BUILD_VENV) --upgrade --no-deps --ignore-requires-python --ignore-installed
-	make faas/build/python
+	@make dummy_lambda/dist/.venv
+	@cd dummy_lambda; make build
 .PHONY: build-test-lambda
 
 isort: env
@@ -35,6 +37,7 @@ test: pytest/test
 .PHONY: test
 
 test-post-build: build-test-lambda pytest/test-post-build
+	@cd dummy_lambda; make clean
 .PHONY: test-post-build
 
 testall: pipenv reports/ python/dist build-test-lambda
@@ -59,4 +62,5 @@ release_major: bumpversion/release_major
 .PHONY: release_major
 
 clean: pipenv/clean python/clean faas/clean clean-build-harness
+	cd dummy_lambda && make clean
 .PHONY: clean

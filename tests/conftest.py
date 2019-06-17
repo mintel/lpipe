@@ -56,7 +56,7 @@ def kinesis(kinesis_streams):
 @pytest.fixture(scope="class")
 def mock_lambda(environment):
     lambda_client = boto3.client("lambda")
-    with open(str(Path().absolute() / "dist/build.zip"), "rb") as f:
+    with open(str(Path().absolute() / "dummy_lambda/dist/build.zip"), "rb") as f:
         zipped_code = f.read()
         lambda_client.create_function(
             FunctionName="my_lambda",
