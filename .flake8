@@ -5,14 +5,14 @@ max-complexity = 18
 select = B,C,E,F,W,T4,B9
 
 exclude =
-    .*,
+	.*,
 	.git,
 	dist,
 	docs,
 	migrations,
-    venv,
-    .venv,
+	venv,
+	.venv,
 	_version.py,
-    .tox,
-    tests,
-    __pycache__
+	.tox,
+	tests,
+	__pycache__
