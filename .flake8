@@ -9,7 +9,6 @@ exclude =
 	.git,
 	dist,
 	docs,
-	migrations,
 	venv,
 	.venv,
 	_version.py,
