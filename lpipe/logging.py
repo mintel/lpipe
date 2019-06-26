@@ -128,21 +128,3 @@ class LoggerContext(ContextDecorator):
         self.log._logger = self.initial_log_logger
         self.initial_log_logger = None
         self.start = None
-
-
-class LogCatcher:
-    def __init__(logger=None, log_handler=None):
-        logs = []
-        self.logger = logger if logger else logging.getLogger()
-        self.log_handler = log_handler
-
-    def _log(message, context=None):
-        if self.log_handler:
-            return self.log_handler(message, context)
-
-        message = {"event": message}
-        if context:
-            message["context"] = context
-        self.logs.append(message)
-
-        return self.logger.log(message, extra=context)
