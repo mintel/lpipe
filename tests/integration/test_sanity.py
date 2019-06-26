@@ -24,7 +24,4 @@ class TestSanityMockSQS:
     def test_mock_sqs(self, sqs_queues):
         queue_url = sqs.get_queue_url(sqs_queues[0])
         client = boto3.client("sqs")
-        client.send_message(
-            QueueUrl=queue_url,
-            MessageBody=json.dumps({"foo": "bar"}),
-        )
+        client.send_message(QueueUrl=queue_url, MessageBody=json.dumps({"foo": "bar"}))

@@ -11,9 +11,7 @@ class TestPutMessages:
         client = boto3.client("sqs")
         queue_url = sqs.get_queue_url(sqs_queues[0])
         responses = sqs.batch_put_messages(
-            queue_url=queue_url,
-            messages=[{"foo": "bar", "wiz": "bang"}],
-            batch_size=2,
+            queue_url=queue_url, messages=[{"foo": "bar", "wiz": "bang"}], batch_size=2
         )
         assert len(responses) == 1
         assert (

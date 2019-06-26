@@ -4,13 +4,7 @@ import pytest
 
 from lpipe import sqs, utils
 from lpipe.logging import ServerlessLogger
-from lpipe.pipeline import (
-    process_event,
-    put_record,
-    Action,
-    Queue,
-    QueueType
-)
+from lpipe.pipeline import process_event, put_record, Action, Queue, QueueType
 from tests import fixtures
 
 
@@ -19,33 +13,21 @@ from tests import fixtures
 class TestPutRecord:
     def test_kinesis(self, kinesis_streams, environment):
         with utils.set_env(environment()):
-            queue = Queue(
-                type=QueueType.KINESIS,
-                path="FOO",
-                name=kinesis_streams[0],
-            )
+            queue = Queue(type=QueueType.KINESIS, path="FOO", name=kinesis_streams[0])
             fixture = {"path": queue.path, "kwargs": {}}
             put_record(queue=queue, record=fixture)
 
     def test_sqs_by_url(self, sqs_queues, environment):
         with utils.set_env(environment()):
             queue_url = sqs.get_queue_url(sqs_queues[0])
-            queue = Queue(
-                type=QueueType.SQS,
-                path="FOO",
-                url=queue_url,
-            )
+            queue = Queue(type=QueueType.SQS, path="FOO", url=queue_url)
             fixture = {"path": queue.path, "kwargs": {}}
             put_record(queue=queue, record=fixture)
 
     def test_sqs_by_name(self, sqs_queues, environment):
         with utils.set_env(environment()):
             queue_name = sqs_queues[0]
-            queue = Queue(
-                type=QueueType.SQS,
-                path="FOO",
-                name=queue_name,
-            )
+            queue = Queue(type=QueueType.SQS, path="FOO", name=queue_name)
             fixture = {"path": queue.path, "kwargs": {}}
             put_record(queue=queue, record=fixture)
 

@@ -3,7 +3,7 @@ from lpipe.pipeline import (
     get_payload_from_record,
     get_records_from_event,
     get_sqs_payload,
-    QueueType
+    QueueType,
 )
 
 
