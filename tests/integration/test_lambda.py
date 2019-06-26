@@ -9,7 +9,7 @@ from tests import fixtures
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("localstack", "kinesis", "mock_lambda")
+@pytest.mark.usefixtures("localstack", "kinesis", "sqs", "mock_lambda")
 class TestMockLambda:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]

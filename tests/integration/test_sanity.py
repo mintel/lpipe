@@ -3,6 +3,8 @@ import json
 import pytest
 import boto3
 
+from lpipe import sqs
+
 
 @pytest.mark.postbuild
 @pytest.mark.usefixtures("localstack", "kinesis")
@@ -16,5 +18,13 @@ class TestSanityMockKinesis:
         )
 
 
-# class TestSanityMockSQS:
-#    test_mock_sqs(self):
+@pytest.mark.postbuild
+@pytest.mark.usefixtures("localstack", "sqs")
+class TestSanityMockSQS:
+    def test_mock_sqs(self, sqs_queues):
+        queue_url = sqs.get_queue_url(sqs_queues[0])
+        client = boto3.client("sqs")
+        client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps({"foo": "bar"}),
+        )

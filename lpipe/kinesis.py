@@ -14,7 +14,7 @@ def build(r):
     return {"Data": data, "PartitionKey": hash(data)}
 
 
-def kinesis(func):
+def mock_kinesis(func):
     @wraps(func)
     def wrapper(stream_name, records, *args, **kwargs):
         try:
@@ -42,7 +42,7 @@ def kinesis(func):
     return wrapper
 
 
-@kinesis
+@mock_kinesis
 def batch_put_records(stream_name, records, batch_size=500, **kwargs):
     """Put records into a kinesis stream, batched by the maximum of 500."""
     client = boto3.client("kinesis")

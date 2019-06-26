@@ -9,10 +9,12 @@ from enum import Enum
 import requests
 from decouple import config
 
-from lpipe import kinesis
+from lpipe import kinesis, sqs
 from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import get_nested, batch
+
+Action = namedtuple("Action", "required_params functions paths")
 
 
 class QueueType(Enum):
@@ -20,8 +22,14 @@ class QueueType(Enum):
     SQS = 2
 
 
-Action = namedtuple("Action", "required_params functions paths")
-Queue = namedtuple("Queue", "type name path")
+class Queue:
+    def __init__(self, type, path, name=None, url=None):
+        assert name or url
+        assert isinstance(type, QueueType)
+        self.type = type
+        self.path = path
+        self.name = name
+        self.url = url
 
 
 def build_response(n_records, n_ok, logger):
@@ -186,6 +194,8 @@ def get_payload_from_record(queue_type, record):
 
 def put_record(queue, record):
     if queue.type == QueueType.KINESIS:
-        kinesis.put_record(stream_name=queue.name, data=record)
+        return kinesis.put_record(stream_name=queue.name, data=record)
     elif queue.type == QueueType.SQS:
-        raise Exception("SQS not yet implemented.")
+        if queue.name and not queue.url:
+            queue.url = sqs.get_queue_url(queue.name)
+        return sqs.put_message(queue_url=queue.url, message=record)
