@@ -1,25 +1,32 @@
 import base64
 import json
+import logging
 import warnings
 from pathlib import Path
+from time import sleep
 
+import backoff
 import boto3
 import pytest
 import pytest_localstack
+from botocore.exceptions import ClientError
 from decouple import config
+from pytest_localstack.service_checks import SERVICE_CHECKS
 
+import lpipe
 from tests import fixtures
 
+logger = logging.getLogger()
 
 localstack = pytest_localstack.patch_fixture(
-    services=["kinesis", "lambda"],
-    scope="module",
+    services=["kinesis", "sqs", "lambda"],
+    scope="class",
     autouse=False,
     localstack_version="0.9.4",
 )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def kinesis_streams():
     return ["TEST_KINESIS_STREAM"]
 
@@ -42,13 +49,59 @@ def kinesis(kinesis_streams):
             )
 
 
+@pytest.fixture(scope="session")
+def sqs_queues():
+    return ["TEST_SQS_QUEUE"]
+
+
 @pytest.fixture(scope="class")
-def environment(kinesis_streams):
+def sqs(localstack, sqs_queues):
+    SERVICE_CHECKS["sqs"](localstack)
+    client = boto3.client("sqs")
+
+    @backoff.on_exception(backoff.expo, ClientError, max_tries=8)
+    def create_queue(q):
+        return client.create_queue(QueueName=queue_name)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] // 100 == 2
+        return response["QueueUrl"]
+
+    def queue_exists(q):
+        try:
+            lpipe.sqs.get_queue_url(q)
+            return True
+        except:
+            return False
+
+    try:
+        queues = {}
+
+        for queue_name in sqs_queues:
+            try:
+                queues[queue_name] = create_queue(queue_name)
+            except ClientError:
+                exists = queue_exists(queue_name)
+                logger.error(f"queue_exists({queue_name}) -> {exists}")
+                raise
+
+        for queue_name in sqs_queues:
+            while not queue_exists(queue_name):
+                sleep(1)
+
+        yield queues
+    finally:
+        for queue_name in sqs_queues:
+            client.delete_queue(QueueUrl=lpipe.sqs.get_queue_url(queue_name))
+
+
+@pytest.fixture(scope="class")
+def environment(sqs_queues, kinesis_streams):
     def env(**kwargs):
         vars = {"SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"}
         vars.update(fixtures.ENV)
-        for s in kinesis_streams:
-            vars[s] = s
+        for name in kinesis_streams:
+            vars[name] = name
+        for name in sqs_queues:
+            vars[name] = lpipe.sqs.get_queue_url(name)
         for k, v in kwargs.items():
             vars[k] = v
         return vars

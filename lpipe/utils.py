@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import importlib
 import json
 import logging
@@ -13,6 +14,10 @@ from pathlib import Path
 import requests
 
 from lpipe.exceptions import InvalidInputError, InvalidPathError
+
+
+def hash(encoded_data):
+    return hashlib.sha1(encoded_data.encode("utf-8")).hexdigest()
 
 
 def batch(iterable, n=1):
