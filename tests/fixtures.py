@@ -41,5 +41,8 @@ DATA = {
         "payload": [{"path": "TEST_KINESIS_PATH", "kwargs": {"uri": "foo"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
-    # "SQS_OUTPUT": {"payload": [{"path": "TEST_SQS_PATH", "kwargs": {"uri": "foo"}}], "response": {"stats": {"received": 1, "successes": 1}}},
+    "SQS_OUTPUT": {
+        "payload": [{"path": "TEST_SQS_PATH", "kwargs": {"uri": "foo"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
 }

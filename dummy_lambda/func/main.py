@@ -73,13 +73,17 @@ PATHS = {
             ],
         )
     ],
-    #    Path.TEST_SQS_PATH: [
-    #        Action(
-    #            required_params=["uri"],
-    #            functions=[],
-    #            paths=[Queue(name=config("TEST_SQS_STREAM"), type=QueueType.SQS, path="TEST_FUNC")],
-    #        )
-    #    ],
+    Path.TEST_SQS_PATH: [
+        Action(
+            required_params=["uri"],
+            functions=[],
+            paths=[
+                Queue(
+                    url=config("TEST_SQS_STREAM"), type=QueueType.SQS, path="TEST_FUNC"
+                )
+            ],
+        )
+    ],
 }
 
 
