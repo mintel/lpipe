@@ -80,7 +80,8 @@ def sqs(localstack, sqs_queues):
                 queues[queue_name] = create_queue(queue_name)
             except ClientError:
                 exists = queue_exists(queue_name)
-                logger.info(f"queue_exists({queue_name}) -> {exists}")
+                logger.error(f"queue_exists({queue_name}) -> {exists}")
+                raise
 
         for queue_name in sqs_queues:
             while not queue_exists(queue_name):
