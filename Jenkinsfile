@@ -9,7 +9,8 @@ node('docker&&virtualenv') {
                 numToKeepStr: '30'
             )
         ),
-        [$class: 'JobRestrictionProperty']
+        [$class: 'JobRestrictionProperty'],
+        gitLabConnection("Gitlab"),
     ])
     gitlabCommitStatus("jenkins-pipeline"){
         com.mintel.jenkins.EverestPipeline.builder(this)
