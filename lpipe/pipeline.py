@@ -23,6 +23,26 @@ class QueueType(Enum):
 
 
 class Queue:
+    """Represents a queue path in an Action.
+
+    Note:
+        Kinesis uses name.
+        SQS uses name or url.
+
+    Args:
+        type (QueueType)
+        path (str): Value of the "path" field set on the message we'll send to this queue.
+        name (str, optional): Queue name
+        url (str, optional): Queue URL/URI
+
+    Attributes:
+        type (QueueType)
+        path (str)
+        name (str)
+        url (str)
+
+    """
+
     def __init__(self, type, path, name=None, url=None):
         assert name or url
         assert isinstance(type, QueueType)

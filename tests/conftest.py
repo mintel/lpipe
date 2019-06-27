@@ -88,9 +88,8 @@ def sqs(localstack, sqs_queues):
 
         yield queues
     finally:
-        # for queue_name in sqs_queues:
-        #     client.delete_queue(QueueUrl=lpipe.sqs.get_queue_url(queue_name))
-        pass
+        for queue_name in sqs_queues:
+            client.delete_queue(QueueUrl=lpipe.sqs.get_queue_url(queue_name))
 
 
 @pytest.fixture(scope="class")
