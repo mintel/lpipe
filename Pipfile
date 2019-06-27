@@ -13,6 +13,7 @@ structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
+backoff = "*"
 isort = "*"
 pipenv = "*"
 pytest = "*"

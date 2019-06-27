@@ -79,7 +79,7 @@ PATHS = {
             functions=[],
             paths=[
                 Queue(
-                    url=config("TEST_SQS_STREAM"), type=QueueType.SQS, path="TEST_FUNC"
+                    url=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
                 )
             ],
         )

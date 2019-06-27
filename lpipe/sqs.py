@@ -30,7 +30,7 @@ def mock_sqs(func):
                     for m in messages:
                         log.debug(
                             "sqs.put_messages: mocked queue:{} data:{}".format(
-                                queue_url, build(r)
+                                queue_url, build(m)
                             )
                         )
                 else:
