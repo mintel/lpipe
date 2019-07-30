@@ -22,7 +22,7 @@ localstack = pytest_localstack.patch_fixture(
     services=["kinesis", "sqs", "lambda"],
     scope="class",
     autouse=False,
-    localstack_version="0.9.4",
+    # localstack_version="0.9.4",
 )
 
 
