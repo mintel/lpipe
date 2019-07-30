@@ -118,6 +118,9 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
 
 def execute_path(path, kwargs, logger, path_enum, paths):
     """Execute functions, paths, and shortcuts in a Path."""
+    if not logger:
+        logger = ServerlessLogger()
+
     if isinstance(path, Enum) or isinstance(path, str):  # PATH
         try:
             path = path_enum[str(path).split(".")[-1]]

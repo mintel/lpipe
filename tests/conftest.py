@@ -32,7 +32,8 @@ def kinesis_streams():
 
 
 @pytest.fixture(scope="class")
-def kinesis(kinesis_streams):
+def kinesis(localstack, kinesis_streams):
+    check(localstack, "kinesis")
     client = boto3.client("kinesis")
     try:
         for stream_name in kinesis_streams:
@@ -54,14 +55,19 @@ def sqs_queues():
     return ["TEST_SQS_QUEUE"]
 
 
+@backoff.on_exception(backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3)
+def check(session, service):
+    return SERVICE_CHECKS[service](session)
+
+
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    SERVICE_CHECKS["sqs"](localstack)
+    check(localstack, "sqs")
     client = boto3.client("sqs")
 
-    @backoff.on_exception(backoff.expo, ClientError, max_tries=8)
+    @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
     def create_queue(q):
-        return client.create_queue(QueueName=queue_name)
+        response = client.create_queue(QueueName=queue_name)
         assert response["ResponseMetadata"]["HTTPStatusCode"] // 100 == 2
         return response["QueueUrl"]
 
