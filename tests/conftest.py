@@ -55,7 +55,9 @@ def sqs_queues():
     return ["TEST_SQS_QUEUE"]
 
 
-@backoff.on_exception(backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3)
+@backoff.on_exception(
+    backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
+)
 def check(session, service):
     return SERVICE_CHECKS[service](session)
 
