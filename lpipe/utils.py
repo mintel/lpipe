@@ -46,7 +46,7 @@ def _set_env(env):
     for k, v in env.items():
         state[k] = os.environ[k] if k in os.environ else None
         os.environ[k] = str(v)
-        print(f"os.environ[{k}] = {v}")
+        logging.getLogger().debug(f"os.environ[{k}] = {v}")
     return state
 
 
