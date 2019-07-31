@@ -41,21 +41,31 @@ def get_nested(d, keys):
     return head
 
 
+def _set_env(env):
+    state = {}
+    for k, v in env.items():
+        state[k] = os.environ[k] if k in os.environ else None
+        os.environ[k] = str(v)
+        print(f"os.environ[{k}] = {v}")
+    return state
+
+
+def _reset_env(env, state):
+    for k, v in env.items():
+        if k in state and state[k]:
+            os.environ[k] = str(state[k])
+        elif k in os.environ:
+            del os.environ[k]
+
+
 @contextmanager
 def set_env(env):
     state = {}
     try:
-        for k, v in env.items():
-            state[k] = os.environ[k] if k in os.environ else None
-            os.environ[k] = str(v)
-            print(f"os.environ[{k}] = {v}")
+        state = _set_env(env)
         yield
     finally:
-        for k, v in env.items():
-            if k in state and state[k]:
-                os.environ[k] = str(state[k])
-            elif k in os.environ:
-                del os.environ[k]
+        _reset_env(env, state)
 
 
 def emit_logs(body, logger=None):
