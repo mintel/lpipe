@@ -69,7 +69,7 @@ class Company:
 
     @uri.setter
     def uri(self, uri):
-        self._uri = build_taxonomy_uri(uri)
+        self._uri = TaxonomyURI.build(uri)
 
     @property
     def industry(self):
@@ -77,7 +77,7 @@ class Company:
 
     @industry.setter
     def industry(self, uri):
-        self._industry = build_taxonomy_uri(uri)
+        self._industry = TaxonomyURI.build(uri)
 
     def __repr__(self):
         return str(self.uri.id)
@@ -100,7 +100,7 @@ class Brand:
 
     @uri.setter
     def uri(self, uri):
-        self._uri = build_taxonomy_uri(uri)
+        self._uri = TaxonomyURI.build(uri)
 
     @property
     def company(self):
@@ -108,7 +108,7 @@ class Brand:
 
     @company.setter
     def company(self, uri):
-        self._company = build_taxonomy_uri(uri)
+        self._company = TaxonomyURI.build(uri)
 
     def __repr__(self):
         return str(self.uri.id)
@@ -137,7 +137,7 @@ class Product:
 
     @uri.setter
     def uri(self, uri):
-        self._uri = build_taxonomy_uri(uri)
+        self._uri = TaxonomyURI.build(uri)
 
     @property
     def product_type(self):
@@ -145,7 +145,7 @@ class Product:
 
     @product_type.setter
     def product_type(self, uri):
-        self._product_type = build_taxonomy_uri(uri)
+        self._product_type = TaxonomyURI.build(uri)
 
     @property
     def company(self):
@@ -153,12 +153,7 @@ class Product:
 
     @company.setter
     def company(self, uri):
-        self._company = build_taxonomy_uri(uri)
+        self._company = TaxonomyURI.build(uri)
 
     def __repr__(self):
         return str(self.uri.id)
-
-
-# def build_taxonomy_uri(uri):
-#    """Given a URI (string or object), return a TaxonomyURI"""
-#    return uri if type(uri) is TaxonomyURI else TaxonomyURI.from_str(uri)
