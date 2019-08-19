@@ -115,7 +115,7 @@ def environment(sqs_queues, kinesis_streams):
 
 
 @pytest.fixture(scope="class")
-def mock_lambda(environment):
+def mock_lambda(localstack, environment):
     lambda_client = boto3.client("lambda")
     with open(str(Path().absolute() / "dummy_lambda/dist/build.zip"), "rb") as f:
         zipped_code = f.read()
