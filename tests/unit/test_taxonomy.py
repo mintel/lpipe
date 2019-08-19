@@ -1,6 +1,7 @@
 import pytest
 
-from lpipe.taxonomy import InvalidTaxonomyURI, TaxonomyURI
+from lpipe.exceptions import InvalidTaxonomyURI
+from lpipe.taxonomy import TaxonomyURI
 
 
 class TestTaxonomyURI:

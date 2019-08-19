@@ -1,5 +1,7 @@
 import re
+import shlex
 
+import requests
 from lpipe.exceptions import InvalidTaxonomyURI, GraphQLError
 
 
