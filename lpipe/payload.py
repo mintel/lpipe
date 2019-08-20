@@ -8,14 +8,15 @@ import dateutil
 def validate_payload(payload, schema):
     validated_params = {}
     for param_name, param in schema.items():
-        if param.required:
+        if param.required and not param.value:
             try:
                 assert param_name in payload
             except:
                 raise InvalidPayload(f"{param_name} is a required parameter.")
 
         try:
-            param.value = payload[param_name] if param_name in payload else param.value
+            if param_name in payload:
+                param.value = payload[param_name]
         except ValueError:
             raise InvalidPayload(
                 f"The value you provided for {param_name} was invalid."
@@ -50,11 +51,10 @@ class Param:
             self._value = new_value
             return
 
-        if self.type == "json":
-            if isinstance(new_value, str):
-                self._value = json.loads(new_value)
-            elif isinstance(new_value, dict):
-                self._value = new_value
+        if self.type == str:
+            self._value = str(new_value)
+        elif self.type == "json":
+            self._value = self._to_json(new_value)
         elif self.type == int:
             self._value = self._to_int(new_value)
         elif self.type == bool:
@@ -63,6 +63,14 @@ class Param:
             self._value = self._to_list(new_value)
         elif self.type == datetime:
             self._value = self._to_datetime(new_value)
+
+    def _to_json(self, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        elif isinstance(v, dict):
+            return v
+        else:
+            raise ValueError('Could not convert "%s" to JSON.', v)
 
     def _to_int(self, v):
         if self._represents_int(v):
