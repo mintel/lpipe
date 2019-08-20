@@ -175,6 +175,9 @@ def build_action_kwargs(action, kwargs):
     Args:
         action (namedtuple)
         kargs (dict): kwargs provided in the event's message
+
+    Returns:
+        dict: validated kwargs required by action
     """
     action_kwargs = {}
     if isinstance(action.required_params, dict):
