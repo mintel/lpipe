@@ -87,6 +87,7 @@ PAYLOAD_DATA = {
             "json": None,
             "bool": None,
             "int": None,
+            "list": None,
             "datetime": None,
         },
         "schema": {
@@ -94,6 +95,7 @@ PAYLOAD_DATA = {
             "json": Param("json"),
             "bool": Param(bool),
             "int": Param(int),
+            "list": Param(list),
             "datetime": Param(datetime),
         },
         "params_out": {
@@ -101,6 +103,7 @@ PAYLOAD_DATA = {
             "json": None,
             "bool": None,
             "int": None,
+            "list": None,
             "datetime": None,
         },
     },

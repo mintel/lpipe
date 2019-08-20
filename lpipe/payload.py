@@ -51,18 +51,19 @@ class Param:
             self._value = new_value
             return
 
-        if self.type == str:
-            self._value = str(new_value)
-        elif self.type == "json":
-            self._value = self._to_json(new_value)
-        elif self.type == int:
-            self._value = self._to_int(new_value)
-        elif self.type == bool:
-            self._value = self._to_bool(new_value)
-        elif self.type == list:
-            self._value = self._to_list(new_value)
-        elif self.type == datetime:
-            self._value = self._to_datetime(new_value)
+        formatters = {
+            str: self._to_str,
+            "json": self._to_json,
+            int: self._to_int,
+            bool: self._to_bool,
+            list: self._to_list,
+            datetime: self._to_datetime,
+        }
+
+        self._value = formatters[self.type](new_value)
+
+    def _to_str(self, v):
+        return str(v)
 
     def _to_json(self, v):
         if isinstance(v, str):
