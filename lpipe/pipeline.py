@@ -12,6 +12,7 @@ from decouple import config
 from lpipe import kinesis, sqs
 from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
 from lpipe.logging import ServerlessLogger
+from lpipe.payload import InvalidPayload, Param, validate_payload
 from lpipe.utils import get_nested, batch
 
 Action = namedtuple("Action", "required_params functions paths")
@@ -131,20 +132,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
             assert isinstance(action, Action)
 
             # Build action kwargs
-            action_kwargs = {}
-            for param in action.required_params:
-                param_name = param[0] if isinstance(param, tuple) else param
-                try:
-                    # Assert required field was provided.
-                    assert param_name in kwargs
-                except AssertionError as e:
-                    raise InvalidInputError(f"Missing param '{param_name}'") from e
-
-                # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
-                if isinstance(param, tuple) and len(param) == 2:
-                    action_kwargs[param[1]] = kwargs[param[0]]
-                else:
-                    action_kwargs[param] = kwargs[param]
+            action_kwargs = build_action_kwargs(action, kwargs)
 
             # Run action functions
             for f in action.functions:
@@ -179,6 +167,41 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
     else:
         logger.info(f"Path should be a string, Path, or Queue {path})")
+
+
+def build_action_kwargs(action, kwargs):
+    """Build dictionary of kwargs for a specific action.
+
+    Args:
+        action (namedtuple)
+        kargs (dict): kwargs provided in the event's message
+    """
+    action_kwargs = {}
+    if isinstance(action.required_params, dict):
+        try:
+            action_kwargs = validate_payload(kwargs, action.required_params)
+        except InvalidPayload as e:
+            raise InvalidInputError(f"Missing or malformed param.") from e
+    elif isinstance(action.required_params, list):
+        for param in action.required_params:
+            param_name = param[0] if isinstance(param, tuple) else param
+            try:
+                # Assert required field was provided.
+                assert param_name in kwargs
+            except AssertionError as e:
+                raise InvalidInputError(f"Missing param '{param_name}'") from e
+
+            # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
+            if isinstance(param, tuple) and len(param) == 2:
+                action_kwargs[param[1]] = kwargs[param[0]]
+            else:
+                action_kwargs[param] = kwargs[param]
+    else:
+        raise InvalidInputError(
+            f"Path ({path}) action's required_params was not a dict or list."
+        )
+
+    return action_kwargs
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
