@@ -45,7 +45,11 @@ PARAM_DATA = {
         "val_in": NOW.isoformat(),
         "val_out": NOW,
     },
-    "datetime_from_none": {"param": {"type": datetime}, "val_in": None, "val_out": None},
+    "datetime_from_none": {
+        "param": {"type": datetime},
+        "val_in": None,
+        "val_out": None,
+    },
 }
 
 PARAM_DATA_INVALID = {
