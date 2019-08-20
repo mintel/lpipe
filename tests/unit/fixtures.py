@@ -77,6 +77,29 @@ PAYLOAD_DATA = {
         "schema": {"foo": Param(str, default="wiz", required=False)},
         "params_out": {"foo": "wiz"},
     },
+    "none_sets_none": {
+        "payload": {
+            "str": None,
+            "json": None,
+            "bool": None,
+            "int": None,
+            "datetime": None,
+        },
+        "schema": {
+            "str": Param(str),
+            "json": Param("json"),
+            "bool": Param(bool),
+            "int": Param(int),
+            "datetime": Param(datetime),
+        },
+        "params_out": {
+            "str": None,
+            "json": None,
+            "bool": None,
+            "int": None,
+            "datetime": None,
+        },
+    },
 }
 
 PAYLOAD_INVALID_DATA = {"str": {"payload": {}, "schema": {"foo": Param(str)}}}
