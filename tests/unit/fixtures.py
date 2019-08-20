@@ -39,8 +39,16 @@ PARAM_DATA = {
         "val_in": NOW.isoformat(),
         "val_out": NOW,
     },
-    "default_is_not_required": {"param": {"type": str, "default": "wiz"}, "val_in": None, "val_out": "wiz"},
-    "not_required_is_not_required": {"param": {"type": str, "required": False}, "val_in": None, "val_out": None},
+    "default_is_not_required": {
+        "param": {"type": str, "default": "wiz"},
+        "val_in": None,
+        "val_out": "wiz",
+    },
+    "not_required_is_not_required": {
+        "param": {"type": str, "required": False},
+        "val_in": None,
+        "val_out": None,
+    },
 }
 
 PARAM_DATA_INVALID = {
