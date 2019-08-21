@@ -16,25 +16,16 @@ def build(r):
 
 def mock_sqs(func):
     @wraps(func)
-    def wrapper(queue_url, messages, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
-            return func(queue_url, messages, *args, **kwargs)
+            return func(*args, **kwargs)
         except (
             botocore.exceptions.NoCredentialsError,
             botocore.exceptions.ClientError,
             botocore.exceptions.NoRegionError,
         ):
             if config("MOCK_AWS", default=False):
-                log = kwargs["logger"] if "logger" in kwargs else logging.getLogger()
-                if messages:
-                    for m in messages:
-                        log.debug(
-                            "sqs.put_messages: mocked queue:{} data:{}".format(
-                                queue_url, build(m)
-                            )
-                        )
-                else:
-                    log.warning("sqs.put_messages: no messages provided")
+                log.debug("{}({}, {})".format(func, args, kwargs))
                 return
             else:
                 raise
@@ -60,6 +51,7 @@ def put_message(queue_url, message, **kwargs):
     return batch_put_messages(queue_url=queue_url, messages=[message])
 
 
+@mock_sqs
 def get_queue_url(queue_name):
     client = boto3.client("sqs")
     response = client.get_queue_url(QueueName=queue_name)
