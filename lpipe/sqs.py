@@ -25,7 +25,7 @@ def mock_sqs(func):
             botocore.exceptions.NoRegionError,
         ):
             if config("MOCK_AWS", default=False):
-                log.debug("{}({}, {})".format(func, args, kwargs))
+                log.debug("Mocked SQS: {}()".format(func), function=f"{func}", params={"args": f"{args}", "kwargs": f"{kwargs}"})
                 return
             else:
                 raise
