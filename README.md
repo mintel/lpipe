@@ -130,3 +130,35 @@ Queue(
   	path="DO_THING"
 )
 ```
+
+
+
+#### Params
+
+```python
+lpipe.payload.Param(type, default=None, required=True)
+```
+
+| Argument          | Type | Description                     |
+| ----------------- | ---- | ------------------------------- |
+| `type` | `type` or `str` | |
+| `default` | | Defaults to None |
+| `required` | `bool` | Experimental. Defaults to True. Changing the value is not recommended. |
+
+##### Example
+
+```python
+from lpipe.payload import Param
+
+Path.MY_PATH: [
+    Action(
+        required_params={
+          "foo": Param(str),
+          "wiz": Param(bool, default=False),
+          "bang": Param(int, default=42),
+        },
+        functions=[my_func],
+        paths=[],
+    )
+],
+```
