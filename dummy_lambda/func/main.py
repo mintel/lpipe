@@ -91,7 +91,7 @@ PATHS = {
             functions=[],
             paths=[
                 Queue(
-                    name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
+                    name="TEST_SQS_QUEUE", type=QueueType.SQS, path="TEST_FUNC"
                 )
             ],
         )
