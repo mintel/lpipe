@@ -89,11 +89,7 @@ PATHS = {
         Action(
             required_params=["uri"],
             functions=[],
-            paths=[
-                Queue(
-                    name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
-                )
-            ],
+            paths=[Queue(name="TEST_SQS_QUEUE", type=QueueType.SQS, path="TEST_FUNC")],
         )
     ],
 }
