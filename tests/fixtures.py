@@ -1,6 +1,4 @@
-ENV = {
-    "MOCK_AWS": True
-}
+ENV = {"MOCK_AWS": True}
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {
