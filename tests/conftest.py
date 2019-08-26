@@ -23,6 +23,13 @@ localstack = pytest_localstack.patch_fixture(
 )
 
 
+@backoff.on_exception(
+    backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
+)
+def check(session, service):
+    return SERVICE_CHECKS[service](session)
+
+
 @pytest.fixture(scope="session")
 def kinesis_streams():
     return ["TEST_KINESIS_STREAM"]
@@ -50,13 +57,6 @@ def kinesis(localstack, kinesis_streams):
 @pytest.fixture(scope="session")
 def sqs_queues():
     return ["TEST_SQS_QUEUE"]
-
-
-@backoff.on_exception(
-    backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
-)
-def check(session, service):
-    return SERVICE_CHECKS[service](session)
 
 
 @pytest.fixture(scope="class")
@@ -101,12 +101,15 @@ def sqs(localstack, sqs_queues):
 @pytest.fixture(scope="class")
 def environment(sqs_queues, kinesis_streams):
     def env(**kwargs):
-        vars = {"SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"}
+        vars = {
+            "APP_ENVIRONMENT": "localstack",
+            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"
+        }
         vars.update(fixtures.ENV)
         for name in kinesis_streams:
             vars[name] = name
         for name in sqs_queues:
-            vars[name] = lpipe.sqs.get_queue_url(name)
+            vars[name] = name
         for k, v in kwargs.items():
             vars[k] = v
         return vars
@@ -117,6 +120,18 @@ def environment(sqs_queues, kinesis_streams):
 @pytest.fixture(scope="class")
 def mock_lambda(localstack, environment):
     lambda_client = boto3.client("lambda")
+
+    def clean_env(env):
+        for k, v in env.items():
+            if isinstance(v, bool):
+                if v:
+                    env[k] = str(v)
+                else:
+                    continue
+            elif isinstance(v, type(None)):
+                env[k] = ""
+        return env
+
     with open(str(Path().absolute() / "dummy_lambda/dist/build.zip"), "rb") as f:
         zipped_code = f.read()
         lambda_client.create_function(
@@ -126,7 +141,7 @@ def mock_lambda(localstack, environment):
             Handler="main.lambda_handler",
             Code=dict(ZipFile=zipped_code),
             Timeout=300,
-            Environment={"Variables": environment(MOCK_AWS="true")},
+            Environment={"Variables": clean_env(environment(MOCK_AWS=True))},
         )
 
 

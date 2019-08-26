@@ -1,4 +1,4 @@
-ENV = {"MOCK_AWS": True}
+ENV = {}
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {
@@ -43,10 +43,6 @@ DATA = {
     },
     "SQS_OUTPUT": {
         "payload": [{"path": "TEST_SQS_PATH", "kwargs": {"uri": "foo"}}],
-        "response": {"stats": {"received": 1, "successes": 1}},
-    },
-    "SQS_NAME_OUTPUT": {
-        "payload": [{"path": "TEST_SQS_NAME_PATH", "kwargs": {"uri": "foo"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
 }

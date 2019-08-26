@@ -29,7 +29,6 @@ class Path(Enum):
     TEST_RENAME_PARAM = 6
     TEST_KINESIS_PATH = 7
     TEST_SQS_PATH = 8
-    TEST_SQS_NAME_PATH = 9
 
 
 PATHS = {
@@ -80,16 +79,9 @@ PATHS = {
             functions=[],
             paths=[
                 Queue(
-                    url=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
+                    name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
                 )
             ],
-        )
-    ],
-    Path.TEST_SQS_NAME_PATH: [
-        Action(
-            required_params=["uri"],
-            functions=[],
-            paths=[Queue(name="TEST_SQS_QUEUE", type=QueueType.SQS, path="TEST_FUNC")],
         )
     ],
 }
