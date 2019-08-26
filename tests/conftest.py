@@ -103,7 +103,7 @@ def environment(sqs_queues, kinesis_streams):
     def env(**kwargs):
         vars = {
             "APP_ENVIRONMENT": "localstack",
-            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1"
+            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
         }
         vars.update(fixtures.ENV)
         for name in kinesis_streams:
