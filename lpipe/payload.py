@@ -34,9 +34,15 @@ class Param:
         self.type = type
         self.value = default
         self.required = required
+        assert self.valid
 
     def __repr__(self):
         return f"{self.value}"
+
+    @property
+    def valid(self):
+        assert isinstance(self.type, type)
+        return True
 
     @property
     def value(self):
@@ -44,80 +50,9 @@ class Param:
 
     @value.setter
     def value(self, new_value):
-        if not new_value and not (isinstance(new_value, int) and self.type == bool):
-            self._value = None
-            return
-        elif isinstance(self.type, type) and isinstance(new_value, self.type):
+        if isinstance(new_value, self.type):
             self._value = new_value
             return
-
-        formatters = {
-            str: self._to_str,
-            "json": self._to_json,
-            int: self._to_int,
-            bool: self._to_bool,
-            list: self._to_list,
-            datetime: self._to_datetime,
-        }
-
-        self._value = formatters[self.type](new_value)
-
-    def _to_str(self, v):
-        return str(v)
-
-    def _to_json(self, v):
-        if isinstance(v, str):
-            return json.loads(v)
-        elif isinstance(v, dict):
-            return v
-        else:
-            raise ValueError('Could not convert "%s" to JSON.', v)
-
-    def _to_int(self, v):
-        if self._represents_int(v):
-            return int(v)
-        else:
-            raise ValueError('Could not convert "%s" to int.', v)
-
-    def _to_bool(self, v):
-        if isinstance(v, int) or self._represents_int(v):
-            if int(v) == 1:
-                return True
-            elif int(v) == 0:
-                return False
-            else:
-                raise ValueError('Could not convert "%s" to bool.', v)
-        if isinstance(v, str):
-            if v.lower() == "true":
-                return True
-            elif v.lower() == "false":
-                return False
-            else:
-                raise ValueError('Could not convert "%s" to bool.', v)
-        else:
-            raise ValueError('Could not convert "%s" to bool.', v)
-
-    def _to_list(self, v):
-        if isinstance(v, str):
-            return v.split(",")
-        else:
-            raise ValueError('Could not convert "%s" to list.', v)
-
-    def _to_datetime(self, v):
-        if type(v) is datetime:
-            return v
-        elif isinstance(v, str):
-            return dateutil.parser.parse(v)  # expects ISO datetime format
-        else:
-            raise ValueError('Could not convert "%s" to datetime.', v)
-
-    @staticmethod
-    def _represents_int(v):
-        try:
-            int(v)
-            return True
-        except ValueError:
-            return False
 
 
 class InvalidPayload(Exception):
