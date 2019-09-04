@@ -28,6 +28,7 @@ PARAM_DATA = {
 }
 
 PARAM_DATA_INVALID = {
+    "str_from_int": {"param": {"type": str}, "val_in": 1},
 }
 
 PAYLOAD_DATA = {

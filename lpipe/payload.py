@@ -49,10 +49,12 @@ class Param:
         return self._value
 
     @value.setter
-    def value(self, new_value):
-        if isinstance(new_value, self.type):
-            self._value = new_value
+    def value(self, v):
+        if isinstance(v, self.type) or isinstance(v, type(None)):
+            self._value = v
             return
+        else:
+            raise ValueError("Param value %s<%s> was an invalid type. Should have been %s.", v, type(v), self.type)
 
 
 class InvalidPayload(Exception):
