@@ -76,6 +76,8 @@ class Param:
     def _to_int(self, v):
         if self._represents_int(v):
             return int(v)
+        else:
+            raise ValueError('Could not convert "%s" to int.', v)
 
     def _to_bool(self, v):
         if isinstance(v, int) or self._represents_int(v):
@@ -84,20 +86,14 @@ class Param:
             elif int(v) == 0:
                 return False
             else:
-                raise ValueError(
-                    'Could not convert "%s" to bool because it did not represent a bool.',
-                    v,
-                )
+                raise ValueError('Could not convert "%s" to bool.', v)
         if isinstance(v, str):
             if v.lower() == "true":
                 return True
             elif v.lower() == "false":
                 return False
             else:
-                raise ValueError(
-                    'Could not convert "%s" to bool because it did not represent a bool.',
-                    v,
-                )
+                raise ValueError('Could not convert "%s" to bool.', v)
         else:
             raise ValueError('Could not convert "%s" to bool.', v)
 
