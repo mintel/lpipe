@@ -8,7 +8,6 @@ from lpipe.payload import validate_payload, InvalidPayload, Param
 from tests.unit import fixtures
 
 
-# These tests may look stupid, but the param validation does more than meet's the eye.
 class TestParam:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.PARAM_DATA.items()]
