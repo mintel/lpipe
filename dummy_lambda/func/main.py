@@ -42,31 +42,23 @@ class Path(Enum):
 
 PATHS = {
     Path.TEST_FUNC: [Action(functions=[test_func])],
-    Path.TEST_FUNC_EXPLICIT_PARAMS: [Action(required_params=["foo"], functions=[test_func])],
+    Path.TEST_FUNC_EXPLICIT_PARAMS: [
+        Action(required_params=["foo"], functions=[test_func])
+    ],
     Path.TEST_FUNC_NO_PARAMS: [Action(functions=[test_func_no_params])],
     Path.TEST_FUNC_BLANK_PARAMS: [
         Action(required_params=[], functions=[test_func_no_params])
     ],
-    Path.TEST_PATH: [
-        Action(required_params=["foo"], paths=[Path.TEST_FUNC])
-    ],
-    Path.TEST_FUNC_AND_PATH: [
-        Action(functions=[test_func], paths=[Path.TEST_FUNC])
-    ],
+    Path.TEST_PATH: [Action(required_params=["foo"], paths=[Path.TEST_FUNC])],
+    Path.TEST_FUNC_AND_PATH: [Action(functions=[test_func], paths=[Path.TEST_FUNC])],
     Path.MULTI_TEST_FUNC: [
         Action(functions=[test_func]),
-        Action(
-            functions=[test_func],
-            paths=[Path.TEST_FUNC],
-        ),
+        Action(functions=[test_func], paths=[Path.TEST_FUNC]),
         Action(paths=[Path.TEST_FUNC_BLANK_PARAMS]),
     ],
     Path.MULTI_TEST_FUNC_NO_PARAMS: [
         Action(functions=[test_func_no_params]),
-        Action(
-            functions=[test_func_no_params],
-            paths=[Path.TEST_FUNC_BLANK_PARAMS],
-        ),
+        Action(functions=[test_func_no_params], paths=[Path.TEST_FUNC_BLANK_PARAMS]),
         Action(paths=[Path.TEST_FUNC_BLANK_PARAMS]),
     ],
     Path.TEST_RENAME_PARAM: [

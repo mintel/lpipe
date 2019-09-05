@@ -143,7 +143,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 
             # Build action kwargs and basic type checking
             try:
-                action_kwargs = build_action_kwargs(action, {"logger": logger, **kwargs})
+                action_kwargs = build_action_kwargs(
+                    action, {"logger": logger, **kwargs}
+                )
             except (TypeError, AssertionError) as e:
                 raise InvalidInputError(f"Failed to run {path.name} {action}") from e
 
@@ -227,7 +229,9 @@ def _merge(functions, iter):
                 try:
                     assert v == output[k]
                 except AssertionError as e:
-                    raise TypeError(f"Incompatible functions {functions}: {k} represented as both {v} and {output[k]}") from e
+                    raise TypeError(
+                        f"Incompatible functions {functions}: {k} represented as both {v} and {output[k]}"
+                    ) from e
             else:
                 output[k] = v
     return output
@@ -242,7 +246,11 @@ def merge_type_hints(functions):
 
 
 def get_defaults(signature):
-    return {k: v.default for k, v in signature.items() if v.default is not inspect.Parameter.empty}
+    return {
+        k: v.default
+        for k, v in signature.items()
+        if v.default is not inspect.Parameter.empty
+    }
 
 
 def validate_signature(functions, params):
