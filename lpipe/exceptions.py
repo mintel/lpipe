@@ -10,5 +10,9 @@ class InvalidPathError(Exception):
     pass
 
 
+class InvalidPayload(Exception):
+    pass
+
+
 class GraphQLError(Exception):
     pass

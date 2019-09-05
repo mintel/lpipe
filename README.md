@@ -24,9 +24,7 @@ class Path(Enum):
 PATHS = {
     Path.EXAMPLE: [
       	Action(
-          	required_params=["foo"],
           	functions=[test_func],
-          	paths=[]
         )
     ],
 }
@@ -87,9 +85,9 @@ lpipe.pipeline.Action(required_params, functions, paths)
 
 | Argument          | Type | Description                     |
 | ----------------- | ---- | ------------------------------- |
-| `required_params` | `list` | A list of kwarg keys to expect. |
-| `functions` | `list` | A list of functions to run with the provided kwargs. |
-| `paths` | `list` | A list of path names (to be run in the current lambda instance) or Queues to push messages to. |
+| `required_params` | `list` | (optional if functions is set, required if ONLY paths is set) A list of kwarg keys to expect. |
+| `functions` | `list` | (optional if paths is set) A list of functions to run with the provided kwargs. |
+| `paths` | `list` | (optional if functions is set) A list of path names (to be run in the current lambda instance) or Queues to push messages to. |
 
 ##### Example
 
@@ -129,4 +127,36 @@ Queue(
   	name="my-stream-name",
   	path="DO_THING"
 )
+```
+
+
+
+#### Params
+
+Parameters can be inferred from your function signatures or explicitly set. If you allow parameters to be inferred, default values are permitted, and type hints will be enforced.
+
+##### Example
+```python
+def test_func(foo: str, bar: int = 42, **kwargs):
+	pass
+
+Path.MY_PATH: [
+    Action(
+        functions=[my_func],
+    )
+],
+```
+
+**OR**
+
+```python
+def test_func(foo, bar, **kwargs):
+	pass
+
+Path.MY_PATH: [
+    Action(
+        required_params=["foo", "bar"],
+        functions=[my_func],
+    )
+],
 ```

@@ -1,10 +1,12 @@
 import base64
 import importlib
+import inspect
 import json
 import logging
 import shlex
 from collections import namedtuple
 from enum import Enum
+from typing import get_type_hints
 
 import requests
 from decouple import config
@@ -14,7 +16,16 @@ from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import get_nested, batch
 
-Action = namedtuple("Action", "required_params functions paths")
+
+class Action:
+    def __init__(self, functions=[], paths=[], required_params=None):
+        assert functions or paths
+        self.functions = functions
+        self.paths = paths
+        self.required_params = required_params
+
+    def __repr__(self):
+        return f"Action(functions={self.functions},paths={self.paths})"
 
 
 class QueueType(Enum):
@@ -130,21 +141,13 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         for action in paths[path]:
             assert isinstance(action, Action)
 
-            # Build action kwargs
-            action_kwargs = {}
-            for param in action.required_params:
-                param_name = param[0] if isinstance(param, tuple) else param
-                try:
-                    # Assert required field was provided.
-                    assert param_name in kwargs
-                except AssertionError as e:
-                    raise InvalidInputError(f"Missing param '{param_name}'") from e
-
-                # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
-                if isinstance(param, tuple) and len(param) == 2:
-                    action_kwargs[param[1]] = kwargs[param[0]]
-                else:
-                    action_kwargs[param] = kwargs[param]
+            # Build action kwargs and validate type hints
+            try:
+                action_kwargs = build_action_kwargs(
+                    action, {"logger": logger, **kwargs}
+                )
+            except (TypeError, AssertionError) as e:
+                raise InvalidInputError(f"Failed to run {path.name} {action}") from e
 
             # Run action functions
             for f in action.functions:
@@ -157,7 +160,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                         }
                     ):
                         logger.log("Executing function.")
-                        f(logger=logger, **action_kwargs)
+                        f(**{**action_kwargs, "logger": logger})
                 except Exception as e:
                     logger.error(f"Skipped {path.name} {f.__name__} because: {e}")
 
@@ -179,6 +182,114 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
     else:
         logger.info(f"Path should be a string, Path, or Queue {path})")
+
+
+def build_action_kwargs(action, kwargs):
+    """Build dictionary of kwargs for a specific action.
+
+    Args:
+        action (namedtuple)
+        kargs (dict): kwargs provided in the event's message
+
+    Returns:
+        dict: validated kwargs required by action
+    """
+    action_kwargs = {}
+    if not action.required_params and action.functions:
+        action_kwargs = validate_signature(action.functions, kwargs)
+    elif action.required_params and isinstance(action.required_params, list):
+        for param in action.required_params:
+            param_name = param[0] if isinstance(param, tuple) else param
+            try:
+                # Assert required field was provided.
+                assert param_name in kwargs
+            except AssertionError as e:
+                raise InvalidInputError(f"Missing param '{param_name}'") from e
+
+            # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
+            if isinstance(param, tuple) and len(param) == 2:
+                action_kwargs[param[1]] = kwargs[param[0]]
+            else:
+                action_kwargs[param] = kwargs[param]
+    elif isinstance(action.required_params, type(None)):
+        return {}
+    else:
+        raise InvalidInputError("This should be impossible.")
+
+    return action_kwargs
+
+
+def _merge(functions, iter):
+    """Get a set of attributes describing several functions."""
+    output = {}
+    for f in functions:
+        i = iter(f)
+        for k, v in i.items():
+            if k in output:
+                try:
+                    assert v == output[k]
+                except AssertionError as e:
+                    raise TypeError(
+                        f"Incompatible functions {functions}: {k} represented as both {v} and {output[k]}"
+                    ) from e
+            else:
+                output[k] = v
+    return output
+
+
+def _merge_signatures(functions):
+    """Create a combined list of function parameters."""
+    return _merge(functions, lambda f: inspect.signature(f).parameters)
+
+
+def _merge_type_hints(functions):
+    """Create a combined list of function parameter type hints."""
+    return _merge(functions, lambda f: get_type_hints(f))
+
+
+def _get_defaults(signature):
+    """Create a dict of function parameters with defaults."""
+    return {
+        k: v.default
+        for k, v in signature.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+
+def validate_signature(functions, params):
+    """Validate and build kwargs for a set of functions based on their signatures.
+
+    Args:
+        functions (list): functions
+        params (dict): kwargs provided in the event's message
+
+    Returns:
+        dict: validated kwargs required by the provided set of functions
+    """
+    signature = _merge_signatures(functions)
+    defaults = _get_defaults(signature)
+    hints = _merge_type_hints(functions)
+
+    validated = {}
+    for k, v in signature.items():
+        if k in params:
+            p = params[k]
+            if k in hints:
+                t = hints[k]
+                try:
+                    assert isinstance(p, t)
+                except AssertionError as e:
+                    raise TypeError(f"Type of {k} should be {t} not {type(p)}.") from e
+                validated[k] = p
+            else:
+                validated[k] = p
+        elif k not in ("kwargs", "args"):
+            try:
+                assert k in defaults
+            except AssertionError as e:
+                raise TypeError(f"{functions} missing required argument: '{k}'") from e
+
+    return validated
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
