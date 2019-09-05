@@ -211,10 +211,10 @@ def build_action_kwargs(action, kwargs):
                 action_kwargs[param[1]] = kwargs[param[0]]
             else:
                 action_kwargs[param] = kwargs[param]
-    elif isinstance(action.required_params, type(None)):
+    elif not action.required_params:
         return {}
     else:
-        raise InvalidInputError("This should be impossible.")
+        raise InvalidInputError("You either didn't provide functions or required_params was not an instance of list or NoneType.")
 
     return action_kwargs
 
