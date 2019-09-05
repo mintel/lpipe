@@ -1,10 +1,12 @@
 import base64
 import importlib
+import inspect
 import json
 import logging
 import shlex
 from collections import namedtuple
 from enum import Enum
+from typing import cast, get_type_hints
 
 import requests
 from decouple import config
@@ -12,10 +14,18 @@ from decouple import config
 from lpipe import kinesis, sqs
 from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
 from lpipe.logging import ServerlessLogger
-from lpipe.payload import InvalidPayload, Param, validate_payload
 from lpipe.utils import get_nested, batch
 
-Action = namedtuple("Action", "required_params functions paths")
+
+class Action:
+    def __init__(self, functions=[], paths=[], required_params=None):
+        assert functions or paths
+        self.functions = functions
+        self.paths = paths
+        self.required_params = required_params
+
+    def __repr__(self):
+        return f"Action(functions={self.functions},paths={self.paths})"
 
 
 class QueueType(Enum):
@@ -131,8 +141,11 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         for action in paths[path]:
             assert isinstance(action, Action)
 
-            # Build action kwargs
-            action_kwargs = build_action_kwargs(action, kwargs)
+            # Build action kwargs and basic type checking
+            try:
+                action_kwargs = build_action_kwargs(action, {"logger": logger, **kwargs})
+            except (TypeError, AssertionError) as e:
+                raise InvalidInputError(f"Failed to run {path.name} {action}") from e
 
             # Run action functions
             for f in action.functions:
@@ -144,8 +157,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                             "function": f.__name__,
                         }
                     ):
+                        # Validate type hints
                         logger.log("Executing function.")
-                        f(logger=logger, **action_kwargs)
+                        f(**{**action_kwargs, "logger": logger})
                 except Exception as e:
                     logger.error(f"Skipped {path.name} {f.__name__} because: {e}")
 
@@ -180,12 +194,9 @@ def build_action_kwargs(action, kwargs):
         dict: validated kwargs required by action
     """
     action_kwargs = {}
-    if isinstance(action.required_params, dict):
-        try:
-            action_kwargs = validate_payload(kwargs, action.required_params)
-        except InvalidPayload as e:
-            raise InvalidInputError(f"Missing or malformed param.") from e
-    elif isinstance(action.required_params, list):
+    if not action.required_params and action.functions:
+        action_kwargs = validate_signature(action.functions, kwargs)
+    elif action.required_params and isinstance(action.required_params, list):
         for param in action.required_params:
             param_name = param[0] if isinstance(param, tuple) else param
             try:
@@ -199,12 +210,66 @@ def build_action_kwargs(action, kwargs):
                 action_kwargs[param[1]] = kwargs[param[0]]
             else:
                 action_kwargs[param] = kwargs[param]
+    elif isinstance(action.required_params, type(None)):
+        return {}
     else:
-        raise InvalidInputError(
-            f"Path ({path}) action's required_params was not a dict or list."
-        )
+        raise InvalidInputError("This should be impossible.")
 
     return action_kwargs
+
+
+def _merge(functions, iter):
+    output = {}
+    for f in functions:
+        i = iter(f)
+        for k, v in i.items():
+            if k in output:
+                try:
+                    assert v == output[k]
+                except AssertionError as e:
+                    raise TypeError(f"Incompatible functions {functions}: {k} represented as both {v} and {output[k]}") from e
+            else:
+                output[k] = v
+    return output
+
+
+def merge_signatures(functions):
+    return _merge(functions, lambda f: inspect.signature(f).parameters)
+
+
+def merge_type_hints(functions):
+    return _merge(functions, lambda f: get_type_hints(f))
+
+
+def get_defaults(signature):
+    return {k: v.default for k, v in signature.items() if v.default is not inspect.Parameter.empty}
+
+
+def validate_signature(functions, params):
+    signature = merge_signatures(functions)
+    defaults = get_defaults(signature)
+    hints = merge_type_hints(functions)
+
+    validated = {}
+    for k, v in signature.items():
+        if k in params:
+            p = params[k]
+            if k in hints:
+                t = hints[k]
+                try:
+                    assert isinstance(p, t)
+                except AssertionError as e:
+                    raise TypeError(f"Type of {k} should be {t} not {type(p)}.") from e
+                validated[k] = p
+            else:
+                validated[k] = p
+        elif k not in ("kwargs", "args"):
+            try:
+                assert k in defaults
+            except AssertionError as e:
+                raise TypeError(f"{functions} missing required argument: '{k}'") from e
+
+    return validated
 
 
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):

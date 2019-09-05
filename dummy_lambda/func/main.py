@@ -8,7 +8,7 @@ from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
 
 
-def test_func(foo, logger, **kwargs):
+def test_func(foo: str, logger, **kwargs):
     if not foo:
         raise Exception("Missing required parameter 'foo'")
     logger.log("test_func success")
@@ -20,36 +20,54 @@ def test_func_no_params(logger, **kwargs):
     return True
 
 
+def test_func_default_param(logger, foo: str = "bar", **kwargs):
+    logger.log("test_func_default_param success")
+    return True
+
+
 class Path(Enum):
     TEST_FUNC = 1
-    TEST_FUNC_NO_PARAMS = 2
-    TEST_PATH = 3
-    TEST_FUNC_AND_PATH = 4
-    MULTI_TEST_FUNC_NO_PARAMS = 5
-    TEST_RENAME_PARAM = 6
-    TEST_KINESIS_PATH = 7
-    TEST_SQS_PATH = 8
+    TEST_FUNC_EXPLICIT_PARAMS = 2
+    TEST_FUNC_NO_PARAMS = 3
+    TEST_FUNC_BLANK_PARAMS = 4
+    TEST_FUNC_DEFAULT_PARAM = 5
+    TEST_PATH = 6
+    TEST_FUNC_AND_PATH = 7
+    MULTI_TEST_FUNC = 8
+    MULTI_TEST_FUNC_NO_PARAMS = 9
+    TEST_RENAME_PARAM = 10
+    TEST_KINESIS_PATH = 11
+    TEST_SQS_PATH = 12
 
 
 PATHS = {
-    Path.TEST_FUNC: [Action(required_params=["foo"], functions=[test_func], paths=[])],
-    Path.TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=[test_func_no_params], paths=[])
+    Path.TEST_FUNC: [Action(functions=[test_func])],
+    Path.TEST_FUNC_EXPLICIT_PARAMS: [Action(required_params=["foo"], functions=[test_func])],
+    Path.TEST_FUNC_NO_PARAMS: [Action(functions=[test_func_no_params])],
+    Path.TEST_FUNC_BLANK_PARAMS: [
+        Action(required_params=[], functions=[test_func_no_params])
     ],
     Path.TEST_PATH: [
-        Action(required_params=["foo"], functions=[], paths=[Path.TEST_FUNC])
+        Action(required_params=["foo"], paths=[Path.TEST_FUNC])
     ],
     Path.TEST_FUNC_AND_PATH: [
-        Action(required_params=["foo"], functions=[test_func], paths=[Path.TEST_FUNC])
+        Action(functions=[test_func], paths=[Path.TEST_FUNC])
+    ],
+    Path.MULTI_TEST_FUNC: [
+        Action(functions=[test_func]),
+        Action(
+            functions=[test_func],
+            paths=[Path.TEST_FUNC],
+        ),
+        Action(paths=[Path.TEST_FUNC_BLANK_PARAMS]),
     ],
     Path.MULTI_TEST_FUNC_NO_PARAMS: [
-        Action(required_params=[], functions=[test_func_no_params], paths=[]),
+        Action(functions=[test_func_no_params]),
         Action(
-            required_params=[],
             functions=[test_func_no_params],
-            paths=[Path.TEST_FUNC_NO_PARAMS],
+            paths=[Path.TEST_FUNC_BLANK_PARAMS],
         ),
-        Action(required_params=[], functions=[], paths=[Path.TEST_FUNC_NO_PARAMS]),
+        Action(paths=[Path.TEST_FUNC_BLANK_PARAMS]),
     ],
     Path.TEST_RENAME_PARAM: [
         Action(
@@ -57,13 +75,11 @@ PATHS = {
                 ("bar", "foo")
             ],  # Tuples indicate the param should be mapped to a different name.
             functions=[test_func],
-            paths=[],
         )
     ],
     Path.TEST_KINESIS_PATH: [
         Action(
             required_params=["uri"],
-            functions=[],
             paths=[
                 Queue(
                     name=config("TEST_KINESIS_STREAM"),
@@ -76,7 +92,6 @@ PATHS = {
     Path.TEST_SQS_PATH: [
         Action(
             required_params=["uri"],
-            functions=[],
             paths=[
                 Queue(
                     name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
@@ -84,6 +99,7 @@ PATHS = {
             ],
         )
     ],
+    Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],
 }
 
 

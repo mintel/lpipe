@@ -17,8 +17,16 @@ DATA = {
         "payload": [{"path": "TEST_FUNC", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 0}},
     },
+    "FUNC_EXPLICIT_PARAMS": {
+        "payload": [{"path": "TEST_FUNC_EXPLICIT_PARAMS", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
     "FUNC_NO_PARAMS": {
         "payload": [{"path": "TEST_FUNC_NO_PARAMS", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "FUNC_BLANK_PARAMS": {
+        "payload": [{"path": "TEST_FUNC_BLANK_PARAMS", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "PATH": {
@@ -27,6 +35,10 @@ DATA = {
     },
     "FUNC_AND_PATH": {
         "payload": [{"path": "TEST_FUNC_AND_PATH", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "MULTI_FUNC": {
+        "payload": [{"path": "MULTI_TEST_FUNC", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "MULTI_FUNC_NO_PARAMS": {
@@ -43,6 +55,14 @@ DATA = {
     },
     "SQS_OUTPUT": {
         "payload": [{"path": "TEST_SQS_PATH", "kwargs": {"uri": "foo"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PARAM": {
+        "payload": [{"path": "TEST_FUNC_DEFAULT_PARAM", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PARAM_SET": {
+        "payload": [{"path": "TEST_FUNC_DEFAULT_PARAM", "kwargs": {"foo": "wiz"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
 }
