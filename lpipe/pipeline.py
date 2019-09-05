@@ -6,7 +6,7 @@ import logging
 import shlex
 from collections import namedtuple
 from enum import Enum
-from typing import cast, get_type_hints
+from typing import get_type_hints
 
 import requests
 from decouple import config
