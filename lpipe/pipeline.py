@@ -143,9 +143,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 
             # Build action kwargs and validate type hints
             try:
-                action_kwargs = build_action_kwargs(
-                    action, {"logger": logger, **kwargs}
-                )
+                action_kwargs = build_action_kwargs(action, {"logger": None, **kwargs})
             except (TypeError, AssertionError) as e:
                 raise InvalidInputError(f"Failed to run {path.name} {action}") from e
 
@@ -214,7 +212,9 @@ def build_action_kwargs(action, kwargs):
     elif not action.required_params:
         return {}
     else:
-        raise InvalidInputError("You either didn't provide functions or required_params was not an instance of list or NoneType.")
+        raise InvalidInputError(
+            "You either didn't provide functions or required_params was not an instance of list or NoneType."
+        )
 
     return action_kwargs
 
