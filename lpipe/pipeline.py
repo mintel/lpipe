@@ -221,6 +221,7 @@ def build_action_kwargs(action, kwargs):
 
 
 def _merge(functions, iter):
+    """Get a set of attributes describing several functions."""
     output = {}
     for f in functions:
         i = iter(f)
@@ -237,15 +238,18 @@ def _merge(functions, iter):
     return output
 
 
-def merge_signatures(functions):
+def _merge_signatures(functions):
+    """Create a combined list of function parameters."""
     return _merge(functions, lambda f: inspect.signature(f).parameters)
 
 
-def merge_type_hints(functions):
+def _merge_type_hints(functions):
+    """Create a combined list of function parameter type hints."""
     return _merge(functions, lambda f: get_type_hints(f))
 
 
-def get_defaults(signature):
+def _get_defaults(signature):
+    """Create a dict of function parameters with defaults."""
     return {
         k: v.default
         for k, v in signature.items()
@@ -254,9 +258,18 @@ def get_defaults(signature):
 
 
 def validate_signature(functions, params):
-    signature = merge_signatures(functions)
-    defaults = get_defaults(signature)
-    hints = merge_type_hints(functions)
+    """Validate and build kwargs for a set of functions based on their signatures.
+
+    Args:
+        functions (list): functions
+        params (dict): kwargs provided in the event's message
+
+    Returns:
+        dict: validated kwargs required by the provided set of functions
+    """
+    signature = _merge_signatures(functions)
+    defaults = _get_defaults(signature)
+    hints = _merge_type_hints(functions)
 
     validated = {}
     for k, v in signature.items():
