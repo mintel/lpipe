@@ -141,7 +141,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         for action in paths[path]:
             assert isinstance(action, Action)
 
-            # Build action kwargs and basic type checking
+            # Build action kwargs and validate type hints
             try:
                 action_kwargs = build_action_kwargs(
                     action, {"logger": logger, **kwargs}
@@ -159,7 +159,6 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                             "function": f.__name__,
                         }
                     ):
-                        # Validate type hints
                         logger.log("Executing function.")
                         f(**{**action_kwargs, "logger": logger})
                 except Exception as e:
