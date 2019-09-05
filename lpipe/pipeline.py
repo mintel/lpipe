@@ -160,7 +160,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                         }
                     ):
                         logger.log("Executing function.")
-                        f(**{**action_kwargs, "logger": logger})
+                        f(**action_kwargs, logger=logger)
                 except Exception as e:
                     logger.error(f"Skipped {path.name} {f.__name__} because: {e}")
 
