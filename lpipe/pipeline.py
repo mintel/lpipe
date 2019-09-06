@@ -6,6 +6,7 @@ import logging
 import shlex
 from collections import namedtuple
 from enum import Enum
+from types import FunctionType
 from typing import get_type_hints
 
 import requests
@@ -149,6 +150,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 
             # Run action functions
             for f in action.functions:
+                assert isinstance(f, FunctionType)
                 try:
                     with logger.context(
                         bind={
@@ -179,7 +181,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
             logger.log("Pushing record.")
         put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
     else:
-        logger.info(f"Path should be a string, Path, or Queue {path})")
+        logger.info(f"Path should be a string (path name), Path (path Enum), or Queue: {path})")
 
 
 def build_action_kwargs(action, kwargs):
@@ -220,9 +222,17 @@ def build_action_kwargs(action, kwargs):
 
 
 def _merge(functions, iter):
-    """Get a set of attributes describing several functions."""
+    """Get a set of attributes describing several functions.
+
+    Args:
+        functions (list): list of functions (FunctionType)
+
+    Raises:
+        TypeError: If two functions have the same parameter name with different types or defaults.
+    """
     output = {}
     for f in functions:
+        assert isinstance(f, FunctionType)
         i = iter(f)
         for k, v in i.items():
             if k in output:
