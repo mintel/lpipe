@@ -181,7 +181,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
             logger.log("Pushing record.")
         put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
     else:
-        logger.info(f"Path should be a string (path name), Path (path Enum), or Queue: {path})")
+        logger.info(
+            f"Path should be a string (path name), Path (path Enum), or Queue: {path})"
+        )
 
 
 def build_action_kwargs(action, kwargs):
