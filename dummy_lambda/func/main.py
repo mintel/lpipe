@@ -4,8 +4,13 @@ import sentry_sdk
 from decouple import config
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
+from lpipe.exceptions import FailButContinue
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
+from lpipe.sentry import push_context
+
+
+sentry_sdk.init(dsn=config("SENTRY_DSN"), integrations=[AwsLambdaIntegration()])
 
 
 def test_func(foo: str, logger, **kwargs):
@@ -25,6 +30,14 @@ def test_func_default_param(logger, foo: str = "bar", **kwargs):
     return True
 
 
+def throw_exception(**kwargs):
+    try:
+        raise Exception("Test event. Please ignore.")
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise FailButContinue from e
+
+
 class Path(Enum):
     TEST_FUNC = 1
     TEST_FUNC_EXPLICIT_PARAMS = 2
@@ -38,6 +51,7 @@ class Path(Enum):
     TEST_RENAME_PARAM = 10
     TEST_KINESIS_PATH = 11
     TEST_SQS_PATH = 12
+    TEST_SENTRY = 13
 
 
 PATHS = {
@@ -92,12 +106,16 @@ PATHS = {
         )
     ],
     Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],
+    Path.TEST_SENTRY: [
+        Action(required_params=[], functions=[throw_exception], paths=[])
+    ],
 }
 
 
+@push_context(
+    {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
+)
 def lambda_handler(event, context):
-    sentry_sdk.init(dsn=config("SENTRY_DSN"), integrations=[AwsLambdaIntegration()])
-
     # logger.persist is designed for debug use.
     # Stores all logs in the logger and adds them to the function response.
     logger = ServerlessLogger(process="dummy-lambda")

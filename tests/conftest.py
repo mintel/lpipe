@@ -23,6 +23,12 @@ localstack = pytest_localstack.patch_fixture(
 )
 
 
+def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
+    status = lpipe.utils.get_nested(response, keys)
+    assert status // 100 == code
+    return status
+
+
 @backoff.on_exception(
     backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
 )
@@ -67,7 +73,7 @@ def sqs(localstack, sqs_queues):
     @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
     def create_queue(q):
         response = client.create_queue(QueueName=queue_name)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] // 100 == 2
+        check_status(response)
         return response["QueueUrl"]
 
     def queue_exists(q):
@@ -85,8 +91,7 @@ def sqs(localstack, sqs_queues):
                 queues[queue_name] = create_queue(queue_name)
             except ClientError:
                 exists = queue_exists(queue_name)
-                logger.error(f"queue_exists({queue_name}) -> {exists}")
-                raise
+                raise Exception(f"queue_exists({queue_name}) -> {exists}") from e
 
         for queue_name in sqs_queues:
             while not queue_exists(queue_name):
@@ -118,8 +123,12 @@ def environment(sqs_queues, kinesis_streams):
 
 
 @pytest.fixture(scope="class")
-def mock_lambda(localstack, environment):
-    lambda_client = boto3.client("lambda")
+def lam(localstack, environment):
+    name = "my_lambda"
+    runtime = "python3.6"
+    role = "foobar"
+    handler = "main.lambda_handler"
+    path = "dummy_lambda/dist/build.zip"
 
     def clean_env(env):
         for k, v in env.items():
@@ -132,17 +141,22 @@ def mock_lambda(localstack, environment):
                 env[k] = ""
         return env
 
-    with open(str(Path().absolute() / "dummy_lambda/dist/build.zip"), "rb") as f:
-        zipped_code = f.read()
-        lambda_client.create_function(
-            FunctionName="my_lambda",
-            Runtime="python3.6",
-            Role="foobar",
-            Handler="main.lambda_handler",
-            Code=dict(ZipFile=zipped_code),
-            Timeout=300,
-            Environment={"Variables": clean_env(environment(MOCK_AWS=True))},
-        )
+    try:
+        lam = boto3.client("lambda")
+        with open(str(Path().absolute() / path), "rb") as f:
+            zipped_code = f.read()
+            lam.create_function(
+                FunctionName=name,
+                Runtime=runtime,
+                Role=role,
+                Handler=handler,
+                Code=dict(ZipFile=zipped_code),
+                Timeout=300,
+                Environment={"Variables": clean_env(environment(MOCK_AWS=True))},
+            )
+        yield
+    finally:
+        lam.delete_function(FunctionName=name)
 
 
 @pytest.fixture
@@ -155,13 +169,11 @@ def invoke_lambda():
             LogType="Tail",
             Payload=json.dumps(payload).encode(),
         )
-        body = response["Payload"].read()
+        body = response["Payload"].read().decode("utf-8")
         try:
             body = json.loads(body)
         except:
             pass
-        print(response)
-        print(body)
         return response, body
 
     return inv

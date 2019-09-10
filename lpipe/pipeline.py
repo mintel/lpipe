@@ -13,7 +13,13 @@ import requests
 from decouple import config
 
 from lpipe import kinesis, sqs
-from lpipe.exceptions import InvalidInputError, InvalidPathError, GraphQLError
+from lpipe.exceptions import (
+    FailButContinue,
+    FailCatastrophically,
+    InvalidInputError,
+    InvalidPathError,
+    GraphQLError,
+)
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import get_nested, batch
 
@@ -124,6 +130,11 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
         except json.JSONDecodeError as e:
             logger.error(f"Payload contained invalid json. {e}")
             continue
+        except FailButContinue:
+            # successes += 0
+            continue  # programmer can say "bad thing happened but keep going"
+        except FailCatastrophically:
+            raise
 
     return build_response(n_records=len(records), n_ok=successes, logger=logger)
 
@@ -161,8 +172,18 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                     ):
                         logger.log("Executing function.")
                         f(**action_kwargs, logger=logger)
+                except (
+                    FailButContinue,
+                    FailCatastrophically,
+                    InvalidInputError,
+                    InvalidPathError,
+                    json.JSONDecodeError,
+                ):
+                    raise
                 except Exception as e:
-                    logger.error(f"Skipped {path.name} {f.__name__} because: {e}")
+                    logger.error(
+                        f"Skipped {path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
+                    )
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:

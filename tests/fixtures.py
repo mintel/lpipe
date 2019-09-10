@@ -1,4 +1,4 @@
-ENV = {}
+ENV = {"FUNCTION_NAME": "dummy_lambda"}
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {
@@ -64,5 +64,9 @@ DATA = {
     "DEFAULT_PARAM_SET": {
         "payload": [{"path": "TEST_FUNC_DEFAULT_PARAM", "kwargs": {"foo": "wiz"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "SENTRY_ERROR": {
+        "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 0}},
     },
 }
