@@ -365,4 +365,4 @@ def put_record(queue, record):
     elif queue.type == QueueType.SQS:
         if queue.name and not queue.url:
             queue.url = sqs.get_queue_url(queue.name)
-        return sqs.put_message(queue_url=queue.url, message=record)
+        return sqs.put_message(queue_url=queue.url, data=record)

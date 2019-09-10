@@ -52,8 +52,8 @@ def batch_put_messages(queue_url, messages, batch_size=10, **kwargs):
     return tuple(responses)
 
 
-def put_message(queue_url, message, **kwargs):
-    return batch_put_messages(queue_url=queue_url, messages=[message])
+def put_message(queue_url, data, **kwargs):
+    return batch_put_messages(queue_url=queue_url, messages=[data])
 
 
 @mock_sqs

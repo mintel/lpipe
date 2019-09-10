@@ -9,8 +9,8 @@ from decouple import config
 from lpipe.utils import batch, hash
 
 
-def build(r):
-    data = json.dumps(r, sort_keys=True)
+def build(record_data):
+    data = json.dumps(record_data, sort_keys=True)
     return {"Data": data, "PartitionKey": hash(data)}
 
 
