@@ -171,7 +171,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                         }
                     ):
                         logger.log("Executing function.")
-                        f(**action_kwargs, logger=logger)
+                        f(**{**action_kwargs, "logger": logger})
                 except (
                     FailButContinue,
                     FailCatastrophically,
