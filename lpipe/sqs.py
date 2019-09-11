@@ -9,12 +9,12 @@ from decouple import config
 from lpipe.utils import batch, hash
 
 
-def build(message_data, message_group_id):
-    data = json.dumps(message_data, sort_keys=True)
-    message = {"Id": hash(data), "MessageBody": data}
+def build(message_data, message_group_id=None):
+    d = json.dumps(message_data, sort_keys=True)
+    m = {"Id": hash(d), "MessageBody": d}
     if message_group_id:
-        message["MessageGroupId"] = message_group_id
-    return message
+        m["MessageGroupId"] = str(message_group_id)
+    return m
 
 
 def mock_sqs(func):
