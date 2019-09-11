@@ -10,11 +10,11 @@ from lpipe.utils import batch, hash
 
 
 def build(message_data, message_group_id=None):
-    d = json.dumps(message_data, sort_keys=True)
-    m = {"Id": hash(d), "MessageBody": d}
+    data = json.dumps(message_data, sort_keys=True)
+    msg = {"Id": hash(data), "MessageBody": data}
     if message_group_id:
-        m["MessageGroupId"] = str(message_group_id)
-    return m
+        msg["MessageGroupId"] = str(message_group_id)
+    return msg
 
 
 def mock_sqs(func):
