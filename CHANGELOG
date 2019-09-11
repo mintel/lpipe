@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [1.0.2]
+### Changed
+- Switched function call back to nested dictionary expansion to fix "f() got multiple values for keyword argument 'logger'"
+- Add kinesis build() tests matching those added for sqs in 1.0.1
+
 ## [1.0.1] - 2019-09-11
 ### Changed
 - Updated lpipe.sqs.build to accept message_group_id
