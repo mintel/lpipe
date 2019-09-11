@@ -9,9 +9,12 @@ from decouple import config
 from lpipe.utils import batch, hash
 
 
-def build(r):
-    data = json.dumps(r, sort_keys=True)
-    return {"Id": hash(data), "MessageBody": data}
+def build(message_data, message_group_id):
+    data = json.dumps(message_data, sort_keys=True)
+    message = {"Id": hash(data), "MessageBody": data}
+    if message_group_id:
+        message["MessageGroupId"] = message_group_id
+    return message
 
 
 def mock_sqs(func):
@@ -39,21 +42,26 @@ def mock_sqs(func):
 
 
 @mock_sqs
-def batch_put_messages(queue_url, messages, batch_size=10, **kwargs):
+def batch_put_messages(
+    queue_url, messages, batch_size=10, message_group_id=None, **kwargs
+):
     """Put messages into a sqs queue, batched by the maximum of 10."""
     assert batch_size <= 10  # send_message_batch will fail otherwise
     client = boto3.client("sqs")
     responses = []
     for b in batch(messages, batch_size):
         response = client.send_message_batch(
-            QueueUrl=queue_url, Entries=[build(message) for message in b]
+            QueueUrl=queue_url,
+            Entries=[build(message, message_group_id) for message in b],
         )
         responses.append(response)
     return tuple(responses)
 
 
-def put_message(queue_url, data, **kwargs):
-    return batch_put_messages(queue_url=queue_url, messages=[data])
+def put_message(queue_url, data, message_group_id=None, **kwargs):
+    return batch_put_messages(
+        queue_url=queue_url, messages=[data], message_group_id=message_group_id
+    )
 
 
 @mock_sqs
