@@ -15,7 +15,6 @@ structlog = "*"
 [dev-packages]
 advbumpversion = "*"
 backoff = "*"
-black = "===19.3b0"
 isort = "*"
 pipenv = "*"
 pytest = "*"
