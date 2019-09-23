@@ -157,7 +157,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
             try:
                 action_kwargs = build_action_kwargs(action, {"logger": None, **kwargs})
             except (TypeError, AssertionError) as e:
-                raise InvalidInputError(f"Failed to run {path.name} {action}") from e
+                raise InvalidInputError(
+                    f"Failed to run {path.name} {action} due to {e}"
+                ) from e
 
             # Run action functions
             for f in action.functions:
