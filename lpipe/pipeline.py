@@ -156,6 +156,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
             # Build action kwargs and validate type hints
             try:
                 action_kwargs = build_action_kwargs(action, {"logger": None, **kwargs})
+                action_kwargs.pop("logger", None)
             except (TypeError, AssertionError) as e:
                 raise InvalidInputError(
                     f"Failed to run {path.name} {action} due to {e}"
