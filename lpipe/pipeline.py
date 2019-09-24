@@ -137,7 +137,7 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
         except FailButContinue as e:
             # successes += 0
             capture(e)
-            continue  # programmer can say "bad thing happened but keep going"
+            continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
             raise
 
