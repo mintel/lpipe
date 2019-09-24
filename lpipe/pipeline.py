@@ -7,7 +7,7 @@ import shlex
 from collections import namedtuple
 from enum import Enum
 from types import FunctionType
-from typing import get_type_hints
+from typing import get_type_hints, Union
 
 import requests
 from decouple import config
@@ -313,7 +313,15 @@ def validate_signature(functions, params):
             if k in hints:
                 t = hints[k]
                 try:
-                    assert isinstance(p, t)
+                    if hasattr(t, "__origin__") and t.__origin__ is Union:
+                        # https://stackoverflow.com/a/49471187
+                        annotation = t
+                        checks = []
+                        for t in annotation.__args__:
+                            checks.append(isinstance(p, t))
+                        assert Any(checks)
+                    else:
+                        assert isinstance(p, t)
                 except AssertionError as e:
                     raise TypeError(f"Type of {k} should be {t} not {type(p)}.") from e
                 validated[k] = p
