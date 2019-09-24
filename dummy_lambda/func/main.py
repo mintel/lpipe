@@ -32,7 +32,7 @@ def throw_exception(**kwargs):
     try:
         raise Exception("Test event. Please ignore.")
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        sentry.capture(e)
         raise FailButContinue from e
 
 
