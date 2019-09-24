@@ -8,7 +8,7 @@ from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
 def init(dsn: str = None):
     if not dsn:
-        dsn = config("SENTRY_DSN", default=None)
+        dsn = config("SENTRY_DSN")
     _init(dsn=dsn, integrations=[AwsLambdaIntegration()])
 
 
