@@ -29,4 +29,4 @@ def push_context(context):
 
 def capture(e):
     if config("SENTRY_DSN", default=None):
-        capture(e)
+        capture_exception(e)
