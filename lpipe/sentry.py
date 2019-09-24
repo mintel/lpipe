@@ -1,7 +1,7 @@
 from functools import wraps
 
 from decouple import config
-from sentry_sdk import push_scope
+from sentry_sdk import capture_exception, push_scope
 
 
 def _env(*keys):
@@ -25,3 +25,8 @@ def push_context(context):
         return wrapper
 
     return decorator
+
+
+def capture(e):
+    if config("SENTRY_DSN", default=None):
+        capture(e)

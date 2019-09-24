@@ -21,6 +21,7 @@ from lpipe.exceptions import (
     GraphQLError,
 )
 from lpipe.logging import ServerlessLogger
+from lpipe.sentry import capture
 from lpipe.utils import get_nested, batch
 
 
@@ -123,15 +124,19 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
             successes += 1
         except InvalidInputError as e:
             logger.error(str(e))
+            capture(e)
             continue  # Drop poisoned records on the floor.
         except InvalidPathError as e:
             logger.error(f"Payload specified an invalid path. {e}")
+            capture(e)
             continue
         except json.JSONDecodeError as e:
             logger.error(f"Payload contained invalid json. {e}")
+            capture(e)
             continue
-        except FailButContinue:
+        except FailButContinue as e:
             # successes += 0
+            capture(e)
             continue  # programmer can say "bad thing happened but keep going"
         except FailCatastrophically:
             raise
