@@ -315,7 +315,7 @@ def validate_signature(functions, params):
                 try:
                     if hasattr(t, "__origin__") and t.__origin__ is Union:
                         # https://stackoverflow.com/a/49471187
-                        assert any([isinstance(p, t) for t in annotation.__args__])
+                        assert any([isinstance(p, typ) for typ in t.__args__])
                     else:
                         assert isinstance(p, t)
                 except AssertionError as e:
