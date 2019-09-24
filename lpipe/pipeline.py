@@ -192,6 +192,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                     logger.error(
                         f"Skipped {path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
                     )
+                    capture(e)
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
