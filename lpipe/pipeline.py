@@ -12,7 +12,7 @@ from typing import get_type_hints, Union
 import requests
 from decouple import config
 
-from lpipe import kinesis, sqs
+from lpipe import kinesis, sentry, sqs
 from lpipe.exceptions import (
     FailButContinue,
     FailCatastrophically,
@@ -21,7 +21,6 @@ from lpipe.exceptions import (
     GraphQLError,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.sentry import capture
 from lpipe.utils import get_nested, batch
 
 
@@ -124,19 +123,19 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
             successes += 1
         except InvalidInputError as e:
             logger.error(str(e))
-            capture(e)
+            sentry.capture(e)
             continue  # Drop poisoned records on the floor.
         except InvalidPathError as e:
             logger.error(f"Payload specified an invalid path. {e}")
-            capture(e)
+            sentry.capture(e)
             continue
         except json.JSONDecodeError as e:
             logger.error(f"Payload contained invalid json. {e}")
-            capture(e)
+            sentry.capture(e)
             continue
         except FailButContinue as e:
             # successes += 0
-            capture(e)
+            sentry.capture(e)
             continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
             raise
@@ -192,7 +191,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                     logger.error(
                         f"Skipped {path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
                     )
-                    capture(e)
+                    sentry.capture(e)
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
