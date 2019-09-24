@@ -319,7 +319,7 @@ def validate_signature(functions, params):
                         checks = []
                         for t in annotation.__args__:
                             checks.append(isinstance(p, t))
-                        assert Any(checks)
+                        assert any(checks)
                     else:
                         assert isinstance(p, t)
                 except AssertionError as e:

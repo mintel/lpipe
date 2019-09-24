@@ -122,3 +122,19 @@ class TestValidateSignature:
         params = {"a": 1, "b": 2}
         validated_params = validate_signature([_test_func], params)
         assert validated_params == {"a": 1, "b": 2}
+
+    def test_hint_with_none_default_but_set(self):
+        def _test_func(a, b, c: str = None, **kwargs):
+            pass
+
+        params = {"a": 1, "b": 2, "c": "foobar"}
+        validated_params = validate_signature([_test_func], params)
+        assert validated_params == {"a": 1, "b": 2, "c": "foobar"}
+
+    def test_hint_with_none_default_raises(self):
+        def _test_func(a, b, c: str = None, **kwargs):
+            pass
+
+        params = {"a": 1, "b": 2, "c": 3}
+        with pytest.raises(TypeError):
+            validate_signature([_test_func], params)
