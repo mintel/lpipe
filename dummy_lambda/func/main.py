@@ -1,16 +1,14 @@
 from enum import Enum
 
-import sentry_sdk
 from decouple import config
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
+from lpipe import sentry
 from lpipe.exceptions import FailButContinue
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
-from lpipe.sentry import push_context
 
 
-sentry_sdk.init(dsn=config("SENTRY_DSN"), integrations=[AwsLambdaIntegration()])
+sentry.init()
 
 
 def test_func(foo: str, logger, **kwargs):
@@ -34,7 +32,7 @@ def throw_exception(**kwargs):
     try:
         raise Exception("Test event. Please ignore.")
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        sentry.capture(e)
         raise FailButContinue from e
 
 
@@ -112,7 +110,7 @@ PATHS = {
 }
 
 
-@push_context(
+@sentry.push_context(
     {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
 )
 def lambda_handler(event, context):
