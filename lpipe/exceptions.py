@@ -7,13 +7,17 @@ class GraphQLError(Exception):
 
 
 class FailButContinue(Exception):
-    """Raise this in your lambda if you want to break with an error but continue processing."""
+    """Raise this to log an exception and, optionally, send it to sentry, but continue processing more records."""
 
     pass
 
 
 class FailCatastrophically(Exception):
-    """Raise this in your lambda if you want the lambda to error out completely."""
+    """Raise this if you want your lambda to error.
+
+    This will often result in poisioned records persisting. Only use it if you
+    have CRITICAL data in the queue.
+    """
 
     pass
 
