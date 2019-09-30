@@ -16,7 +16,7 @@ dist-if:
 .PHONY: dist-if
 
 dummy_lambda/dist/.venv:
-	$(WITH_PIPENV) pip install -r <(pipenv lock -r) --upgrade --target dummy_lambda/dist/.venv --ignore-installed
+	$(WITH_PIPENV) pip install -r <(PIPENV_QUIET=1 pipenv --bare lock -r) --ignore-installed --target $@
 
 build-test-lambda: dist-if
 	@make dummy_lambda/dist/.venv
