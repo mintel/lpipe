@@ -36,8 +36,9 @@ class Action:
 
 
 class QueueType(Enum):
-    KINESIS = 1
-    SQS = 2
+    RAW = 1
+    KINESIS = 2
+    SQS = 3
 
 
 class Queue:
@@ -349,6 +350,15 @@ def validate_signature(functions, params):
     return validated
 
 
+def get_raw_payload(record, required_fields=["path", "kwargs"]):
+    """Decode and validate a json record."""
+    assert record is not None
+    payload = record if isinstance(record, dict) else json.loads(record)
+    for field in required_fields:
+        assert field in payload
+    return payload
+
+
 def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
     """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
@@ -370,6 +380,8 @@ def get_sqs_payload(record, required_fields=["path", "kwargs"]):
 
 
 def get_records_from_event(queue_type, event):
+    if queue_type == QueueType.RAW:
+        return event
     if queue_type == QueueType.KINESIS:
         return event["Records"]
     if queue_type == QueueType.SQS:
@@ -377,6 +389,8 @@ def get_records_from_event(queue_type, event):
 
 
 def get_payload_from_record(queue_type, record):
+    if queue_type == QueueType.RAW:
+        return get_raw_payload(record)
     if queue_type == QueueType.KINESIS:
         return get_kinesis_payload(record)
     if queue_type == QueueType.SQS:
@@ -386,7 +400,7 @@ def get_payload_from_record(queue_type, record):
 def put_record(queue, record):
     if queue.type == QueueType.KINESIS:
         return kinesis.put_record(stream_name=queue.name, data=record)
-    elif queue.type == QueueType.SQS:
+    if queue.type == QueueType.SQS:
         if queue.name and not queue.url:
             queue.url = sqs.get_queue_url(queue.name)
         return sqs.put_message(queue_url=queue.url, data=record)

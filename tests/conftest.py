@@ -180,6 +180,18 @@ def invoke_lambda():
 
 
 @pytest.fixture
+def raw_payload():
+    def raw(payloads):
+        def fmt(p):
+            return json.dumps(p).encode()
+
+        records = [fmt(p) for p in payloads]
+        return records
+
+    return raw
+
+
+@pytest.fixture
 def kinesis_payload():
     def kin(payloads):
         def fmt(p):

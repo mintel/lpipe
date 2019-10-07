@@ -38,6 +38,27 @@ class TestProcessEvents:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
     )
+    def test_process_event_fixtures_raw(
+        self, raw_payload, environment, fixture_name, fixture
+    ):
+        with utils.set_env(environment()):
+            logger = ServerlessLogger(level=logging.DEBUG, process="my_lambda")
+            logger.persist = True
+            from dummy_lambda.func.main import Path, PATHS
+
+            response = process_event(
+                event=raw_payload(fixture["payload"]),
+                path_enum=Path,
+                paths=PATHS,
+                queue_type=QueueType.RAW,
+                logger=logger,
+            )
+            utils.emit_logs(response)
+            assert fixture["response"]["stats"] == response["stats"]
+
+    @pytest.mark.parametrize(
+        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
+    )
     def test_process_event_fixtures_kinesis(
         self, kinesis_payload, environment, fixture_name, fixture
     ):
