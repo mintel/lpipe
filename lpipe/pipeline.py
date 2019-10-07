@@ -98,7 +98,9 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
         logger.error(f"'records' is not a list {e}")
         return build_response(0, 0, logger)
 
+    output = []
     for record in records:
+        ret = None
         try:
             try:
                 payload = get_payload_from_record(queue_type, record)
@@ -113,7 +115,7 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
 
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
-            execute_path(
+            ret = execute_path(
                 path=payload["path"],
                 kwargs=payload["kwargs"],
                 logger=logger,
@@ -139,14 +141,20 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
             continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
             raise
+        output.append(ret)
 
-    return build_response(n_records=len(records), n_ok=successes, logger=logger)
+    response = build_response(n_records=len(records), n_ok=successes, logger=logger)
+    if any(output):
+        response["output"] = output
+    return response
 
 
 def execute_path(path, kwargs, logger, path_enum, paths):
     """Execute functions, paths, and shortcuts in a Path."""
     if not logger:
         logger = ServerlessLogger()
+
+    ret = None
 
     if isinstance(path, Enum) or isinstance(path, str):  # PATH
         try:
@@ -178,7 +186,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                         }
                     ):
                         logger.log("Executing function.")
-                        f(**{**action_kwargs, "logger": logger})
+                        ret = f(**{**action_kwargs, "logger": logger})
                 except (
                     FailButContinue,
                     FailCatastrophically,
@@ -195,7 +203,9 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
-                execute_path(path_descriptor, action_kwargs, logger, path_enum, paths)
+                ret = execute_path(
+                    path_descriptor, action_kwargs, logger, path_enum, paths
+                )
     elif isinstance(path, Queue):  # SHORTCUT
         queue = path
         assert isinstance(queue.type, QueueType)
@@ -213,6 +223,8 @@ def execute_path(path, kwargs, logger, path_enum, paths):
         logger.info(
             f"Path should be a string (path name), Path (path Enum), or Queue: {path})"
         )
+
+    return ret
 
 
 def build_action_kwargs(action, kwargs):

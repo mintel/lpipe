@@ -36,6 +36,10 @@ def throw_exception(**kwargs):
         raise FailButContinue from e
 
 
+def return_foobar(**kwargs):
+    return "foobar"
+
+
 class Path(Enum):
     TEST_FUNC = 1
     TEST_FUNC_EXPLICIT_PARAMS = 2
@@ -50,6 +54,7 @@ class Path(Enum):
     TEST_KINESIS_PATH = 11
     TEST_SQS_PATH = 12
     TEST_SENTRY = 13
+    TEST_RET = 14
 
 
 PATHS = {
@@ -104,9 +109,8 @@ PATHS = {
         )
     ],
     Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],
-    Path.TEST_SENTRY: [
-        Action(required_params=[], functions=[throw_exception], paths=[])
-    ],
+    Path.TEST_SENTRY: [Action(functions=[throw_exception])],
+    Path.TEST_RET: [Action(functions=[return_foobar])],
 }
 
 

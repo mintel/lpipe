@@ -69,4 +69,8 @@ DATA = {
         "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 0}},
     },
+    "MANUAL_OUTPUT": {
+        "payload": [{"path": "TEST_RET", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 1}, "output": ["foobar"]},
+    },
 }
