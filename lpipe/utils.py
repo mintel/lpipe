@@ -72,6 +72,6 @@ def emit_logs(body, logger=None):
     logger = logger if logger else logging.getLogger()
     if isinstance(body, dict) and "logs" in body:
         for log in body["logs"]:
-            logger.log(level=logging.INFO, msg=log["event"])
+            logger.info(log)
     elif isinstance(body, str):
         logger.log(level=logging.INFO, msg=body)

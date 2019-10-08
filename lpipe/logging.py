@@ -8,9 +8,6 @@ from structlog.processors import JSONRenderer, TimeStamper
 
 
 class ServerlessLogger:
-    persist = False
-    events = []
-
     def __init__(self, level=logging.INFO, **kwargs):
         self._logger = wrap_logger(
             structlog.get_logger(),
@@ -18,6 +15,8 @@ class ServerlessLogger:
         )
         self.level = level
         self.bind(**kwargs)
+        self.events = []
+        self.persist = False
 
     def bind(self, **kwargs):
         """Bind context data to logger by forwarding to structlog.
@@ -74,7 +73,12 @@ class ServerlessLogger:
             return
         else:
             if self.persist:
-                self.events.append({"level": level, "event": event})
+                event = {
+                    "level": level,
+                    "event": event,
+                    "context": self._logger._context,
+                }
+                self.events.append(event)
             return self._log(event, level=level, **kwargs)
 
     def debug(self, event, **kwargs):
