@@ -81,7 +81,7 @@ def build_response(n_records, n_ok, logger):
     return response
 
 
-def process_event(event, path_enum, paths, queue_type, logger=None):
+def process_event(event, path_enum, paths, queue_type, logger=None, debug=False):
     if not logger:
         logger = ServerlessLogger()
 
@@ -147,6 +147,10 @@ def process_event(event, path_enum, paths, queue_type, logger=None):
     response = build_response(n_records=len(records), n_ok=successes, logger=logger)
     if any(output):
         response["output"] = output
+    if debug:
+        debug = {}
+        debug["records"] = records
+        response["debug"] = debug
     return response
 
 
