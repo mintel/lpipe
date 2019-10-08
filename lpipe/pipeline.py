@@ -21,7 +21,7 @@ from lpipe.exceptions import (
     GraphQLError,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import get_nested, batch
+from lpipe.utils import get_nested, batch, AutoEncoder
 
 
 class Action:
@@ -77,7 +77,7 @@ def build_response(n_records, n_ok, logger):
         "stats": {"received": n_records, "successes": n_ok},
     }
     if hasattr(logger, "events") and logger.events:
-        response["logs"] = logger.events
+        response["logs"] = json.dumps(logger.events, cls=AutoEncoder)
     return response
 
 
@@ -148,9 +148,7 @@ def process_event(event, path_enum, paths, queue_type, logger=None, debug=False)
     if any(output):
         response["output"] = output
     if debug:
-        debug = {}
-        debug["records"] = records
-        response["debug"] = debug
+        response["debug"] = json.dumps(records, cls=AutoEncoder)
     return response
 
 

@@ -19,10 +19,7 @@ from tests import fixtures
 logger = logging.getLogger()
 
 localstack = pytest_localstack.patch_fixture(
-    services=["kinesis", "sqs", "lambda"],
-    scope="class",
-    autouse=False,
-    localstack_version="0.10.4",
+    services=["kinesis", "sqs", "lambda"], scope="class", autouse=False
 )
 
 

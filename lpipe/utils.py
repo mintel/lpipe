@@ -71,7 +71,21 @@ def set_env(env):
 def emit_logs(body, logger=None):
     logger = logger if logger else logging.getLogger()
     if isinstance(body, dict) and "logs" in body:
-        for log in body["logs"]:
-            logger.info(log)
+        try:
+            logs = json.loads(body["logs"])
+        except TypeError:
+            logs = body["logs"]
+        for log in logs:
+            logger.info(f"{log}")
     elif isinstance(body, str):
         logger.log(level=logging.INFO, msg=body)
+
+
+class AutoEncoder(json.JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, Enum):
+                return str(obj)
+            return obj._json()
+        except AttributeError:
+            return json.JSONEncoder.default(self, obj)
