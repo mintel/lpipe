@@ -41,6 +41,12 @@ def get_nested(d, keys):
     return head
 
 
+def set_nested(d, keys, value):
+    for key in keys[:-1]:
+        d = d.setdefault(key, {})
+    d[keys[-1]] = value
+
+
 def _set_env(env):
     state = {}
     for k, v in env.items():
