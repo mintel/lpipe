@@ -21,9 +21,13 @@ def test_dict_helpers():
     my_dict = {}
 
     utils.set_nested(my_dict, ["a", "b", "c", "wiz", "bang"], "test1")
+    assert my_dict == {"a": {"b": {"c": {"wiz": {"bang": "test1"}}}}}
+
     val = utils.get_nested(my_dict, ["a", "b", "c", "wiz", "bang"])
     assert val == "test1"
 
     utils.set_nested(my_dict, ["a", "b", "c", "wiz", "bang"], "test2")
+    assert my_dict == {"a": {"b": {"c": {"wiz": {"bang": "test2"}}}}}
+
     val = utils.get_nested(my_dict, ["a", "b", "c", "wiz", "bang"])
     assert val == "test2"
