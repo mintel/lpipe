@@ -33,9 +33,16 @@ def batch(iterable, n=1):
 
 def get_nested(d, keys):
     """Given a dictionary, fetch a key nested several levels deep."""
+
+    def _get(head, k):
+        if isinstance(head, dict):
+            return head.get(k, {})
+        else:
+            return getattr(head, k, {})
+
     head = d
     for k in keys:
-        head = head.get(k, {})
+        head = _get(head, k)
         if not head:
             return head
     return head
