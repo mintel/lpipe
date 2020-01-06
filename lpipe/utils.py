@@ -102,3 +102,10 @@ class AutoEncoder(json.JSONEncoder):
             return obj._json()
         except AttributeError:
             return json.JSONEncoder.default(self, obj)
+
+
+def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
+    """Check status of an AWS API response."""
+    status = get_nested(response, keys)
+    assert status // 100 == code
+    return status

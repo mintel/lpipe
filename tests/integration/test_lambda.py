@@ -23,5 +23,5 @@ class TestMockLambda:
             name="my_lambda", payload=kinesis_payload(fixture["payload"])
         )
         utils.emit_logs(body)
-        assert response["StatusCode"] // 100 == 2
+        assert utils.check_status(response, keys=["StatusCode"])
         assert fixture["response"]["stats"] == body["stats"]

@@ -23,12 +23,6 @@ localstack = pytest_localstack.patch_fixture(
 )
 
 
-def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
-    status = lpipe.utils.get_nested(response, keys)
-    assert status // 100 == code
-    return status
-
-
 @backoff.on_exception(
     backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
 )
@@ -73,7 +67,7 @@ def sqs(localstack, sqs_queues):
     @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
     def create_queue(q):
         response = client.create_queue(QueueName=queue_name)
-        check_status(response)
+        lpipe.utils.check_status(response)
         return response["QueueUrl"]
 
     def queue_exists(q):
