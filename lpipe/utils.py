@@ -109,3 +109,19 @@ def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
     status = get_nested(response, keys)
     assert status // 100 == code
     return status
+
+
+def get_enum_value(e, k):
+    """Get the value of an enum key.
+
+    Args:
+        e: A string or reference to an enumerated values
+        k: The name of an enumerated value
+
+    Raises:
+        InvalidPathError: if key `k` is not in Enum `e`
+    """
+    try:
+        return e[str(k).split(".")[-1]]
+    except KeyError as err:
+        raise InvalidPathError(err)

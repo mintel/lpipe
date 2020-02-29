@@ -21,7 +21,7 @@ from lpipe.exceptions import (
     GraphQLError,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import get_nested, batch, AutoEncoder
+from lpipe.utils import get_enum_value, get_nested, batch, AutoEncoder
 
 
 class Action:
@@ -81,7 +81,15 @@ def build_response(n_records, n_ok, logger):
     return response
 
 
-def process_event(event, path_enum, paths, queue_type, logger=None, debug=False):
+def process_event(
+    event,
+    path_enum,
+    paths,
+    queue_type,
+    logger=None,
+    debug=False,
+    default_path: Enum = None,
+):
     if not logger:
         logger = ServerlessLogger()
 
@@ -104,7 +112,11 @@ def process_event(event, path_enum, paths, queue_type, logger=None, debug=False)
         ret = None
         try:
             try:
-                payload = get_payload_from_record(queue_type, record)
+                payload = get_payload_from_record(
+                    queue_type=queue_type,
+                    record=record,
+                    validate=False if default_path else True,
+                )
             except AssertionError as e:
                 raise InvalidInputError(
                     "'path' or 'kwargs' missing from payload."
@@ -116,9 +128,10 @@ def process_event(event, path_enum, paths, queue_type, logger=None, debug=False)
 
             with logger.context(bind={"payload": payload}):
                 logger.log(f"Record received.")
+
             ret = execute_path(
-                path=payload["path"],
-                kwargs=payload["kwargs"],
+                path=default_path if default_path else payload["path"],
+                kwargs=payload if default_path else payload["kwargs"],
                 logger=logger,
                 path_enum=path_enum,
                 paths=paths,
@@ -160,10 +173,7 @@ def execute_path(path, kwargs, logger, path_enum, paths):
     ret = None
 
     if isinstance(path, Enum) or isinstance(path, str):  # PATH
-        try:
-            path = path_enum[str(path).split(".")[-1]]
-        except KeyError as e:
-            raise InvalidPathError(e)
+        path = get_enum_value(path_enum, path)
 
         for action in paths[path]:
             assert isinstance(action, Action)
@@ -352,33 +362,22 @@ def validate_signature(functions, params):
     return validated
 
 
-def get_raw_payload(record, required_fields=["path", "kwargs"]):
+def get_raw_payload(record):
     """Decode and validate a json record."""
     assert record is not None
-    payload = record if isinstance(record, dict) else json.loads(record)
-    for field in required_fields:
-        assert field in payload
-    return payload
+    return record if isinstance(record, dict) else json.loads(record)
 
 
-def get_kinesis_payload(record, required_fields=["path", "kwargs"]):
+def get_kinesis_payload(record):
     """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
-    payload = json.loads(
-        base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8"))
-    )
-    for field in required_fields:
-        assert field in payload
-    return payload
+    return json.loads(base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8")))
 
 
-def get_sqs_payload(record, required_fields=["path", "kwargs"]):
+def get_sqs_payload(record):
     """Decode and validate an sqs record."""
     assert record["body"] is not None
-    payload = json.loads(record["body"])
-    for field in required_fields:
-        assert field in payload
-    return payload
+    return json.loads(record["body"])
 
 
 def get_records_from_event(queue_type, event):
@@ -390,13 +389,19 @@ def get_records_from_event(queue_type, event):
         return event["Records"]
 
 
-def get_payload_from_record(queue_type, record):
+def get_payload_from_record(queue_type, record, validate=True):
     if queue_type == QueueType.RAW:
-        return get_raw_payload(record)
+        payload = get_raw_payload(record)
     if queue_type == QueueType.KINESIS:
-        return get_kinesis_payload(record)
+        payload = get_kinesis_payload(record)
     if queue_type == QueueType.SQS:
-        return get_sqs_payload(record)
+        payload = get_sqs_payload(record)
+
+    if validate:
+        for field in ["path", "kwargs"]:
+            assert field in payload
+
+    return payload
 
 
 def put_record(queue, record):

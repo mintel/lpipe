@@ -97,3 +97,41 @@ class TestProcessEvents:
             )
             utils.emit_logs(response)
             assert fixture["response"]["stats"] == response["stats"]
+
+    @pytest.mark.parametrize(
+        "fixture_name,fixture",
+        [
+            (
+                "TEST_FUNC",
+                {
+                    "payload": [{"foo": "bar"}],
+                    "response": {"stats": {"received": 1, "successes": 1}},
+                },
+            ),
+            (
+                "TEST_FUNC_MANY",
+                {
+                    "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
+                    "response": {"stats": {"received": 3, "successes": 3}},
+                },
+            ),
+        ],
+    )
+    def test_process_event_default_path(
+        self, sqs_payload, environment, fixture_name, fixture
+    ):
+        with utils.set_env(environment()):
+            logger = ServerlessLogger(level=logging.DEBUG, process="my_lambda")
+            logger.persist = True
+            from dummy_lambda.func.main import Path, PATHS
+
+            response = process_event(
+                event=sqs_payload(fixture["payload"]),
+                path_enum=Path,
+                paths=PATHS,
+                queue_type=QueueType.SQS,
+                logger=logger,
+                default_path="TEST_FUNC",
+            )
+            utils.emit_logs(response)
+            assert fixture["response"]["stats"] == response["stats"]
