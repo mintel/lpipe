@@ -5,9 +5,9 @@ import json
 import logging
 import shlex
 from collections import namedtuple
-from enum import Enum
+from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import get_type_hints, Union
+from typing import Union, get_type_hints
 
 import requests
 from decouple import config
@@ -16,12 +16,28 @@ from lpipe import kinesis, sentry, sqs
 from lpipe.exceptions import (
     FailButContinue,
     FailCatastrophically,
+    GraphQLError,
     InvalidInputError,
     InvalidPathError,
-    GraphQLError,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import get_enum_value, get_nested, batch, AutoEncoder
+from lpipe.utils import AutoEncoder, batch, get_enum_value, get_nested
+
+
+class Payload:
+    def __init__(self, path: Enum, kwargs: dict):
+        self.path = path
+        self.kwargs = kwargs
+
+    def validate(self, path_enum: EnumMeta):
+        assert isinstance(get_enum_value(path_enum, self.path), path_enum)
+        return self
+
+    def to_dict(self) -> dict:
+        return {"path": self.path, "kwargs": self.kwargs}
+
+    def __repr__(self):
+        return f"Payload<{self.to_dict()}>"
 
 
 class Action:
@@ -71,7 +87,7 @@ class Queue:
         self.url = url
 
 
-def build_response(n_records, n_ok, logger):
+def build_response(n_records, n_ok, logger) -> dict:
     response = {
         "event": "Finished.",
         "stats": {"received": n_records, "successes": n_ok},
@@ -83,9 +99,9 @@ def build_response(n_records, n_ok, logger):
 
 def process_event(
     event,
-    path_enum,
-    paths,
-    queue_type,
+    path_enum: EnumMeta,
+    paths: dict,
+    queue_type: QueueType,
     logger=None,
     debug=False,
     default_path: Enum = None,
@@ -108,33 +124,32 @@ def process_event(
         return build_response(0, 0, logger)
 
     output = []
-    for record in records:
+    for encoded_record in records:
         ret = None
         try:
             try:
-                payload = get_payload_from_record(
+                _record = get_payload_from_record(
                     queue_type=queue_type,
-                    record=record,
+                    record=encoded_record,
                     validate=False if default_path else True,
                 )
+                _path = default_path if default_path else _record["path"]
+                _kwargs = _record if default_path else _record["kwargs"]
+                payload = Payload(_path, _kwargs).validate(path_enum)
             except AssertionError as e:
                 raise InvalidInputError(
                     "'path' or 'kwargs' missing from payload."
                 ) from e
             except TypeError as e:
                 raise InvalidInputError(
-                    f"Bad record provided for queue type {queue_type}. {record}"
+                    f"Bad record provided for queue type {queue_type}. {encoded_record}"
                 ) from e
 
-            with logger.context(bind={"payload": payload}):
+            with logger.context(bind={"payload": payload.to_dict()}):
                 logger.log(f"Record received.")
 
             ret = execute_path(
-                path=default_path if default_path else payload["path"],
-                kwargs=payload if default_path else payload["kwargs"],
-                logger=logger,
-                path_enum=path_enum,
-                paths=paths,
+                payload=payload, path_enum=path_enum, paths=paths, logger=logger
             )
             successes += 1
         except InvalidInputError as e:
@@ -165,22 +180,24 @@ def process_event(
     return response
 
 
-def execute_path(path, kwargs, logger, path_enum, paths):
+def execute_path(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
     """Execute functions, paths, and shortcuts in a Path."""
     if not logger:
         logger = ServerlessLogger()
 
     ret = None
 
-    if isinstance(path, Enum) or isinstance(path, str):  # PATH
-        path = get_enum_value(path_enum, path)
+    if isinstance(payload.path, Enum) or isinstance(payload.path, str):  # PATH
+        path = get_enum_value(path_enum, payload.path)
 
         for action in paths[path]:
             assert isinstance(action, Action)
 
             # Build action kwargs and validate type hints
             try:
-                action_kwargs = build_action_kwargs(action, {"logger": None, **kwargs})
+                action_kwargs = build_action_kwargs(
+                    action, {"logger": None, **payload.kwargs}
+                )
                 action_kwargs.pop("logger", None)
             except (TypeError, AssertionError) as e:
                 raise InvalidInputError(
@@ -200,6 +217,8 @@ def execute_path(path, kwargs, logger, path_enum, paths):
                     ):
                         logger.log("Executing function.")
                         ret = f(**{**action_kwargs, "logger": logger})
+                        if isinstance(ret, Payload):
+                            ret = execute_path(ret, path_enum, paths, logger)
                 except (
                     FailButContinue,
                     FailCatastrophically,
@@ -216,31 +235,30 @@ def execute_path(path, kwargs, logger, path_enum, paths):
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
-                ret = execute_path(
-                    path_descriptor, action_kwargs, logger, path_enum, paths
-                )
-    elif isinstance(path, Queue):  # SHORTCUT
-        queue = path
+                _payload = Payload(path_descriptor, action_kwargs)
+                ret = execute_path(_payload, path_enum, paths, logger)
+    elif isinstance(payload.path, Queue):  # SHORTCUT
+        queue = payload.path
         assert isinstance(queue.type, QueueType)
         with logger.context(
             bind={
                 "path": queue.path,
                 "queue_type": queue.type,
                 "queue_name": queue.name,
-                "kwargs": kwargs,
+                "kwargs": payload.kwargs,
             }
         ):
             logger.log("Pushing record.")
-        put_record(queue=queue, record={"path": queue.path, "kwargs": kwargs})
+        put_record(queue=queue, record={"path": queue.path, "kwargs": payload.kwargs})
     else:
         logger.info(
-            f"Path should be a string (path name), Path (path Enum), or Queue: {path})"
+            f"Path should be a string (path name), Path (path Enum), or Queue: {payload.path})"
         )
 
     return ret
 
 
-def build_action_kwargs(action, kwargs):
+def build_action_kwargs(action: namedtuple, kwargs: dict) -> dict:
     """Build dictionary of kwargs for a specific action.
 
     Args:
@@ -277,7 +295,7 @@ def build_action_kwargs(action, kwargs):
     return action_kwargs
 
 
-def _merge(functions, iter):
+def _merge(functions: list, iter):
     """Get a set of attributes describing several functions.
 
     Args:
@@ -303,12 +321,12 @@ def _merge(functions, iter):
     return output
 
 
-def _merge_signatures(functions):
+def _merge_signatures(functions: list):
     """Create a combined list of function parameters."""
     return _merge(functions, lambda f: inspect.signature(f).parameters)
 
 
-def _merge_type_hints(functions):
+def _merge_type_hints(functions: list):
     """Create a combined list of function parameter type hints."""
     return _merge(functions, lambda f: get_type_hints(f))
 
@@ -322,7 +340,7 @@ def _get_defaults(signature):
     }
 
 
-def validate_signature(functions, params):
+def validate_signature(functions: list, params: dict) -> dict:
     """Validate and build kwargs for a set of functions based on their signatures.
 
     Args:
@@ -362,25 +380,25 @@ def validate_signature(functions, params):
     return validated
 
 
-def get_raw_payload(record):
+def get_raw_payload(record) -> dict:
     """Decode and validate a json record."""
     assert record is not None
     return record if isinstance(record, dict) else json.loads(record)
 
 
-def get_kinesis_payload(record):
+def get_kinesis_payload(record) -> dict:
     """Decode and validate a kinesis record."""
     assert record["kinesis"]["data"] is not None
     return json.loads(base64.b64decode(bytearray(record["kinesis"]["data"], "utf-8")))
 
 
-def get_sqs_payload(record):
+def get_sqs_payload(record) -> dict:
     """Decode and validate an sqs record."""
     assert record["body"] is not None
     return json.loads(record["body"])
 
 
-def get_records_from_event(queue_type, event):
+def get_records_from_event(queue_type: QueueType, event):
     if queue_type == QueueType.RAW:
         return event
     if queue_type == QueueType.KINESIS:
@@ -389,22 +407,20 @@ def get_records_from_event(queue_type, event):
         return event["Records"]
 
 
-def get_payload_from_record(queue_type, record, validate=True):
+def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dict:
     if queue_type == QueueType.RAW:
         payload = get_raw_payload(record)
     if queue_type == QueueType.KINESIS:
         payload = get_kinesis_payload(record)
     if queue_type == QueueType.SQS:
         payload = get_sqs_payload(record)
-
     if validate:
         for field in ["path", "kwargs"]:
             assert field in payload
-
     return payload
 
 
-def put_record(queue, record):
+def put_record(queue: Queue, record: dict):
     if queue.type == QueueType.KINESIS:
         return kinesis.put_record(stream_name=queue.name, data=record)
     if queue.type == QueueType.SQS:
