@@ -25,3 +25,5 @@ class TestMockLambda:
         utils.emit_logs(body)
         assert utils.check_status(response, keys=["StatusCode"])
         assert fixture["response"]["stats"] == body["stats"]
+        if "output" in fixture["response"]:
+            assert fixture["response"]["output"] == body["output"]
