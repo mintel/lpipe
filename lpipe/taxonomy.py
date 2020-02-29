@@ -2,7 +2,8 @@ import re
 import shlex
 
 import requests
-from lpipe.exceptions import InvalidTaxonomyURI, GraphQLError
+
+from lpipe.exceptions import GraphQLError, InvalidTaxonomyURI
 
 
 def query_graphql(raw_query, endpoint):

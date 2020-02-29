@@ -1,11 +1,11 @@
 import logging
 
 import pytest
+from tests import fixtures
 
 from lpipe import sqs, utils
 from lpipe.logging import ServerlessLogger
-from lpipe.pipeline import process_event, put_record, Action, Queue, QueueType
-from tests import fixtures
+from lpipe.pipeline import Action, Queue, QueueType, process_event, put_record
 
 
 @pytest.mark.postbuild

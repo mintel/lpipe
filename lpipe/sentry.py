@@ -2,7 +2,9 @@ from contextlib import contextmanager
 from functools import wraps
 
 from decouple import config
-from sentry_sdk import capture_exception, configure_scope, init as _init, push_scope
+from sentry_sdk import capture_exception, configure_scope
+from sentry_sdk import init as _init
+from sentry_sdk import push_scope
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
 

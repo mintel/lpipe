@@ -1,12 +1,12 @@
 import pytest
 
 from lpipe.pipeline import (
+    QueueType,
     get_kinesis_payload,
     get_payload_from_record,
     get_records_from_event,
     get_sqs_payload,
     validate_signature,
-    QueueType,
 )
 
 

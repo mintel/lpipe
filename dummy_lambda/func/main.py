@@ -7,7 +7,6 @@ from lpipe.exceptions import FailButContinue
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event
 
-
 sentry.init()
 
 
