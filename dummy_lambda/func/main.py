@@ -5,8 +5,7 @@ from decouple import config
 from lpipe import sentry
 from lpipe.exceptions import FailButContinue
 from lpipe.logging import ServerlessLogger
-from lpipe.pipeline import Action, Queue, QueueType, process_event
-
+from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
 
 sentry.init()
 
@@ -28,16 +27,31 @@ def test_func_default_param(logger, foo: str = "bar", **kwargs):
     return True
 
 
+def test_func_trigger_first(logger, **kwargs):
+    return Payload(Path.TEST_TRIGGER_SECOND, kwargs)
+
+
+def test_func_multi_trigger(logger, **kwargs):
+    try:
+        return [
+            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+        ]
+    except Exception as e:
+        logger.log("Failed to return multiple payloads.")
+        raise FailButContinue from e
+
+
+def return_foobar(**kwargs):
+    return "foobar"
+
+
 def throw_exception(**kwargs):
     try:
         raise Exception("Test event. Please ignore.")
     except Exception as e:
         sentry.capture(e)
         raise FailButContinue from e
-
-
-def return_foobar(**kwargs):
-    return "foobar"
 
 
 class Path(Enum):
@@ -55,6 +69,9 @@ class Path(Enum):
     TEST_SQS_PATH = 12
     TEST_SENTRY = 13
     TEST_RET = 14
+    TEST_TRIGGER_FIRST = 15
+    TEST_TRIGGER_SECOND = 16
+    TEST_MULTI_TRIGGER = 17
 
 
 PATHS = {
@@ -111,6 +128,9 @@ PATHS = {
     Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],
     Path.TEST_SENTRY: [Action(functions=[throw_exception])],
     Path.TEST_RET: [Action(functions=[return_foobar])],
+    Path.TEST_TRIGGER_FIRST: [Action(functions=[test_func_trigger_first])],
+    Path.TEST_TRIGGER_SECOND: [Action(functions=[return_foobar])],
+    Path.TEST_MULTI_TRIGGER: [Action(functions=[test_func_multi_trigger])],
 }
 
 

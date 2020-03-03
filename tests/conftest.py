@@ -12,9 +12,9 @@ import pytest_localstack
 from botocore.exceptions import ClientError
 from decouple import config
 from pytest_localstack.service_checks import SERVICE_CHECKS
+from tests import fixtures
 
 import lpipe
-from tests import fixtures
 
 logger = logging.getLogger()
 

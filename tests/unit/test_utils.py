@@ -1,4 +1,7 @@
 import json
+from enum import Enum
+
+import pytest
 
 from lpipe import utils
 
@@ -31,3 +34,19 @@ def test_dict_helpers():
 
     val = utils.get_nested(my_dict, ["a", "b", "c", "wiz", "bang"])
     assert val == "test2"
+
+
+class Path(Enum):
+    FOO = 1
+
+
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [
+        ("enum", {"e": Path, "k": Path.FOO}),
+        ("string", {"e": Path, "k": "FOO"}),
+        ("enum_cast_to_string", {"e": Path, "k": "Path.FOO"}),
+    ],
+)
+def test_get_enum_value(fixture_name, fixture):
+    assert utils.get_enum_value(**fixture) == Path.FOO

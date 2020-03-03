@@ -1,11 +1,11 @@
 import logging
 
 import pytest
+from tests import fixtures
 
 from lpipe import utils
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, QueueType, process_event
-from tests import fixtures
 
 
 @pytest.mark.postbuild
@@ -25,3 +25,5 @@ class TestMockLambda:
         utils.emit_logs(body)
         assert utils.check_status(response, keys=["StatusCode"])
         assert fixture["response"]["stats"] == body["stats"]
+        if "output" in fixture["response"]:
+            assert fixture["response"]["output"] == body["output"]
