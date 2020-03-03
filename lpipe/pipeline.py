@@ -73,14 +73,17 @@ class Queue:
 
 
 class Payload:
-    def __init__(self, path: Enum, kwargs: dict):
+    def __init__(self, path, kwargs: dict):
         self.path = path
         self.kwargs = kwargs
 
-    def validate(self, path_enum: EnumMeta):
-        assert isinstance(
-            get_enum_value(path_enum, self.path), path_enum
-        ) or isinstance(self.path, Queue)
+    def validate(self, path_enum: EnumMeta = None):
+        if path_enum:
+            assert isinstance(
+                get_enum_value(path_enum, self.path), path_enum
+            ) or isinstance(self.path, Queue)
+        else:
+            assert isinstance(self.path, Queue)
         return self
 
     def to_dict(self) -> dict:
@@ -199,10 +202,11 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
 
     ret = None
 
-    if isinstance(payload.path, Enum) or isinstance(payload.path, str):  # PATH
-        path = get_enum_value(path_enum, payload.path)
+    if isinstance(payload.path, str):
+        payload.path = get_enum_value(path_enum, payload.path)
 
-        for action in paths[path]:
+    if isinstance(payload.path, Enum):  # PATH
+        for action in paths[payload.path]:
             assert isinstance(action, Action)
 
             # Build action kwargs and validate type hints
@@ -213,7 +217,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                 action_kwargs.pop("logger", None)
             except (TypeError, AssertionError) as e:
                 raise InvalidInputError(
-                    f"Failed to run {path.name} {action} due to {e}"
+                    f"Failed to run {payload.path.name} {action} due to {e}"
                 ) from e
 
             # Run action functions
@@ -224,7 +228,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                     with logger.context(
                         bind={
                             "kwargs": action_kwargs,
-                            "path": path.name,
+                            "path": payload.path.name,
                             "function": f.__name__,
                         }
                     ):
@@ -263,7 +267,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                     raise
                 except Exception as e:
                     logger.error(
-                        f"Skipped {path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
+                        f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
                     )
                     sentry.capture(e)
 

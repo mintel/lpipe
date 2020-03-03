@@ -1,6 +1,10 @@
+from enum import Enum
+
 import pytest
 
 from lpipe.pipeline import (
+    Payload,
+    Queue,
     QueueType,
     get_kinesis_payload,
     get_payload_from_record,
@@ -54,16 +58,54 @@ class TestGetPayloadFromRecord:
         payload = kinesis_payload(records)
         records = get_records_from_event(QueueType.KINESIS, payload)
         for r in records:
-            record = get_payload_from_record(QueueType.KINESIS, r)
-            assert "path" in record and record["path"] == "foo"
+            payload = get_payload_from_record(QueueType.KINESIS, r)
+            assert "path" in payload and payload["path"] == "foo"
 
     def test_sqs(self, sqs_payload):
         records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
         payload = sqs_payload(records)
         records = get_records_from_event(QueueType.SQS, payload)
         for r in records:
-            record = get_payload_from_record(QueueType.SQS, r)
-            assert "path" in record and record["path"] == "foo"
+            payload = get_payload_from_record(QueueType.SQS, r)
+            assert "path" in payload and payload["path"] == "foo"
+
+
+class TestQueue:
+    def test_name(self):
+        q = Queue(QueueType.SQS, "FOO", name="foobar")
+        assert q
+
+    def test_url(self):
+        q = Queue(QueueType.SQS, "FOO", url="http://www.foo.com/bar")
+        assert q
+
+
+class Path(Enum):
+    FOO = 1
+
+
+class TestPayload:
+    @pytest.mark.parametrize(
+        "fixture_name,fixture",
+        [
+            ("enum", {"path": Path.FOO, "kwargs": {"foo": "bar"}}),
+            ("string", {"path": "FOO", "kwargs": {"foo": "bar"}}),
+            ("empty_kwargs", {"path": Path.FOO, "kwargs": {}}),
+        ],
+    )
+    def test_payload(self, fixture_name, fixture):
+        Payload(**fixture).validate(Path)
+
+    @pytest.mark.parametrize(
+        "fixture_name,fixture",
+        [
+            ("enum", {"type": QueueType.SQS, "path": Path.FOO, "name": "foobar"}),
+            ("string", {"type": QueueType.SQS, "path": "FOO", "name": "foobar"}),
+        ],
+    )
+    def test_queue_payload(self, fixture_name, fixture):
+        q = Queue(**fixture)
+        Payload(q, {"foo": "bar"}).validate()
 
 
 class TestValidateSignature:
