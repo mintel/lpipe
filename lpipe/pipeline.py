@@ -131,13 +131,13 @@ def process_event(
         ret = None
         try:
             try:
-                _record = get_payload_from_record(
+                _payload = get_payload_from_record(
                     queue_type=queue_type,
                     record=encoded_record,
                     validate=False if default_path else True,
                 )
-                _path = default_path if default_path else _record["path"]
-                _kwargs = _record if default_path else _record["kwargs"]
+                _path = default_path if default_path else _payload["path"]
+                _kwargs = _payload if default_path else _payload["kwargs"]
                 payload = Payload(_path, _kwargs).validate(path_enum)
             except AssertionError as e:
                 raise InvalidInputError(
