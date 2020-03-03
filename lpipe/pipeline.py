@@ -4,10 +4,11 @@ import inspect
 import json
 import logging
 import shlex
+import warnings
 from collections import namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Union, get_type_hints
+from typing import Callable, Union, get_type_hints
 
 import requests
 from decouple import config
@@ -22,22 +23,6 @@ from lpipe.exceptions import (
 )
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import AutoEncoder, batch, get_enum_value, get_nested
-
-
-class Payload:
-    def __init__(self, path: Enum, kwargs: dict):
-        self.path = path
-        self.kwargs = kwargs
-
-    def validate(self, path_enum: EnumMeta):
-        assert isinstance(get_enum_value(path_enum, self.path), path_enum)
-        return self
-
-    def to_dict(self) -> dict:
-        return {"path": self.path, "kwargs": self.kwargs}
-
-    def __repr__(self):
-        return f"Payload<{self.to_dict()}>"
 
 
 class Action:
@@ -85,6 +70,24 @@ class Queue:
         self.path = path
         self.name = name
         self.url = url
+
+
+class Payload:
+    def __init__(self, path: Enum, kwargs: dict):
+        self.path = path
+        self.kwargs = kwargs
+
+    def validate(self, path_enum: EnumMeta):
+        assert isinstance(
+            get_enum_value(path_enum, self.path), path_enum
+        ) or isinstance(self.path, Queue)
+        return self
+
+    def to_dict(self) -> dict:
+        return {"path": self.path, "kwargs": self.kwargs}
+
+    def __repr__(self):
+        return f"Payload<{self.to_dict()}>"
 
 
 def build_response(n_records, n_ok, logger) -> dict:
@@ -148,7 +151,7 @@ def process_event(
             with logger.context(bind={"payload": payload.to_dict()}):
                 logger.log(f"Record received.")
 
-            ret = execute_path(
+            ret = execute_payload(
                 payload=payload, path_enum=path_enum, paths=paths, logger=logger
             )
             successes += 1
@@ -166,6 +169,7 @@ def process_event(
             continue
         except FailButContinue as e:
             # successes += 0
+            logger.debug(str(e))
             sentry.capture(e)
             continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
@@ -180,7 +184,15 @@ def process_event(
     return response
 
 
-def execute_path(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
+def execute_path(path, kwargs, logger, path_enum, paths):
+    warnings.warn(
+        "execute_path is deprecated in favor of execute_payload", DeprecationWarning
+    )
+    payload = Payload(path, kwargs).validate(path_enum)
+    return execute_payload(payload, path_enum, paths, logger)
+
+
+def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
     """Execute functions, paths, and shortcuts in a Path."""
     if not logger:
         logger = ServerlessLogger()
@@ -208,6 +220,7 @@ def execute_path(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
             for f in action.functions:
                 assert isinstance(f, FunctionType)
                 try:
+                    # TODO: if ret, set _last_output
                     with logger.context(
                         bind={
                             "kwargs": action_kwargs,
@@ -217,8 +230,29 @@ def execute_path(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                     ):
                         logger.log("Executing function.")
                         ret = f(**{**action_kwargs, "logger": logger})
-                        if isinstance(ret, Payload):
-                            ret = execute_path(ret, path_enum, paths, logger)
+
+                    if ret:
+                        _payloads = []
+                        try:
+                            if isinstance(ret, Payload):
+                                _payloads.append(ret.validate(path_enum))
+                            elif isinstance(ret, list):
+                                for r in ret:
+                                    if isinstance(r, Payload):
+                                        _payloads.append(r.validate(path_enum))
+                        except Exception as e:
+                            raise FailButContinue(
+                                f"Something went wrong while extracting Payloads from a function return value. {ret}"
+                            ) from e
+
+                        for p in _payloads:
+                            logger.debug(f"Function returned a Payload. Executing. {p}")
+                            try:
+                                ret = execute_payload(p, path_enum, paths, logger)
+                            except Exception as e:
+                                raise FailButContinue(
+                                    f"Failed to execute returned Payload. {p}"
+                                ) from e
                 except (
                     FailButContinue,
                     FailCatastrophically,
@@ -236,7 +270,7 @@ def execute_path(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
                 _payload = Payload(path_descriptor, action_kwargs)
-                ret = execute_path(_payload, path_enum, paths, logger)
+                ret = execute_payload(_payload, path_enum, paths, logger)
     elif isinstance(payload.path, Queue):  # SHORTCUT
         queue = payload.path
         assert isinstance(queue.type, QueueType)

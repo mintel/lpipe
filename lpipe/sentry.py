@@ -1,10 +1,9 @@
 from contextlib import contextmanager
 from functools import wraps
 
+import sentry_sdk.init
 from decouple import config
-from sentry_sdk import capture_exception, configure_scope
-from sentry_sdk import init as _init
-from sentry_sdk import push_scope
+from sentry_sdk import capture_exception, configure_scope, push_scope
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
 
@@ -16,7 +15,7 @@ def _set_tags(scope, context):
 def init(dsn: str = None, context: dict = None):
     if not dsn:
         dsn = config("SENTRY_DSN")
-    _init(dsn=dsn, integrations=[AwsLambdaIntegration()])
+    sentry_sdk.init(dsn=dsn, integrations=[AwsLambdaIntegration()])
     if context:
         with configure_scope() as scope:
             _set_tags(scope, context)

@@ -31,8 +31,15 @@ def test_func_trigger_first(logger, **kwargs):
     return Payload(Path.TEST_TRIGGER_SECOND, kwargs)
 
 
-def test_func_trigger_second(**kwargs):
-    return "foobar"
+def test_func_multi_trigger(logger, **kwargs):
+    try:
+        return [
+            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+        ]
+    except Exception as e:
+        logger.log("Failed to return multiple payloads.")
+        raise FailButContinue from e
 
 
 def return_foobar(**kwargs):
@@ -64,6 +71,7 @@ class Path(Enum):
     TEST_RET = 14
     TEST_TRIGGER_FIRST = 15
     TEST_TRIGGER_SECOND = 16
+    TEST_MULTI_TRIGGER = 17
 
 
 PATHS = {
@@ -121,7 +129,8 @@ PATHS = {
     Path.TEST_SENTRY: [Action(functions=[throw_exception])],
     Path.TEST_RET: [Action(functions=[return_foobar])],
     Path.TEST_TRIGGER_FIRST: [Action(functions=[test_func_trigger_first])],
-    Path.TEST_TRIGGER_SECOND: [Action(functions=[test_func_trigger_second])],
+    Path.TEST_TRIGGER_SECOND: [Action(functions=[return_foobar])],
+    Path.TEST_MULTI_TRIGGER: [Action(functions=[test_func_multi_trigger])],
 }
 
 
