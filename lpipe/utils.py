@@ -111,6 +111,22 @@ def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
     return status
 
 
+def call(_callable, *args, **kwargs):
+    """Call boto3 function and check the AWS API response status code.
+
+    Args:
+        _callable (function): boto3 function to call
+        *args: arguments to pass to _callable
+        **kwargs: keyword args to pass to _callable
+
+    Raises:
+        AssertionError: if the _callable response status code is not in the 200 range
+    """
+    resp = _callable(*args, **kwargs)
+    check_status(resp)
+    return resp
+
+
 def get_enum_value(e, k):
     """Get the value of an enum key.
 
@@ -125,3 +141,12 @@ def get_enum_value(e, k):
         return e[str(k).split(".")[-1]]
     except KeyError as err:
         raise InvalidPathError(err)
+
+
+def _repr(o, attrs):
+    desc = ", ".join([f"{a}: {getattr(o, a)}" for a in attrs])
+    return f"{o.__class__.__name__}<{desc}>"
+
+
+def describe_client_error(e):
+    return e.response.get("Error", {}).get("Code")

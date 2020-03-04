@@ -1,4 +1,4 @@
-ENV = {"FUNCTION_NAME": "dummy_lambda"}
+ENV = {"AWS_DEFAULT_REGION": "us-east-2", "FUNCTION_NAME": "dummy_lambda"}
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {

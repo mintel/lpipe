@@ -8,17 +8,29 @@ from lpipe.pipeline import (
     QueueType,
     get_kinesis_payload,
     get_payload_from_record,
+    get_raw_payload,
     get_records_from_event,
     get_sqs_payload,
     validate_signature,
 )
+from lpipe.testing import kinesis_payload, raw_payload, sqs_payload
 
 
-def test_kinesis_payload(kinesis_payload):
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [
+        ("sqs", {"encode_func": sqs_payload, "decode_func": get_sqs_payload}),
+        (
+            "kinesis",
+            {"encode_func": kinesis_payload, "decode_func": get_kinesis_payload},
+        ),
+    ],
+)
+def test_encode_payload(fixture_name, fixture):
     records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-    payload = kinesis_payload(records)
+    payload = fixture["encode_func"](records)
     assert "Records" in payload
-    decoded_records = [get_kinesis_payload(r) for r in payload["Records"]]
+    decoded_records = [fixture["decode_func"](r) for r in payload["Records"]]
     for r in decoded_records:
         assert "path" in r
         assert r["path"] == "foo"
@@ -26,58 +38,46 @@ def test_kinesis_payload(kinesis_payload):
         assert isinstance(r["kwargs"], dict)
 
 
-def test_sqs_payload(sqs_payload):
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [
+        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
+        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
+        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+    ],
+)
+def test_get_records_from_event(fixture_name, fixture):
     records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-    payload = sqs_payload(records)
-    assert "Records" in payload
-    decoded_records = [get_sqs_payload(r) for r in payload["Records"]]
-    for r in decoded_records:
-        assert "path" in r
-        assert r["path"] == "foo"
-        assert "kwargs" in r
-        assert isinstance(r["kwargs"], dict)
+    payload = fixture["encode_func"](records)
+    event_records = get_records_from_event(fixture["queue_type"], payload)
+    assert len(records) == len(event_records)
 
 
-class TestGetRecordsFromEvent:
-    def test_kinesis(self, kinesis_payload):
-        records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-        payload = kinesis_payload(records)
-        records = get_records_from_event(QueueType.KINESIS, payload)
-        assert len(records) == 2
-
-    def test_sqs(self, sqs_payload):
-        records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-        payload = sqs_payload(records)
-        records = get_records_from_event(QueueType.SQS, payload)
-        assert len(records) == 2
-
-
-class TestGetPayloadFromRecord:
-    def test_kinesis(self, kinesis_payload):
-        records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-        payload = kinesis_payload(records)
-        records = get_records_from_event(QueueType.KINESIS, payload)
-        for r in records:
-            payload = get_payload_from_record(QueueType.KINESIS, r)
-            assert "path" in payload and payload["path"] == "foo"
-
-    def test_sqs(self, sqs_payload):
-        records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
-        payload = sqs_payload(records)
-        records = get_records_from_event(QueueType.SQS, payload)
-        for r in records:
-            payload = get_payload_from_record(QueueType.SQS, r)
-            assert "path" in payload and payload["path"] == "foo"
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [
+        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
+        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
+        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+    ],
+)
+def test_get_payload_from_record(fixture_name, fixture):
+    records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
+    payload = fixture["encode_func"](records)
+    event_records = get_records_from_event(fixture["queue_type"], payload)
+    payload_records = [
+        get_payload_from_record(fixture["queue_type"], r) for r in event_records
+    ]
+    assert payload_records == records
 
 
-class TestQueue:
-    def test_name(self):
-        q = Queue(QueueType.SQS, "FOO", name="foobar")
-        assert q
-
-    def test_url(self):
-        q = Queue(QueueType.SQS, "FOO", url="http://www.foo.com/bar")
-        assert q
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [("name", {"name": "foobar"}), ("url", {"url": "http://www.foo.com/bar"})],
+)
+def test_queue(fixture_name, fixture):
+    q = Queue(QueueType.SQS, "FOO", **fixture)
+    assert q
 
 
 class Path(Enum):

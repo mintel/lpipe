@@ -6,7 +6,7 @@ import boto3
 import botocore
 from decouple import config
 
-from lpipe.utils import batch, hash
+from lpipe.utils import batch, call, hash
 
 
 def build(message_data, message_group_id=None):
@@ -26,7 +26,8 @@ def mock_sqs(func):
             botocore.exceptions.NoCredentialsError,
             botocore.exceptions.ClientError,
             botocore.exceptions.NoRegionError,
-        ):
+            botocore.exceptions.ParamValidationError,
+        ) as e:
             if config("MOCK_AWS", default=False):
                 log = kwargs["logger"] if "logger" in kwargs else logging.getLogger()
                 log.debug(
@@ -67,5 +68,5 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 @mock_sqs
 def get_queue_url(queue_name):
     client = boto3.client("sqs")
-    response = client.get_queue_url(QueueName=queue_name)
+    response = call(client.get_queue_url, QueueName=queue_name)
     return response["QueueUrl"]

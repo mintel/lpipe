@@ -147,6 +147,6 @@ def lambda_handler(event, context):
         event=event,
         path_enum=Path,
         paths=PATHS,
-        queue_type=QueueType.KINESIS,
+        queue_type=QueueType.SQS,
         logger=logger,
     )
