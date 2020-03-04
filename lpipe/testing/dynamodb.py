@@ -1,19 +1,31 @@
 """
-Example dynamodb_tables
+Example Usage
 
-[
-    {
-        "AttributeDefinitions": [
-            {"AttributeName": "uri", "AttributeType": "S"},
-            {"AttributeName": "timestamp", "AttributeType": "S"},
-        ],
-        "TableName": "my-table",
-        "KeySchema": [
-            {"AttributeName": "uri", "KeyType": "HASH"},
-            {"AttributeName": "timestamp", "KeyType": "RANGE"},
-        ],
-    },
-]
+```python
+@pytest.fixture(scope="session")
+def dynamodb_tables():
+    return [
+        {
+            "AttributeDefinitions": [
+                {"AttributeName": "uri", "AttributeType": "S"},
+                {"AttributeName": "timestamp", "AttributeType": "S"},
+            ],
+            "TableName": "my-dbd-table",
+            "KeySchema": [
+                {"AttributeName": "uri", "KeyType": "HASH"},
+                {"AttributeName": "timestamp", "KeyType": "RANGE"},
+            ],
+        }
+    ]
+
+
+@pytest.fixture(scope="class")
+def dynamodb(localstack, dynamodb_tables):
+    try:
+        yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
+    finally:
+        lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+```
 """
 
 import backoff

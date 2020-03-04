@@ -1,3 +1,21 @@
+"""
+Example Usage
+
+```python
+@pytest.fixture(scope="session")
+def sqs_queues():
+    return ["TEST_SQS_QUEUE"]
+
+
+@pytest.fixture(scope="class")
+def sqs(localstack, sqs_queues):
+    try:
+        yield lpipe.testing.create_sqs_queues(sqs_queues)
+    finally:
+        lpipe.testing.destroy_sqs_queues(sqs_queues)
+```
+"""
+
 import json
 from time import sleep
 

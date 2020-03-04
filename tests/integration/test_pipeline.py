@@ -49,9 +49,8 @@ class TestProcessEvents:
             logger=logger,
         )
         utils.emit_logs(response)
-        assert fixture["response"]["stats"] == response["stats"]
-        if "output" in fixture["response"]:
-            assert fixture["response"]["output"] == response["output"]
+        for k, v in fixture["response"].items():
+            assert response[k] == v
 
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
@@ -71,9 +70,8 @@ class TestProcessEvents:
             logger=logger,
         )
         utils.emit_logs(response)
-        assert fixture["response"]["stats"] == response["stats"]
-        if "output" in fixture["response"]:
-            assert fixture["response"]["output"] == response["output"]
+        for k, v in fixture["response"].items():
+            assert response[k] == v
 
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
@@ -91,9 +89,8 @@ class TestProcessEvents:
             logger=logger,
         )
         utils.emit_logs(response)
-        assert fixture["response"]["stats"] == response["stats"]
-        if "output" in fixture["response"]:
-            assert fixture["response"]["output"] == response["output"]
+        for k, v in fixture["response"].items():
+            assert response[k] == v
 
     @pytest.mark.parametrize(
         "fixture_name,fixture",
@@ -128,6 +125,5 @@ class TestProcessEvents:
             default_path="TEST_FUNC",
         )
         utils.emit_logs(response)
-        assert fixture["response"]["stats"] == response["stats"]
-        if "output" in fixture["response"]:
-            assert fixture["response"]["output"] == response["output"]
+        for k, v in fixture["response"].items():
+            assert response[k] == v

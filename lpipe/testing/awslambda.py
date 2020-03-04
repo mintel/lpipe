@@ -1,3 +1,23 @@
+"""
+Example Usage
+
+```python
+@pytest.fixture(scope="class")
+def lam(localstack, environment):
+    try:
+        yield lpipe.testing.create_lambda(
+            runtime="python3.6", environment=environment(MOCK_AWS=True)
+        )
+    finally:
+        lpipe.testing.destroy_lambda()
+
+@pytest.mark.usefixtures("lam")
+def test_lambda():
+    payload = [{...}, {...}]
+    response, body = invoke_lambda(name="my_lambda", payload=sqs_payload(messages))
+```
+"""
+
 import json
 from pathlib import Path
 
@@ -54,9 +74,11 @@ def invoke_lambda(name: str, payload: dict, invocation_type="RequestResponse"):
         LogType="Tail",
         Payload=json.dumps(payload).encode(),
     )
+    utils.check_status(response, keys=["StatusCode"])
     body = response["Payload"].read().decode("utf-8")
     try:
         body = json.loads(body)
     except:
         pass
+    utils.emit_logs(body)
     return response, body

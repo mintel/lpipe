@@ -1,3 +1,21 @@
+"""
+Example Usage
+
+```python
+@pytest.fixture(scope="session")
+def kinesis_streams():
+    return ["TEST_KINESIS_STREAM"]
+
+
+@pytest.fixture(scope="class")
+def kinesis(localstack, kinesis_streams):
+    try:
+        yield lpipe.testing.create_kinesis_streams(kinesis_streams)
+    finally:
+        lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+```
+"""
+
 import base64
 import json
 

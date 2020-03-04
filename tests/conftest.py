@@ -1,16 +1,8 @@
-import base64
 import json
 import logging
-import warnings
-from pathlib import Path
 
-import backoff
-import boto3
 import pytest
 import pytest_localstack
-from botocore.exceptions import ClientError
-from decouple import config
-from pytest_localstack.service_checks import SERVICE_CHECKS
 from tests import fixtures
 
 import lpipe
