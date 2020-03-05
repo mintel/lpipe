@@ -19,3 +19,7 @@ def test_sqs_moto_fixtures(sqs_queues, sqs_moto):
             QueueUrl=queue_url,
             MessageBody=json.dumps({"foo": "bar"}),
         )
+
+
+def test_top_level_imports():
+    from lpipe import Action, QueueType, process_event, sentry
