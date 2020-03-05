@@ -99,7 +99,9 @@ def set_environment(environment):
 def lam(localstack, environment):
     try:
         yield lpipe.testing.create_lambda(
-            runtime="python3.6", environment=environment(MOCK_AWS=True)
+            path="dummy_lambda/dist/build.zip",
+            runtime="python3.6",
+            environment=environment(MOCK_AWS=True)
         )
     finally:
         lpipe.testing.destroy_lambda()
