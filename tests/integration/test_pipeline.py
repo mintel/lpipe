@@ -6,11 +6,11 @@ from tests import fixtures
 from lpipe import sqs, utils
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Queue, QueueType, process_event, put_record
-from lpipe.testing import kinesis_payload, raw_payload, sqs_payload
+from lpipe.testing import emit_logs, kinesis_payload, raw_payload, sqs_payload
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("localstack", "kinesis", "sqs")
+@pytest.mark.usefixtures("kinesis", "sqs")
 class TestPutRecord:
     def test_kinesis(self, kinesis_streams, set_environment):
         queue = Queue(type=QueueType.KINESIS, path="FOO", name=kinesis_streams[0])
@@ -31,7 +31,7 @@ class TestPutRecord:
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("localstack", "kinesis", "sqs")
+@pytest.mark.usefixtures("kinesis", "sqs")
 class TestProcessEvents:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
@@ -48,7 +48,7 @@ class TestProcessEvents:
             queue_type=QueueType.RAW,
             logger=logger,
         )
-        utils.emit_logs(response)
+        emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -69,7 +69,7 @@ class TestProcessEvents:
             queue_type=QueueType.KINESIS,
             logger=logger,
         )
-        utils.emit_logs(response)
+        emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -88,7 +88,7 @@ class TestProcessEvents:
             queue_type=QueueType.SQS,
             logger=logger,
         )
-        utils.emit_logs(response)
+        emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -124,6 +124,6 @@ class TestProcessEvents:
             logger=logger,
             default_path="TEST_FUNC",
         )
-        utils.emit_logs(response)
+        emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v

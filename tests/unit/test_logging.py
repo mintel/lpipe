@@ -1,7 +1,7 @@
 import pytest
 
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import emit_logs
+from lpipe.testing.utils import emit_logs
 
 
 def test_create_logger():

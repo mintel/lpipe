@@ -46,3 +46,16 @@ def environment(
         return vars
 
     return env
+
+
+def emit_logs(body, logger=None):
+    logger = logger if logger else logging.getLogger()
+    if isinstance(body, dict) and "logs" in body:
+        try:
+            logs = json.loads(body["logs"])
+        except TypeError:
+            logs = body["logs"]
+        for log in logs:
+            logger.info(f"{log}")
+    elif isinstance(body, str):
+        logger.log(level=logging.INFO, msg=body)
