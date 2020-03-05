@@ -13,7 +13,7 @@ from pathlib import Path
 
 import requests
 
-from lpipe.exceptions import InvalidInputError, InvalidPathError
+from lpipe.exceptions import InvalidPathError
 
 
 def hash(encoded_data):
@@ -129,7 +129,7 @@ def get_enum_value(e: EnumMeta, k):
     try:
         return e[str(k).split(".")[-1]]
     except KeyError as err:
-        raise InvalidPathError(err)
+        raise InvalidPathError(f"Payload specified an invalid path.") from e
 
 
 def _repr(o, attrs):
