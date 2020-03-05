@@ -28,7 +28,7 @@ def mock_kinesis(func):
             if config("MOCK_AWS", default=False):
                 log = kwargs["logger"] if "logger" in kwargs else logging.getLogger()
                 log.debug(
-                    "Mocked Kinesis: {}()".format(func),
+                    "Mocked Kinesis",
                     function=f"{func}",
                     params={"args": f"{args}", "kwargs": f"{kwargs}"},
                 )
