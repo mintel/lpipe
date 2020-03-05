@@ -13,7 +13,7 @@ At its most basic, your lambda would require no more than this.
 ```python
 from lpipe import Action, QueueType, process_event
 
-def test_func(foo, **kwargs):
+def test_func(foo: str, **kwargs):
 	pass
 
 PATHS = {
@@ -51,7 +51,7 @@ This lambda could now be triggered from a kinesis stream input with the followin
 
 `lpipe` relies on exceptions for flow control. Your code must raise exceptions that inherit from one of two classes.
 
-### FailCatastrophically
+### `FailCatastrophically`
 
 Raise this if you want your lambda to error out. This will result in poisoned records persisting on the queue if you're not careful. Only use it if you have CRITICAL data in the queue *or* if you hit an error state while setting up. This will trigger your redrive or DLQ policy.
 
@@ -59,7 +59,7 @@ Raise this if you want your lambda to error out. This will result in poisoned re
 | - | - |
 | InvalidConfigurationError(FailCatastrophically) | Raised automatically if your lambda is misconfigured. |
 
-### FailButContinue
+### `FailButContinue`
 
 Raise this to log an exception and, optionally, send it to sentry, but continue processing more records. **This will treat your record as poisoned and will drop it.**
 
