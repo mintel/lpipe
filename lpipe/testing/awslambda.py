@@ -32,7 +32,7 @@ def create_lambda(
     runtime: str = "python3.8",
     role: str = "foobar",
     handler: str = "main.lambda_handler",
-    path: str = "dummy_lambda/dist/build.zip",
+    path: str = "dist/build.zip",
     environment: dict = {},
 ):
     def clean_env(env):
