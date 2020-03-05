@@ -118,7 +118,7 @@ def get_enum_value(e: EnumMeta, k):
     """Get the value of an enum key.
 
     Args:
-        e (EnumMeta): A string or reference to an enumerated values
+        e (EnumMeta): A reference to an enumerated values
         k: The name of an enumerated value
 
     Raises:
