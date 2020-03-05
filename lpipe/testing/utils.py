@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import namedtuple
 
 import backoff
 from botocore.exceptions import ClientError
@@ -59,3 +60,6 @@ def emit_logs(body, logger=None):
             logger.info(f"{log}")
     elif isinstance(body, str):
         logger.log(level=logging.INFO, msg=body)
+
+
+MockContext = namedtuple("Context", ["function_name"])

@@ -5,7 +5,6 @@ import json
 import logging
 import shlex
 import warnings
-from collections import namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
 from typing import Callable, Union, get_type_hints
@@ -23,17 +22,6 @@ from lpipe.exceptions import (
 )
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import AutoEncoder, _repr, batch, get_enum_value, get_nested
-
-
-class Action:
-    def __init__(self, functions=[], paths=[], required_params=None):
-        assert functions or paths
-        self.functions = functions
-        self.paths = paths
-        self.required_params = required_params
-
-    def __repr__(self):
-        return _repr(self, ["functions", "paths"])
 
 
 class QueueType(Enum):
@@ -75,6 +63,33 @@ class Queue:
         return _repr(self, ["type", "name", "url"])
 
 
+def clean_path(path_enum: EnumMeta, path):
+    if isinstance(path, Queue):
+        return path
+    else:
+        return get_enum_value(path_enum, path)
+
+
+class Action:
+    def __init__(self, functions=[], paths=[], required_params=None):
+        assert functions or paths
+        self.functions = functions
+        self.paths = paths
+        self.required_params = required_params
+
+    def __repr__(self):
+        return _repr(self, ["functions", "paths"])
+
+    def copy(self):
+        return type(self)(
+            functions=self.functions,
+            paths=[
+                p if isinstance(p, Queue) else str(p).split(".")[-1] for p in self.paths
+            ],
+            required_params=self.required_params,
+        )
+
+
 class Payload:
     def __init__(self, path, kwargs: dict):
         self.path = path
@@ -83,7 +98,7 @@ class Payload:
     def validate(self, path_enum: EnumMeta = None):
         if path_enum:
             assert isinstance(
-                get_enum_value(path_enum, self.path), path_enum
+                clean_path(path_enum, self.path), path_enum
             ) or isinstance(self.path, Queue)
         else:
             assert isinstance(self.path, Queue)
@@ -108,21 +123,34 @@ def build_response(n_records, n_ok, logger) -> dict:
 
 def process_event(
     event,
-    path_enum: EnumMeta,
+    context,
     paths: dict,
     queue_type: QueueType,
+    path_enum: EnumMeta = None,
+    default_path=None,
     logger=None,
     debug=False,
-    default_path: Enum = None,
 ):
     if not logger:
-        logger = ServerlessLogger()
+        logger = ServerlessLogger(
+            level=logging.DEBUG if debug else logging.INFO,
+            process=getattr(
+                context, "function_name", config("FUNCTION_NAME", default=None)
+            ),
+        )
+
+    if debug and isinstance(logger, ServerlessLogger):
+        logger.persist = True
 
     logger.debug(f"Event received. queue: {queue_type}, event: {event}")
     try:
         assert isinstance(queue_type, QueueType)
     except AssertionError as e:
         raise InvalidInputError(f"Invalid queue type '{queue_type}'") from e
+
+    if not path_enum:
+        path_enum = Enum("AutoPath", [k.upper() for k in paths.keys()])
+        paths = {clean_path(path_enum, k): v for k, v in paths.items()}
 
     successes = 0
     records = get_records_from_event(queue_type, event)
@@ -175,7 +203,7 @@ def process_event(
             continue
         except FailButContinue as e:
             # successes += 0
-            logger.debug(str(e))
+            logger.error(str(e))
             sentry.capture(e)
             continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
@@ -186,7 +214,7 @@ def process_event(
     if any(output):
         response["output"] = output
     if debug:
-        response["debug"] = json.dumps(records, cls=AutoEncoder)
+        response["debug"] = json.dumps({"records": records}, cls=AutoEncoder)
     return response
 
 
@@ -205,8 +233,8 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
 
     ret = None
 
-    if isinstance(payload.path, str):
-        payload.path = get_enum_value(path_enum, payload.path)
+    if not isinstance(payload.path, path_enum):
+        payload.path = clean_path(path_enum, payload.path)
 
     if isinstance(payload.path, Enum):  # PATH
         for action in paths[payload.path]:
@@ -248,6 +276,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                                     if isinstance(r, Payload):
                                         _payloads.append(r.validate(path_enum))
                         except Exception as e:
+                            logger.debug(f"{e.__class__.__name__} {e}")
                             raise FailButContinue(
                                 f"Something went wrong while extracting Payloads from a function return value. {ret}"
                             ) from e
@@ -257,6 +286,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                             try:
                                 ret = execute_payload(p, path_enum, paths, logger)
                             except Exception as e:
+                                logger.debug(f"{e.__class__.__name__} {e}")
                                 raise FailButContinue(
                                     f"Failed to execute returned Payload. {p}"
                                 ) from e
@@ -276,7 +306,9 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
-                _payload = Payload(path_descriptor, action_kwargs)
+                _payload = Payload(
+                    clean_path(path_enum, path_descriptor), action_kwargs
+                ).validate(path_enum)
                 ret = execute_payload(_payload, path_enum, paths, logger)
     elif isinstance(payload.path, Queue):  # SHORTCUT
         queue = payload.path
@@ -299,11 +331,11 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
     return ret
 
 
-def build_action_kwargs(action: namedtuple, kwargs: dict) -> dict:
+def build_action_kwargs(action: Action, kwargs: dict) -> dict:
     """Build dictionary of kwargs for a specific action.
 
     Args:
-        action (namedtuple)
+        action (Action)
         kargs (dict): kwargs provided in the event's message
 
     Returns:
