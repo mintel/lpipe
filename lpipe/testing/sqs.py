@@ -80,5 +80,5 @@ def destroy_sqs_queues(names: list):
         except ClientError as e:
             code = utils.describe_client_error(e)
             if code != "QueueDoesNotExist":
-                raise TestingException("Queue does not exist.") from e
+                raise TestingException(code) from e
             raise
