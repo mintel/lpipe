@@ -86,6 +86,8 @@ class AutoEncoder(json.JSONEncoder):
         try:
             if isinstance(obj, Enum):
                 return str(obj)
+            if isinstance(obj, bytes):
+                return obj.decode("utf-8")
             return obj._json()
         except AttributeError:
             return json.JSONEncoder.default(self, obj)

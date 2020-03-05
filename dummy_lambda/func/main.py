@@ -138,15 +138,11 @@ PATHS = {
     {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
 )
 def lambda_handler(event, context):
-    # logger.persist is designed for debug use.
-    # Stores all logs in the logger and adds them to the function response.
-    logger = ServerlessLogger(process="dummy-lambda")
-    logger.persist = True
-
     return process_event(
         event=event,
+        context=context,
         path_enum=Path,
         paths=PATHS,
         queue_type=QueueType.SQS,
-        logger=logger,
+        debug=True,
     )

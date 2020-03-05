@@ -5,7 +5,6 @@ import json
 import logging
 import shlex
 import warnings
-from collections import namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
 from typing import Callable, Union, get_type_hints
@@ -124,16 +123,24 @@ def build_response(n_records, n_ok, logger) -> dict:
 
 def process_event(
     event,
+    context,
     paths: dict,
     queue_type: QueueType,
     path_enum: EnumMeta = None,
-    logger=None,
-    context=None,
-    debug=False,
     default_path=None,
+    logger=None,
+    debug=False,
 ):
     if not logger:
-        logger = ServerlessLogger()
+        logger = ServerlessLogger(
+            level=logging.DEBUG if debug else logging.INFO,
+            process=getattr(
+                context, "function_name", config("FUNCTION_NAME", default=None)
+            ),
+        )
+
+    if debug and isinstance(logger, ServerlessLogger):
+        logger.persist = True
 
     logger.debug(f"Event received. queue: {queue_type}, event: {event}")
     try:
@@ -207,9 +214,7 @@ def process_event(
     if any(output):
         response["output"] = output
     if debug:
-        response["debug"] = json.dumps(
-            {"context": context, "records": records}, cls=AutoEncoder
-        )
+        response["debug"] = json.dumps({"records": records}, cls=AutoEncoder)
     return response
 
 
@@ -326,11 +331,11 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
     return ret
 
 
-def build_action_kwargs(action: namedtuple, kwargs: dict) -> dict:
+def build_action_kwargs(action: Action, kwargs: dict) -> dict:
     """Build dictionary of kwargs for a specific action.
 
     Args:
-        action (namedtuple)
+        action (Action)
         kargs (dict): kwargs provided in the event's message
 
     Returns:
