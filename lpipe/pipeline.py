@@ -128,6 +128,7 @@ def process_event(
     queue_type: QueueType,
     path_enum: EnumMeta = None,
     logger=None,
+    context=None,
     debug=False,
     default_path=None,
 ):
@@ -206,7 +207,9 @@ def process_event(
     if any(output):
         response["output"] = output
     if debug:
-        response["debug"] = json.dumps(records, cls=AutoEncoder)
+        response["debug"] = json.dumps(
+            {"context": context, "records": records}, cls=AutoEncoder
+        )
     return response
 
 
