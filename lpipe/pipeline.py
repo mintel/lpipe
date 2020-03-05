@@ -16,9 +16,10 @@ from lpipe import kinesis, sentry, sqs
 from lpipe.exceptions import (
     FailButContinue,
     FailCatastrophically,
-    GraphQLError,
-    InvalidInputError,
+    InvalidConfigurationError,
     InvalidPathError,
+    InvalidPayloadError,
+    LambdaPipelineException,
 )
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import AutoEncoder, _repr, batch, get_enum_value, get_nested
@@ -131,26 +132,32 @@ def process_event(
     logger=None,
     debug=False,
 ):
-    if not logger:
-        logger = ServerlessLogger(
-            level=logging.DEBUG if debug else logging.INFO,
-            process=getattr(
-                context, "function_name", config("FUNCTION_NAME", default=None)
-            ),
-        )
+    try:
+        if not logger:
+            logger = ServerlessLogger(
+                level=logging.DEBUG if debug else logging.INFO,
+                process=getattr(
+                    context, "function_name", config("FUNCTION_NAME", default=None)
+                ),
+            )
 
-    if debug and isinstance(logger, ServerlessLogger):
-        logger.persist = True
+        if debug and isinstance(logger, ServerlessLogger):
+            logger.persist = True
+    except Exception as e:
+        raise InvalidConfigurationError("Failed to initialize logger.") from e
 
     logger.debug(f"Event received. queue: {queue_type}, event: {event}")
     try:
         assert isinstance(queue_type, QueueType)
     except AssertionError as e:
-        raise InvalidInputError(f"Invalid queue type '{queue_type}'") from e
+        raise InvalidConfigurationError(f"Invalid queue type '{queue_type}'") from e
 
     if not path_enum:
-        path_enum = Enum("AutoPath", [k.upper() for k in paths.keys()])
-        paths = {clean_path(path_enum, k): v for k, v in paths.items()}
+        try:
+            path_enum = Enum("AutoPath", [k.upper() for k in paths.keys()])
+            paths = {clean_path(path_enum, k): v for k, v in paths.items()}
+        except Exception as e:
+            raise InvalidConfigurationError from e
 
     successes = 0
     records = get_records_from_event(queue_type, event)
@@ -174,11 +181,11 @@ def process_event(
                 _kwargs = _payload if default_path else _payload["kwargs"]
                 payload = Payload(_path, _kwargs).validate(path_enum)
             except AssertionError as e:
-                raise InvalidInputError(
+                raise InvalidPayloadError(
                     "'path' or 'kwargs' missing from payload."
                 ) from e
             except TypeError as e:
-                raise InvalidInputError(
+                raise InvalidPayloadError(
                     f"Bad record provided for queue type {queue_type}. {encoded_record}"
                 ) from e
 
@@ -189,24 +196,17 @@ def process_event(
                 payload=payload, path_enum=path_enum, paths=paths, logger=logger
             )
             successes += 1
-        except InvalidInputError as e:
-            logger.error(str(e))
-            sentry.capture(e)
-            continue  # Drop poisoned records on the floor.
-        except InvalidPathError as e:
-            logger.error(f"Payload specified an invalid path. {e}")
-            sentry.capture(e)
-            continue
-        except json.JSONDecodeError as e:
-            logger.error(f"Payload contained invalid json. {e}")
-            sentry.capture(e)
-            continue
         except FailButContinue as e:
+            # CAPTURES:
+            #    InvalidPayloadError
+            #    InvalidPathError
             # successes += 0
             logger.error(str(e))
             sentry.capture(e)
-            continue  # user can say "bad thing happened but keep going"
+            continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
         except FailCatastrophically:
+            # CAPTURES:
+            #    InvalidConfigurationError
             raise
         output.append(ret)
 
@@ -247,7 +247,7 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                 )
                 action_kwargs.pop("logger", None)
             except (TypeError, AssertionError) as e:
-                raise InvalidInputError(
+                raise InvalidPayloadError(
                     f"Failed to run {payload.path.name} {action} due to {e}"
                 ) from e
 
@@ -290,13 +290,10 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                                 raise FailButContinue(
                                     f"Failed to execute returned Payload. {p}"
                                 ) from e
-                except (
-                    FailButContinue,
-                    FailCatastrophically,
-                    InvalidInputError,
-                    InvalidPathError,
-                    json.JSONDecodeError,
-                ):
+                except LambdaPipelineException:
+                    # CAPTURES:
+                    #    FailButContinue
+                    #    FailCatastrophically
                     raise
                 except Exception as e:
                     logger.error(
@@ -351,7 +348,7 @@ def build_action_kwargs(action: Action, kwargs: dict) -> dict:
                 # Assert required field was provided.
                 assert param_name in kwargs
             except AssertionError as e:
-                raise InvalidInputError(f"Missing param '{param_name}'") from e
+                raise InvalidPayloadError(f"Missing param '{param_name}'") from e
 
             # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
             if isinstance(param, tuple) and len(param) == 2:
@@ -361,7 +358,7 @@ def build_action_kwargs(action: Action, kwargs: dict) -> dict:
     elif not action.required_params:
         return {}
     else:
-        raise InvalidInputError(
+        raise InvalidPayloadError(
             "You either didn't provide functions or required_params was not an instance of list or NoneType."
         )
 
@@ -481,12 +478,15 @@ def get_records_from_event(queue_type: QueueType, event):
 
 
 def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dict:
-    if queue_type == QueueType.RAW:
-        payload = get_raw_payload(record)
-    if queue_type == QueueType.KINESIS:
-        payload = get_kinesis_payload(record)
-    if queue_type == QueueType.SQS:
-        payload = get_sqs_payload(record)
+    try:
+        if queue_type == QueueType.RAW:
+            payload = get_raw_payload(record)
+        if queue_type == QueueType.KINESIS:
+            payload = get_kinesis_payload(record)
+        if queue_type == QueueType.SQS:
+            payload = get_sqs_payload(record)
+    except json.JSONDecodeError as e:
+        raise InvalidPayloadError(f"Payload contained invalid json. {e}") from e
     if validate:
         for field in ["path", "kwargs"]:
             assert field in payload

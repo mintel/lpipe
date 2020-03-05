@@ -6,23 +6,18 @@ This project was borne out of a desire to support directed-graph workflows on FA
 
 
 
-
 ## Getting Started
 
 At its most basic, your lambda would require no more than this.
 
 ```python
-from enum import Enum
-from lpipe.pipeline import Action, Queue, QueueType, process_event
+from lpipe import Action, QueueType, process_event
 
 def test_func(foo, **kwargs):
 	pass
 
-class Path(Enum):
-    EXAMPLE = 1
-
 PATHS = {
-    Path.EXAMPLE: [
+    "EXAMPLE": [
       	Action(
           	functions=[test_func],
         )
@@ -32,7 +27,7 @@ PATHS = {
 def lambda_handler(event, context):
     return process_event(
         event=event,
-        path_enum=Path,
+        context=context,
         paths=PATHS,
         queue_type=QueueType.KINESIS,
     )
@@ -52,6 +47,33 @@ This lambda could now be triggered from a kinesis stream input with the followin
 
 
 
+## Flow Control
+
+`lpipe` relies on exceptions for flow control. Your code must raise exceptions that inherit from one of two classes.
+
+### FailCatastrophically
+
+Raise this if you want your lambda to error out. This will result in poisoned records persisting on the queue if you're not careful. Only use it if you have CRITICAL data in the queue *or* if you hit an error state while setting up. This will trigger your redrive or DLQ policy.
+
+| Exception | Description |
+| - | - |
+| InvalidConfigurationError(FailCatastrophically) | Raised automatically if your lambda is misconfigured. |
+
+### FailButContinue
+
+Raise this to log an exception and, optionally, send it to sentry, but continue processing more records. **This will treat your record as poisoned and will drop it.**
+
+| Exception | Description |
+| - | - |
+| InvalidPathError(FailButContinue) | Raised automatically if you use a Path that was not defined. |
+| InvalidPayloadError(FailButContinue) | Raised automatically if your lambda receives a message that is malformed or invalid. |
+
+### Everything else...
+
+Any errors that don't inherit from one of the two classes above will be logged and captured at sentry (if initialized.) Your record will then be dropped to prevent a poisoned queue.
+
+
+
 ## Advanced
 
 #### Paths
@@ -62,7 +84,7 @@ A path is defined by an enumerated name and a list of actions.
 
 ```python
 from enum import Enum
-from lpipe.pipeline import Action
+from lpipe import Action
 
 class Path(Enum):
 	DO_THING = 1
@@ -75,12 +97,25 @@ PATHS = {
 }
 ```
 
+`lpipe` can also handle this for you automatically...
+
+```python
+from lpipe import Action
+
+PATHS = {
+    "DO_THING": [
+        Action(required_params=[], functions=[], paths=[]),
+      	Action(required_params=[], functions=[], paths=[]),
+    ],
+}
+```
+
 
 
 #### Actions
 
 ```python
-lpipe.pipeline.Action(required_params, functions, paths)
+lpipe.Action(required_params, functions, paths)
 ```
 
 | Argument          | Type | Description                     |
@@ -92,7 +127,7 @@ lpipe.pipeline.Action(required_params, functions, paths)
 ##### Example
 
 ```python
-from lpipe.pipeline import Action
+from lpipe import Action
 
 Action(
     required_params=["name", "email"],
@@ -108,7 +143,7 @@ Using this action would first call `subscribe_to_pewdiepie(name, email)` then tr
 #### Queues
 
 ```python
-lpipe.pipeline.Queue(type, name, path)
+lpipe.Queue(type, name, path)
 ```
 
 | Argument          | Type | Description                     |
@@ -120,7 +155,7 @@ lpipe.pipeline.Queue(type, name, path)
 ##### Example
 
 ```python
-from lpipe.pipeline import Queue, QueueType
+from lpipe import Queue, QueueType
 
 Queue(
 	type=QueueType.KINESIS,
