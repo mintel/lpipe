@@ -23,8 +23,8 @@ from pathlib import Path
 
 import boto3
 
-from .utils import emit_logs
 from ..utils import call, check_status
+from .utils import emit_logs
 
 
 def create_lambda(
