@@ -23,7 +23,7 @@ from pathlib import Path
 
 import boto3
 
-from ..utils import call, check_status
+from .. import utils
 from .utils import emit_logs
 
 
@@ -49,7 +49,7 @@ def create_lambda(
     client = boto3.client("lambda")
     with open(str(Path().absolute() / path), "rb") as f:
         zipped_code = f.read()
-        call(
+        utils.call(
             client.create_function,
             FunctionName=name,
             Runtime=runtime,
@@ -63,19 +63,19 @@ def create_lambda(
 
 def destroy_lambda(name: str = "my_lambda"):
     client = boto3.client("lambda")
-    return call(client.delete_function, FunctionName=name)
+    return utils.call(client.delete_function, FunctionName=name)
 
 
 def invoke_lambda(name: str, payload: dict, invocation_type="RequestResponse"):
     client = boto3.client("lambda")
-    response = call(
+    response = utils.call(
         client.invoke,
         FunctionName=name,
         InvocationType=invocation_type,
         LogType="Tail",
         Payload=json.dumps(payload).encode(),
     )
-    check_status(response, keys=["StatusCode"])
+    utils.check_status(response, keys=["StatusCode"])
     body = response["Payload"].read().decode("utf-8")
     try:
         body = json.loads(body)

@@ -101,7 +101,7 @@ def lam(localstack, environment):
         yield lpipe.testing.create_lambda(
             path="dummy_lambda/dist/build.zip",
             runtime="python3.6",
-            environment=environment(MOCK_AWS=True)
+            environment=environment(MOCK_AWS=True),
         )
     finally:
         lpipe.testing.destroy_lambda()
