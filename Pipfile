@@ -16,6 +16,7 @@ structlog = "*"
 [dev-packages]
 advbumpversion = "*"
 isort = "*"
+moto = "*"
 pipenv = "*"
 pytest = "*"
 pytest-cov = "*"

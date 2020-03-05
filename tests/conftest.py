@@ -1,8 +1,10 @@
 import json
 import logging
+import warnings
 
 import pytest
 import pytest_localstack
+from moto import mock_sqs
 from tests import fixtures
 
 import lpipe
@@ -40,6 +42,16 @@ def sqs(localstack, sqs_queues):
         yield lpipe.testing.create_sqs_queues(sqs_queues)
     finally:
         lpipe.testing.destroy_sqs_queues(sqs_queues)
+
+
+@pytest.fixture(scope="function")
+def sqs_moto(sqs_queues, set_environment):
+    with mock_sqs():
+        try:
+            warnings.simplefilter("ignore")
+            yield lpipe.testing.create_sqs_queues(sqs_queues)
+        finally:
+            lpipe.testing.destroy_sqs_queues(sqs_queues)
 
 
 @pytest.fixture(scope="session")

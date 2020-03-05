@@ -27,7 +27,7 @@ def mock_sqs(func):
             botocore.exceptions.ClientError,
             botocore.exceptions.NoRegionError,
             botocore.exceptions.ParamValidationError,
-        ) as e:
+        ):
             if config("MOCK_AWS", default=False):
                 log = kwargs["logger"] if "logger" in kwargs else logging.getLogger()
                 log.debug(

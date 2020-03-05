@@ -7,6 +7,11 @@ from lpipe import sqs, testing, utils
 
 
 @pytest.mark.postbuild
+def test_sanity_post_build():
+    pass
+
+
+@pytest.mark.postbuild
 @pytest.mark.usefixtures("kinesis")
 def test_kinesis_fixtures(kinesis_streams):
     client = boto3.client("kinesis")
@@ -20,9 +25,14 @@ def test_kinesis_fixtures(kinesis_streams):
 @pytest.mark.postbuild
 @pytest.mark.usefixtures("sqs")
 def test_sqs_fixtures(sqs_queues):
-    queue_url = sqs.get_queue_url(sqs_queues[0])
-    client = boto3.client("sqs")
-    client.send_message(QueueUrl=queue_url, MessageBody=json.dumps({"foo": "bar"}))
+    for q in sqs_queues:
+        queue_url = sqs.get_queue_url(q)
+        client = boto3.client("sqs")
+        utils.call(
+            client.send_message,
+            QueueUrl=queue_url,
+            MessageBody=json.dumps({"foo": "bar"}),
+        )
 
 
 @pytest.mark.postbuild
