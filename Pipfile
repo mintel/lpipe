@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 backoff = "*"
 boto3 = "*"
-jsonschema = "*"
+# TODO: jsonschema = "*"
 python-dateutil = "*"
 python-decouple = "*"
 requests = "*"

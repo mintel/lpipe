@@ -8,7 +8,7 @@ import shlex
 import sys
 from collections import namedtuple
 from contextlib import contextmanager
-from enum import Enum
+from enum import Enum, EnumMeta
 from pathlib import Path
 
 import requests
@@ -114,11 +114,11 @@ def call(_callable, *args, **kwargs):
     return resp
 
 
-def get_enum_value(e, k):
+def get_enum_value(e: EnumMeta, k):
     """Get the value of an enum key.
 
     Args:
-        e: A string or reference to an enumerated values
+        e (EnumMeta): A string or reference to an enumerated values
         k: The name of an enumerated value
 
     Raises:
