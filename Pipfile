@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+backoff = "*"
 boto3 = "*"
 jsonschema = "*"
 python-dateutil = "*"
@@ -14,8 +15,8 @@ structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
-backoff = "*"
 isort = "*"
+moto = "*"
 pipenv = "*"
 pytest = "*"
 pytest-cov = "*"

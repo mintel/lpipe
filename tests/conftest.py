@@ -1,33 +1,21 @@
-import base64
 import json
 import logging
 import warnings
-from pathlib import Path
-from time import sleep
 
-import backoff
-import boto3
 import pytest
 import pytest_localstack
-from botocore.exceptions import ClientError
-from decouple import config
-from pytest_localstack.service_checks import SERVICE_CHECKS
+from moto import mock_sqs
 from tests import fixtures
 
 import lpipe
 
 logger = logging.getLogger()
-
 localstack = pytest_localstack.patch_fixture(
-    services=["kinesis", "sqs", "lambda"], scope="class", autouse=False
+    services=["dynamodb", "kinesis", "sqs", "lambda"],
+    scope="class",
+    autouse=False,
+    region_name=fixtures.ENV["AWS_DEFAULT_REGION"],
 )
-
-
-@backoff.on_exception(
-    backoff.expo, pytest_localstack.exceptions.TimeoutError, max_tries=3
-)
-def check(session, service):
-    return SERVICE_CHECKS[service](session)
 
 
 @pytest.fixture(scope="session")
@@ -37,21 +25,10 @@ def kinesis_streams():
 
 @pytest.fixture(scope="class")
 def kinesis(localstack, kinesis_streams):
-    check(localstack, "kinesis")
-    client = boto3.client("kinesis")
     try:
-        for stream_name in kinesis_streams:
-            client.create_stream(StreamName=stream_name, ShardCount=1)
-            client.get_waiter("stream_exists").wait(
-                StreamName=stream_name, WaiterConfig={"Delay": 2, "MaxAttempts": 2}
-            )
-        yield kinesis_streams
+        yield lpipe.testing.create_kinesis_streams(kinesis_streams)
     finally:
-        for stream_name in kinesis_streams:
-            client.delete_stream(StreamName=stream_name)
-            client.get_waiter("stream_not_exists").wait(
-                StreamName=stream_name, WaiterConfig={"Delay": 2, "MaxAttempts": 2}
-            )
+        lpipe.testing.destroy_kinesis_streams(kinesis_streams)
 
 
 @pytest.fixture(scope="session")
@@ -61,153 +38,70 @@ def sqs_queues():
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    check(localstack, "sqs")
-    client = boto3.client("sqs")
-
-    @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
-    def create_queue(q):
-        response = client.create_queue(QueueName=queue_name)
-        lpipe.utils.check_status(response)
-        return response["QueueUrl"]
-
-    def queue_exists(q):
-        try:
-            lpipe.sqs.get_queue_url(q)
-            return True
-        except:
-            return False
-
     try:
-        queues = {}
-
-        for queue_name in sqs_queues:
-            try:
-                queues[queue_name] = create_queue(queue_name)
-            except ClientError:
-                exists = queue_exists(queue_name)
-                raise Exception(f"queue_exists({queue_name}) -> {exists}") from e
-
-        for queue_name in sqs_queues:
-            while not queue_exists(queue_name):
-                sleep(1)
-
-        yield queues
+        yield lpipe.testing.create_sqs_queues(sqs_queues)
     finally:
-        for queue_name in sqs_queues:
-            client.delete_queue(QueueUrl=lpipe.sqs.get_queue_url(queue_name))
+        lpipe.testing.destroy_sqs_queues(sqs_queues)
+
+
+@pytest.fixture(scope="function")
+def sqs_moto(sqs_queues, set_environment):
+    with mock_sqs():
+        try:
+            warnings.simplefilter("ignore")
+            yield lpipe.testing.create_sqs_queues(sqs_queues)
+        finally:
+            lpipe.testing.destroy_sqs_queues(sqs_queues)
+
+
+@pytest.fixture(scope="session")
+def dynamodb_tables():
+    return [
+        {
+            "AttributeDefinitions": [
+                {"AttributeName": "uri", "AttributeType": "S"},
+                {"AttributeName": "timestamp", "AttributeType": "S"},
+            ],
+            "TableName": "my-dbd-table",
+            "KeySchema": [
+                {"AttributeName": "uri", "KeyType": "HASH"},
+                {"AttributeName": "timestamp", "KeyType": "RANGE"},
+            ],
+        }
+    ]
 
 
 @pytest.fixture(scope="class")
-def environment(sqs_queues, kinesis_streams):
-    def env(**kwargs):
-        vars = {
-            "APP_ENVIRONMENT": "localstack",
-            "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
-        }
-        vars.update(fixtures.ENV)
-        for name in kinesis_streams:
-            vars[name] = name
-        for name in sqs_queues:
-            vars[name] = name
-        for k, v in kwargs.items():
-            vars[k] = v
-        return vars
+def dynamodb(localstack, dynamodb_tables):
+    try:
+        yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
+    finally:
+        lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
 
-    return env
+
+@pytest.fixture(scope="class")
+def environment(sqs_queues, kinesis_streams, dynamodb_tables):
+    return lpipe.testing.environment(
+        fixtures=fixtures.ENV,
+        sqs_queues=sqs_queues,
+        kinesis_streams=kinesis_streams,
+        dynamodb_tables=dynamodb_tables,
+    )
+
+
+@pytest.fixture(scope="function")
+def set_environment(environment):
+    with lpipe.utils.set_env(environment()):
+        yield
 
 
 @pytest.fixture(scope="class")
 def lam(localstack, environment):
-    name = "my_lambda"
-    runtime = "python3.6"
-    role = "foobar"
-    handler = "main.lambda_handler"
-    path = "dummy_lambda/dist/build.zip"
-
-    def clean_env(env):
-        for k, v in env.items():
-            if isinstance(v, bool):
-                if v:
-                    env[k] = str(v)
-                else:
-                    continue
-            elif isinstance(v, type(None)):
-                env[k] = ""
-        return env
-
     try:
-        lam = boto3.client("lambda")
-        with open(str(Path().absolute() / path), "rb") as f:
-            zipped_code = f.read()
-            lam.create_function(
-                FunctionName=name,
-                Runtime=runtime,
-                Role=role,
-                Handler=handler,
-                Code=dict(ZipFile=zipped_code),
-                Timeout=300,
-                Environment={"Variables": clean_env(environment(MOCK_AWS=True))},
-            )
-        yield
-    finally:
-        lam.delete_function(FunctionName=name)
-
-
-@pytest.fixture
-def invoke_lambda():
-    def inv(name, payload):
-        client = boto3.client("lambda")
-        response = client.invoke(
-            FunctionName=name,
-            InvocationType="RequestResponse",
-            LogType="Tail",
-            Payload=json.dumps(payload).encode(),
+        yield lpipe.testing.create_lambda(
+            path="dummy_lambda/dist/build.zip",
+            runtime="python3.6",
+            environment=environment(MOCK_AWS=True),
         )
-        body = response["Payload"].read().decode("utf-8")
-        try:
-            body = json.loads(body)
-        except:
-            pass
-        return response, body
-
-    return inv
-
-
-@pytest.fixture
-def raw_payload():
-    def raw(payloads):
-        def fmt(p):
-            return json.dumps(p).encode()
-
-        records = [fmt(p) for p in payloads]
-        return records
-
-    return raw
-
-
-@pytest.fixture
-def kinesis_payload():
-    def kin(payloads):
-        def fmt(p):
-            return {
-                "kinesis": {
-                    "data": str(base64.b64encode(json.dumps(p).encode()), "utf-8")
-                }
-            }
-
-        records = [fmt(p) for p in payloads]
-        return {"Records": records}
-
-    return kin
-
-
-@pytest.fixture
-def sqs_payload():
-    def sqs(payloads):
-        def fmt(p):
-            return {"body": json.dumps(p).encode()}
-
-        records = [fmt(p) for p in payloads]
-        return {"Records": records}
-
-    return sqs
+    finally:
+        lpipe.testing.destroy_lambda()

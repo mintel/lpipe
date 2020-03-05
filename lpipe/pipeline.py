@@ -22,7 +22,7 @@ from lpipe.exceptions import (
     InvalidPathError,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import AutoEncoder, batch, get_enum_value, get_nested
+from lpipe.utils import AutoEncoder, _repr, batch, get_enum_value, get_nested
 
 
 class Action:
@@ -33,7 +33,7 @@ class Action:
         self.required_params = required_params
 
     def __repr__(self):
-        return f"Action(functions={self.functions},paths={self.paths})"
+        return _repr(self, ["functions", "paths"])
 
 
 class QueueType(Enum):
@@ -71,6 +71,9 @@ class Queue:
         self.name = name
         self.url = url
 
+    def __repr__(self):
+        return _repr(self, ["type", "name", "url"])
+
 
 class Payload:
     def __init__(self, path, kwargs: dict):
@@ -90,7 +93,7 @@ class Payload:
         return {"path": self.path, "kwargs": self.kwargs}
 
     def __repr__(self):
-        return f"Payload<{self.to_dict()}>"
+        return _repr(self, ["path", "kwargs"])
 
 
 def build_response(n_records, n_ok, logger) -> dict:
@@ -462,6 +465,9 @@ def put_record(queue: Queue, record: dict):
     if queue.type == QueueType.KINESIS:
         return kinesis.put_record(stream_name=queue.name, data=record)
     if queue.type == QueueType.SQS:
-        if queue.name and not queue.url:
+        if not queue.url:
             queue.url = sqs.get_queue_url(queue.name)
-        return sqs.put_message(queue_url=queue.url, data=record)
+        try:
+            return sqs.put_message(queue_url=queue.url, data=record)
+        except Exception as e:
+            raise FailCatastrophically(f"Failed to send message to {queue}") from e

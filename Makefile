@@ -49,7 +49,7 @@ testall-lf: pipenv reports/ python/dist build-test-lambda
 .PHONY: testall-lf
 
 testall-mf: pipenv reports/ python/dist build-test-lambda
-	$(WITH_PIPENV) pytest -s -v --log-cli-level=info --lf --maxfail=2
+	$(WITH_PIPENV) pytest -s -v --log-cli-level=info --lf --maxfail=1
 .PHONY: testall-mf
 
 testall-verbose: pipenv reports/ python/dist build-test-lambda

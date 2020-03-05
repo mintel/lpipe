@@ -32,3 +32,7 @@ class InvalidPathError(Exception):
 
 class InvalidPayload(Exception):
     pass
+
+
+class TestingException(Exception):
+    pass

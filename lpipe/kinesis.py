@@ -23,18 +23,15 @@ def mock_kinesis(func):
             botocore.exceptions.NoCredentialsError,
             botocore.exceptions.ClientError,
             botocore.exceptions.NoRegionError,
+            botocore.exceptions.ParamValidationError,
         ):
             if config("MOCK_AWS", default=False):
                 log = kwargs["logger"] if "logger" in kwargs else logging.getLogger()
-                if records:
-                    for r in records:
-                        log.debug(
-                            "kinesis.put_records: mocked stream:{} data:{}".format(
-                                stream_name, build(r)
-                            )
-                        )
-                else:
-                    log.warning("kinesis.put_records: no records provided")
+                log.debug(
+                    "Mocked Kinesis",
+                    function=f"{func}",
+                    params={"args": f"{args}", "kwargs": f"{kwargs}"},
+                )
                 return
             else:
                 raise
