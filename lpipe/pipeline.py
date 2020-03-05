@@ -195,7 +195,7 @@ def process_event(
             continue
         except FailButContinue as e:
             # successes += 0
-            logger.error(f"{e}")
+            logger.error(str(e))
             sentry.capture(e)
             continue  # user can say "bad thing happened but keep going"
         except FailCatastrophically:
