@@ -6,6 +6,8 @@ import structlog
 from structlog import PrintLogger, wrap_logger
 from structlog.processors import JSONRenderer, TimeStamper
 
+from .utils import _repr
+
 
 class ServerlessLogger:
     def __init__(self, level=logging.INFO, **kwargs):
@@ -17,6 +19,9 @@ class ServerlessLogger:
         self.bind(**kwargs)
         self.events = []
         self.persist = False
+
+    def _json(self):
+        return _repr(self)
 
     def bind(self, **kwargs):
         """Bind context data to logger by forwarding to structlog.

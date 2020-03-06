@@ -10,9 +10,11 @@ from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
 sentry.init()
 
 
-def test_func(foo: str, logger, **kwargs):
+def test_func(foo: str, logger, event, context, **kwargs):
     if not foo:
         raise Exception("Missing required parameter 'foo'")
+    assert isinstance(event, dict)
+    assert context.function_name == "dummy_lambda"
     logger.log("test_func success")
     return True
 

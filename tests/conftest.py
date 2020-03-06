@@ -4,6 +4,7 @@ import warnings
 
 import pytest
 import pytest_localstack
+from decouple import config
 from moto import mock_sqs
 from tests import fixtures
 

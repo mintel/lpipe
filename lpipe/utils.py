@@ -132,7 +132,7 @@ def get_enum_value(e: EnumMeta, k):
         raise InvalidPathError(f"Payload specified an invalid path.") from e
 
 
-def _repr(o, attrs):
+def _repr(o, attrs=[]):
     desc = ", ".join([f"{a}: {getattr(o, a)}" for a in attrs])
     return f"{o.__class__.__name__}<{desc}>"
 

@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from decouple import config
 from tests import fixtures
 
 from lpipe import utils
@@ -15,8 +16,8 @@ class TestMockLambda:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
     )
-    def test_lambda_fixtures(self, fixture_name, fixture):
+    def test_lambda_fixtures(self, set_environment, fixture_name, fixture):
         payload = sqs_payload(fixture["payload"])
-        response, body = invoke_lambda(name="my_lambda", payload=payload)
+        response, body = invoke_lambda(name=config("FUNCTION_NAME"), payload=payload)
         for k, v in fixture["response"].items():
             assert body[k] == v

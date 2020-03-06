@@ -132,6 +132,18 @@ def process_event(
     logger=None,
     debug=False,
 ):
+    """Process an AWS Lambda event.
+
+    Args:
+        event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        paths (dict): Keys are path names / enums and values are a list of Action objects
+        queue_type (QueueType): The event source type.
+        path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
+        default_path: A string or Enum which will be run for every message received.
+        logger:
+        debug (bool):
+    """
     try:
         if not logger:
             logger = ServerlessLogger(
@@ -193,7 +205,12 @@ def process_event(
                 logger.log(f"Record received.")
 
             ret = execute_payload(
-                payload=payload, path_enum=path_enum, paths=paths, logger=logger
+                payload=payload,
+                path_enum=path_enum,
+                paths=paths,
+                logger=logger,
+                event=event,
+                context=context,
             )
             successes += 1
         except FailButContinue as e:
@@ -218,16 +235,19 @@ def process_event(
     return response
 
 
-def execute_path(path, kwargs, logger, path_enum, paths):
-    warnings.warn(
-        "execute_path is deprecated in favor of execute_payload", DeprecationWarning
-    )
-    payload = Payload(path, kwargs).validate(path_enum)
-    return execute_payload(payload, path_enum, paths, logger)
+def execute_payload(
+    payload: Payload, path_enum: EnumMeta, paths: dict, logger, event, context
+):
+    """Execute functions, paths, and shortcuts in a Path.
 
-
-def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
-    """Execute functions, paths, and shortcuts in a Path."""
+    Args:
+        payload (Payload):
+        path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
+        paths (dict): Keys are path names / enums and values are a list of Action objects
+        logger:
+        event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+    """
     if not logger:
         logger = ServerlessLogger()
 
@@ -242,10 +262,14 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
 
             # Build action kwargs and validate type hints
             try:
+                dummy = ["logger", "event", "context"]
+                for k in dummy:
+                    payload.kwargs.pop(k, None)
                 action_kwargs = build_action_kwargs(
-                    action, {"logger": None, **payload.kwargs}
+                    action, {**{k: None for k in dummy}, **payload.kwargs}
                 )
-                action_kwargs.pop("logger", None)
+                for k in dummy:
+                    action_kwargs.pop(k, None)
             except (TypeError, AssertionError) as e:
                 raise InvalidPayloadError(
                     f"Failed to run {payload.path.name} {action} due to {e}"
@@ -264,7 +288,14 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                         }
                     ):
                         logger.log("Executing function.")
-                        ret = f(**{**action_kwargs, "logger": logger})
+                        ret = f(
+                            **{
+                                **action_kwargs,
+                                "logger": logger,
+                                "event": event,
+                                "context": context,
+                            }
+                        )
 
                     if ret:
                         _payloads = []
@@ -284,7 +315,9 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                         for p in _payloads:
                             logger.debug(f"Function returned a Payload. Executing. {p}")
                             try:
-                                ret = execute_payload(p, path_enum, paths, logger)
+                                ret = execute_payload(
+                                    p, path_enum, paths, logger, event, context
+                                )
                             except Exception as e:
                                 logger.debug(f"{e.__class__.__name__} {e}")
                                 raise FailButContinue(
@@ -306,7 +339,9 @@ def execute_payload(payload: Payload, path_enum: EnumMeta, paths: dict, logger):
                 _payload = Payload(
                     clean_path(path_enum, path_descriptor), action_kwargs
                 ).validate(path_enum)
-                ret = execute_payload(_payload, path_enum, paths, logger)
+                ret = execute_payload(
+                    _payload, path_enum, paths, logger, event, context
+                )
     elif isinstance(payload.path, Queue):  # SHORTCUT
         queue = payload.path
         assert isinstance(queue.type, QueueType)

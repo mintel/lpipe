@@ -2,6 +2,7 @@ import logging
 from copy import deepcopy
 
 import pytest
+from decouple import config
 from tests import fixtures
 
 from lpipe import sqs, utils
@@ -48,7 +49,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name="my_function"),
+            context=MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
             queue_type=QueueType.RAW,
@@ -66,7 +67,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=kinesis_payload(fixture["payload"]),
-            context=MockContext(function_name="my_function"),
+            context=MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
             queue_type=QueueType.KINESIS,
@@ -84,7 +85,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name="my_function"),
+            context=MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
             queue_type=QueueType.SQS,
@@ -118,7 +119,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name="my_function"),
+            context=MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
             queue_type=QueueType.SQS,
@@ -145,7 +146,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name="my_function"),
+            context=MockContext(function_name=config("FUNCTION_NAME")),
             paths=_PATHS,
             queue_type=QueueType.RAW,
             debug=True,
