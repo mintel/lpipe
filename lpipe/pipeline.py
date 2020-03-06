@@ -263,8 +263,6 @@ def execute_payload(
             # Build action kwargs and validate type hints
             try:
                 dummy = ["logger", "event", "context"]
-                for k in dummy:
-                    payload.kwargs.pop(k, None)
                 action_kwargs = build_action_kwargs(
                     action, {**{k: None for k in dummy}, **payload.kwargs}
                 )
