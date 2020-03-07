@@ -5,7 +5,9 @@ import pytest
 from decouple import config
 from tests import fixtures
 
+from lpipe import exceptions
 from lpipe.pipeline import (
+    Action,
     Payload,
     Queue,
     QueueType,
@@ -212,6 +214,30 @@ class TestPutRecord:
         queue = Queue(type=QueueType.SQS, path="FOO", name=queue_name)
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
+
+
+def test_invalid_queue(set_environment):
+    with pytest.raises(exceptions.InvalidConfigurationError):
+        response = process_event(
+            event=None,
+            context=MockContext(function_name=config("FUNCTION_NAME")),
+            paths=None,
+            queue_type="badqueue",
+        )
+
+
+def test_fail_catastrophically(set_environment):
+    def _fail(**kwargs):
+        raise exceptions.FailCatastrophically()
+
+    with pytest.raises(exceptions.FailCatastrophically):
+        response = process_event(
+            event=[{"foo": "bar"}],
+            context=MockContext(function_name=config("FUNCTION_NAME")),
+            paths={"FAIL": [Action(functions=[_fail])]},
+            queue_type=QueueType.RAW,
+            default_path="FAIL",
+        )
 
 
 @pytest.mark.usefixtures("sqs_moto", "kinesis_moto")

@@ -40,7 +40,7 @@ def environment(
         vars.update({clean(t["TableName"]): t["TableName"] for t in dynamodb_tables})
         will_overwrite = list(set(vars.keys()) & set(kwargs.keys()))
         if will_overwrite:
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 f"Your tests are going to overwrite the following fields: {will_overwrite}"
             )
         vars.update(kwargs)

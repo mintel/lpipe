@@ -1,8 +1,20 @@
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 
 from lpipe import sqs, testing
-from lpipe.utils import check_status
+from lpipe.utils import check_status, set_env
+
+
+def test_mock(environment):
+    with set_env(environment(MOCK_AWS=True)):
+        sqs.put_message("foobar", {"foo": "bar"})
+
+
+def test_no_mock(environment):
+    with pytest.raises(ClientError):
+        with set_env(environment()):
+            sqs.put_message("foobar", {"foo": "bar"})
 
 
 class TestBuild:

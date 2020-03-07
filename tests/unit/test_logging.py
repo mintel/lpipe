@@ -1,7 +1,10 @@
+import json
+
 import pytest
 
 from lpipe.logging import ServerlessLogger
 from lpipe.testing.utils import emit_logs
+from lpipe.utils import AutoEncoder
 
 
 def test_create_logger():
@@ -19,9 +22,19 @@ def test_logger_log_info():
     logger.info("Test info.")
 
 
+def test_logger_log_warning():
+    logger = ServerlessLogger()
+    logger.warning("Test warning.")
+
+
 def test_logger_log_error():
     logger = ServerlessLogger()
     logger.error("Test error.")
+
+
+def test_logger_log_critical():
+    logger = ServerlessLogger()
+    logger.critical("Test critical.")
 
 
 def test_create_logger_persist():
@@ -56,3 +69,20 @@ def test_logger_persist_emit():
         logger.log("TEST")
     body = {"logs": logger.events}
     emit_logs(body)
+
+
+def test_logger_persist_events_action():
+    logger = ServerlessLogger()
+    with logger.context(bind={"foo": "bar"}, action="my_action"):
+        logger.log("TEST")
+
+
+def test_logger_persist_events_action():
+    logger = ServerlessLogger()
+    logger.bind(foo="bar")
+    logger.unbind("foo")
+
+
+def test_encode_logger():
+    logger = ServerlessLogger()
+    json.dumps(logger, cls=AutoEncoder)

@@ -1,7 +1,7 @@
 import pytest
 
 from lpipe.exceptions import InvalidTaxonomyURI
-from lpipe.taxonomy import TaxonomyURI
+from lpipe.taxonomy import Brand, Company, Product, TaxonomyURI
 
 
 class TestTaxonomyURI:
@@ -44,3 +44,18 @@ class TestTaxonomyURI:
     def test_encoded(self):
         uri = TaxonomyURI(1234, "foobar", 5678)
         assert isinstance(uri.encoded, str)
+
+
+def test_company():
+    company = Company("taxonomy-v1234/company/5678")
+    assert company.uri.type == "company"
+
+
+def test_brand():
+    brand = Brand("taxonomy-v1234/brand/5678")
+    assert brand.uri.type == "brand"
+
+
+def test_product():
+    product = Product("taxonomy-v1234/product/5678")
+    assert product.uri.type == "product"

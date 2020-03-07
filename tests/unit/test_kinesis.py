@@ -1,6 +1,18 @@
 import pytest
+from botocore.exceptions import ClientError, NoCredentialsError
 
-from lpipe import kinesis
+from lpipe import kinesis, utils
+
+
+def test_mock(environment):
+    with utils.set_env(environment(MOCK_AWS=True)):
+        kinesis.put_record("foobar", {"foo": "bar"})
+
+
+def test_no_mock(environment):
+    with pytest.raises(NoCredentialsError):
+        with utils.set_env(environment()):
+            kinesis.put_record("foobar", {"foo": "bar"})
 
 
 class TestBuild:

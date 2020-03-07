@@ -70,7 +70,7 @@ def invoke_lambda(name: str, payload: dict, **kwargs):
         "Payload": json.dumps(payload).encode(),
     }
     response = boto3.client("lambda").invoke(
-        FunctionName=name ** {**defaults, **kwargs}
+        FunctionName=name, **{**defaults, **kwargs}
     )
     utils.check_status(response, keys=["StatusCode"])
     body = response["Payload"].read().decode("utf-8")
