@@ -35,31 +35,20 @@ from .. import exceptions, utils
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_dynamodb_table(config):
-    client = boto3.client("dynamodb")
     config.update({"BillingMode": "PAY_PER_REQUEST"})
-    return utils.call(client.create_table, **config)
+    return utils.call(boto3.client("dynamodb").create_table, **config)
 
 
 def create_dynamodb_tables(dynamodb_tables):
     client = boto3.client("dynamodb")
-
-    def table_exists(name):
-        try:
-            utils.call(client.describe_table, TableName=name)
-            return True
-        except:
-            return False
-
     for table in dynamodb_tables:
         assert create_dynamodb_table(table)
-
     for table in dynamodb_tables:
         name = table["TableName"]
         client.get_waiter("table_exists").wait(
             TableName=name, WaiterConfig={"Delay": 1, "MaxAttempts": 30}
         )
-        assert table_exists(name)
-
+        assert utils.call(client.describe_table, TableName=name)
     return [t["TableName"] for t in dynamodb_tables]
 
 
@@ -72,10 +61,4 @@ def destroy_dynamodb_table(config):
 def destroy_dynamodb_tables(dynamodb_tables):
     client = boto3.client("dynamodb")
     for table in dynamodb_tables:
-        try:
-            destroy_dynamodb_table(table)
-        except ClientError as e:
-            code = utils.describe_client_error(e)
-            if code != "ResourceNotFoundException":
-                raise exceptions.TestingException(code) from e
-            raise
+        destroy_dynamodb_table(table)

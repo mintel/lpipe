@@ -32,35 +32,27 @@ def sqs_payload(payloads):
     return {"Records": records}
 
 
-@backoff.on_exception(backoff.expo, ClientError, max_tries=3)
+def _sqs_queue_exists(q):
+    try:
+        sqs.get_queue_url(q)
+        return True
+    except:
+        return False
+
+
+@backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_sqs_queue(q):
-    client = boto3.client("sqs")
-    return utils.call(client.create_queue, QueueName=q)["QueueUrl"]
+    return utils.call(boto3.client("sqs").create_queue, QueueName=q)["QueueUrl"]
 
 
 def create_sqs_queues(names: list):
     client = boto3.client("sqs")
-
-    def queue_exists(q):
-        try:
-            sqs.get_queue_url(q)
-            return True
-        except:
-            return False
-
     queues = {}
-
     for name in names:
-        try:
-            queues[name] = create_sqs_queue(name)
-        except ClientError:
-            exists = queue_exists(name)
-            raise Exception(f"queue_exists({name}) -> {exists}") from e
-
+        queues[name] = create_sqs_queue(name)
     for name in names:
-        while not queue_exists(name):
+        while not _sqs_queue_exists(name):
             sleep(1)
-
     return queues
 
 
