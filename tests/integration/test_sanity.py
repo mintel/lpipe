@@ -7,39 +7,31 @@ from lpipe import sqs, testing, utils
 
 
 @pytest.mark.postbuild
-def test_sanity_post_build():
-    pass
+@pytest.mark.usefixtures("localstack")
+class TestMockWithLocalstack:
+    @pytest.mark.usefixtures("kinesis")
+    def test_kinesis_fixtures(self, kinesis_streams):
+        client = boto3.client("kinesis")
+        for ks in kinesis_streams:
+            client.put_record(
+                StreamName=ks, Data=json.dumps({"foo": "bar"}), PartitionKey="foobar"
+            )
 
-
-@pytest.mark.postbuild
-@pytest.mark.usefixtures("kinesis")
-def test_kinesis_fixtures(kinesis_streams):
-    client = boto3.client("kinesis")
-    client.put_record(
-        StreamName=kinesis_streams[0],
-        Data=json.dumps({"foo": "bar"}),
-        PartitionKey="foobar",
-    )
-
-
-@pytest.mark.postbuild
-@pytest.mark.usefixtures("sqs")
-def test_sqs_fixtures(sqs_queues):
-    for q in sqs_queues:
-        queue_url = sqs.get_queue_url(q)
+    @pytest.mark.usefixtures("sqs")
+    def test_sqs_fixtures(self, sqs_queues):
         client = boto3.client("sqs")
-        utils.call(
-            client.send_message,
-            QueueUrl=queue_url,
-            MessageBody=json.dumps({"foo": "bar"}),
-        )
+        for q in sqs_queues:
+            queue_url = sqs.get_queue_url(q)
+            utils.call(
+                client.send_message,
+                QueueUrl=queue_url,
+                MessageBody=json.dumps({"foo": "bar"}),
+            )
 
-
-@pytest.mark.postbuild
-@pytest.mark.usefixtures("dynamodb")
-def test_dynamodb_fixtures(dynamodb_tables):
-    client = boto3.client("dynamodb")
-    utils.call(testing.backoff_check, func=lambda: client.list_tables())
-    for table in dynamodb_tables:
-        response = utils.call(client.describe_table, TableName=table["TableName"])
-        assert response["Table"]["TableName"] == table["TableName"]
+    @pytest.mark.usefixtures("dynamodb")
+    def test_dynamodb_fixtures(self, dynamodb_tables):
+        client = boto3.client("dynamodb")
+        resp = utils.call(testing.backoff_check, func=lambda: client.list_tables())
+        for table in dynamodb_tables:
+            name = table["TableName"]
+            assert name in resp["TableNames"]

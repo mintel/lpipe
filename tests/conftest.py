@@ -1,11 +1,10 @@
 import json
 import logging
-import warnings
 
+import moto
 import pytest
 import pytest_localstack
 from decouple import config
-from moto import mock_sqs
 from tests import fixtures
 
 import lpipe
@@ -19,39 +18,49 @@ localstack = pytest_localstack.patch_fixture(
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def requests_log_level():
+    for name in ("requests", "urllib3"):
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.ERROR)
+        logger.propagate = True
+
+
 @pytest.fixture(scope="session")
 def kinesis_streams():
-    return ["TEST_KINESIS_STREAM"]
+    return ["test-kinesis-stream"]
 
 
 @pytest.fixture(scope="class")
 def kinesis(localstack, kinesis_streams):
-    try:
-        yield lpipe.testing.create_kinesis_streams(kinesis_streams)
-    finally:
-        lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+    yield lpipe.testing.create_kinesis_streams(kinesis_streams)
+    lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+
+
+@pytest.fixture(scope="class")
+def kinesis_moto(kinesis_streams, environment):
+    with lpipe.utils.set_env(environment()):
+        with moto.mock_kinesis():
+            yield lpipe.testing.create_kinesis_streams(kinesis_streams)
+            lpipe.testing.destroy_kinesis_streams(kinesis_streams)
 
 
 @pytest.fixture(scope="session")
 def sqs_queues():
-    return ["TEST_SQS_QUEUE"]
+    return ["test-sqs-queue"]
 
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    try:
-        yield lpipe.testing.create_sqs_queues(sqs_queues)
-    finally:
-        lpipe.testing.destroy_sqs_queues(sqs_queues)
+    yield lpipe.testing.create_sqs_queues(sqs_queues)
+    lpipe.testing.destroy_sqs_queues(sqs_queues)
 
 
-@pytest.fixture(scope="function")
-def sqs_moto(sqs_queues, set_environment):
-    with mock_sqs():
-        try:
-            warnings.simplefilter("ignore")
+@pytest.fixture(scope="class")
+def sqs_moto(sqs_queues, environment):
+    with lpipe.utils.set_env(environment()):
+        with moto.mock_sqs():
             yield lpipe.testing.create_sqs_queues(sqs_queues)
-        finally:
             lpipe.testing.destroy_sqs_queues(sqs_queues)
 
 
@@ -74,10 +83,16 @@ def dynamodb_tables():
 
 @pytest.fixture(scope="class")
 def dynamodb(localstack, dynamodb_tables):
-    try:
-        yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
-    finally:
-        lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+    yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
+    lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+
+
+@pytest.fixture(scope="class")
+def dynamodb_moto(dynamodb_tables, environment):
+    with lpipe.utils.set_env(environment()):
+        with moto.mock_dynamodb2():
+            yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
+            lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
 
 
 @pytest.fixture(scope="class")
@@ -98,11 +113,9 @@ def set_environment(environment):
 
 @pytest.fixture(scope="class")
 def lam(localstack, environment):
-    try:
-        yield lpipe.testing.create_lambda(
-            path="dummy_lambda/dist/build.zip",
-            runtime="python3.6",
-            environment=environment(MOCK_AWS=True),
-        )
-    finally:
-        lpipe.testing.destroy_lambda()
+    yield lpipe.testing.create_lambda(
+        path="dummy_lambda/dist/build.zip",
+        runtime="python3.6",
+        environment=environment(MOCK_AWS=True),
+    )
+    lpipe.testing.destroy_lambda()

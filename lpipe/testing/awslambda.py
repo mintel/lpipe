@@ -4,12 +4,11 @@ Example Usage
 ```python
 @pytest.fixture(scope="class")
 def lam(localstack, environment):
-    try:
-        yield lpipe.testing.create_lambda(
-            runtime="python3.6", environment=environment(MOCK_AWS=True)
-        )
-    finally:
-        lpipe.testing.destroy_lambda()
+    yield lpipe.testing.create_lambda(
+        runtime="python3.6",
+        environment=environment(MOCK_AWS=True),
+    )
+    lpipe.testing.destroy_lambda()
 
 @pytest.mark.usefixtures("lam")
 def test_lambda():

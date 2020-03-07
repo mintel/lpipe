@@ -11,7 +11,7 @@ from lpipe.testing import invoke_lambda, sqs_payload
 
 
 @pytest.mark.postbuild
-@pytest.mark.usefixtures("localstack", "sqs", "kinesis", "lam")
+@pytest.mark.usefixtures("sqs", "kinesis", "lam")
 class TestMockLambda:
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]

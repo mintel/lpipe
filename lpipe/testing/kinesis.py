@@ -9,10 +9,8 @@ def kinesis_streams():
 
 @pytest.fixture(scope="class")
 def kinesis(localstack, kinesis_streams):
-    try:
-        yield lpipe.testing.create_kinesis_streams(kinesis_streams)
-    finally:
-        lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+    yield lpipe.testing.create_kinesis_streams(kinesis_streams)
+    lpipe.testing.destroy_kinesis_streams(kinesis_streams)
 ```
 """
 

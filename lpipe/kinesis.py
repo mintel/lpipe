@@ -6,7 +6,7 @@ import boto3
 import botocore
 from decouple import config
 
-from lpipe.utils import batch, hash
+from lpipe.utils import batch, call, hash
 
 
 def build(record_data):
@@ -45,10 +45,13 @@ def batch_put_records(stream_name, records, batch_size=500, **kwargs):
     client = boto3.client("kinesis")
     responses = []
     for b in batch(records, batch_size):
-        response = client.put_records(
-            StreamName=stream_name, Records=[build(record) for record in b]
+        responses.append(
+            call(
+                client.put_records,
+                StreamName=stream_name,
+                Records=[build(record) for record in b],
+            )
         )
-        responses.append(response)
     return tuple(responses)
 
 

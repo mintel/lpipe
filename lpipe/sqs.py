@@ -51,11 +51,13 @@ def batch_put_messages(
     client = boto3.client("sqs")
     responses = []
     for b in batch(messages, batch_size):
-        response = client.send_message_batch(
-            QueueUrl=queue_url,
-            Entries=[build(message, message_group_id) for message in b],
+        responses.append(
+            call(
+                client.send_message_batch,
+                QueueUrl=queue_url,
+                Entries=[build(message, message_group_id) for message in b],
+            )
         )
-        responses.append(response)
     return tuple(responses)
 
 
@@ -67,6 +69,5 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 
 @mock_sqs
 def get_queue_url(queue_name):
-    client = boto3.client("sqs")
-    response = call(client.get_queue_url, QueueName=queue_name)
+    response = call(boto3.client("sqs").get_queue_url, QueueName=queue_name)
     return response["QueueUrl"]

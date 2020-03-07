@@ -9,10 +9,8 @@ def sqs_queues():
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    try:
-        yield lpipe.testing.create_sqs_queues(sqs_queues)
-    finally:
-        lpipe.testing.destroy_sqs_queues(sqs_queues)
+    yield lpipe.testing.create_sqs_queues(sqs_queues)
+    lpipe.testing.destroy_sqs_queues(sqs_queues)
 ```
 """
 
@@ -80,5 +78,5 @@ def destroy_sqs_queues(names: list):
         except ClientError as e:
             code = utils.describe_client_error(e)
             if code != "QueueDoesNotExist":
-                raise TestingException(code) from e
+                raise exceptions.TestingException(code) from e
             raise
