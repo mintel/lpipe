@@ -45,11 +45,10 @@ def create_lambda(
                 env[k] = ""
         return env
 
-    client = boto3.client("lambda")
     with open(str(Path().absolute() / path), "rb") as f:
         zipped_code = f.read()
         utils.call(
-            client.create_function,
+            boto3.client("lambda").create_function,
             FunctionName=name,
             Runtime=runtime,
             Role=role,
@@ -61,20 +60,20 @@ def create_lambda(
 
 
 def destroy_lambda(name: str = "my_lambda"):
-    client = boto3.client("lambda")
-    return utils.call(client.delete_function, FunctionName=name)
+    return utils.call(boto3.client("lambda").delete_function, FunctionName=name)
 
 
-def invoke_lambda(name: str, payload: dict, invocation_type="RequestResponse"):
-    client = boto3.client("lambda")
+def invoke_lambda(name: str, payload: dict, **kwargs):
+    defaults = {
+        "InvocationType": "RequestResponse",
+        "LogType": "Tail",
+        "Payload": json.dumps(payload).encode(),
+    }
     response = utils.call(
-        client.invoke,
-        FunctionName=name,
-        InvocationType=invocation_type,
-        LogType="Tail",
-        Payload=json.dumps(payload).encode(),
+        boto3.client("lambda").invoke,
+        keys=["StatusCode"],
+        **{**defaults, **kwargs, "FunctionName": name}
     )
-    utils.check_status(response, keys=["StatusCode"])
     body = response["Payload"].read().decode("utf-8")
     try:
         body = json.loads(body)
