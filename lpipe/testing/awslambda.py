@@ -69,11 +69,10 @@ def invoke_lambda(name: str, payload: dict, **kwargs):
         "LogType": "Tail",
         "Payload": json.dumps(payload).encode(),
     }
-    response = utils.call(
-        boto3.client("lambda").invoke,
-        keys=["StatusCode"],
-        **{**defaults, **kwargs, "FunctionName": name}
+    response = boto3.client("lambda").invoke(
+        FunctionName=name ** {**defaults, **kwargs}
     )
+    utils.check_status(response, keys=["StatusCode"])
     body = response["Payload"].read().decode("utf-8")
     try:
         body = json.loads(body)

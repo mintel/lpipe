@@ -100,7 +100,7 @@ def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
     return status
 
 
-def call(_callable, keys=["ResponseMetadata", "HTTPStatusCode"], *args, **kwargs):
+def call(_callable, *args, **kwargs):
     """Call boto3 function and check the AWS API response status code.
 
     Args:
@@ -112,7 +112,7 @@ def call(_callable, keys=["ResponseMetadata", "HTTPStatusCode"], *args, **kwargs
         AssertionError: if the _callable response status code is not in the 200 range
     """
     resp = _callable(*args, **kwargs)
-    check_status(resp, keys=keys)
+    check_status(resp)
     return resp
 
 
