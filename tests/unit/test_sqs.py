@@ -11,12 +11,6 @@ def test_mock(environment):
         sqs.put_message("foobar", {"foo": "bar"})
 
 
-def test_no_mock(environment):
-    with pytest.raises(ClientError):
-        with set_env(environment()):
-            sqs.put_message("foobar", {"foo": "bar"})
-
-
 class TestBuild:
     def test_build(self):
         result = sqs.build(message_data={"foo": "bar"})

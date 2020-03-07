@@ -9,12 +9,6 @@ def test_mock(environment):
         kinesis.put_record("foobar", {"foo": "bar"})
 
 
-def test_no_mock(environment):
-    with pytest.raises(NoCredentialsError):
-        with utils.set_env(environment()):
-            kinesis.put_record("foobar", {"foo": "bar"})
-
-
 class TestBuild:
     def test_build(self):
         result = kinesis.build(record_data={"foo": "bar"})
