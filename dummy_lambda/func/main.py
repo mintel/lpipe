@@ -15,7 +15,7 @@ def test_func(foo: str, logger, event, **kwargs):
         raise Exception("Missing required parameter 'foo'")
     assert isinstance(event, dict)
     assert event["context"].function_name == "my_lambda"
-    assert "event_source" in event
+    assert isinstance(event["payload"], Payload)
     logger.log("test_func success")
     return True
 

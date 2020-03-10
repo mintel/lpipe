@@ -305,7 +305,7 @@ def execute_payload(
                                 "event": {
                                     "event": event,
                                     "context": context,
-                                    "event_source": payload.event_source,
+                                    "payload": payload,
                                 },
                             }
                         )

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.5] - 2020-03-10
+- Pass entire payload via event rather than just the event_source_arn.
+
 ## [2.0.4] - 2020-03-10
 - `utils.get_nested()` now has the option of setting a default value, and it will raise a KeyError if the requested keys don't exist.
 - Unhandled exceptions will now be raised if debug is true.
