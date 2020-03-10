@@ -72,11 +72,14 @@ def clean_path(path_enum: EnumMeta, path):
 
 
 class Action:
-    def __init__(self, functions=[], paths=[], required_params=None):
+    def __init__(
+        self, functions=[], paths=[], required_params=None, include_all_params=False
+    ):
         assert functions or paths
         self.functions = functions
         self.paths = paths
         self.required_params = required_params
+        self.include_all_params = include_all_params
 
     def __repr__(self):
         return _repr(self, ["functions", "paths"])
@@ -394,6 +397,9 @@ def build_action_kwargs(action: Action, kwargs: dict) -> dict:
         raise InvalidPayloadError(
             "You either didn't provide functions or required_params was not an instance of list or NoneType."
         )
+
+    if action.include_all_params:
+        action_kwargs.update(kwargs)
 
     return action_kwargs
 

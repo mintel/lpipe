@@ -3,7 +3,7 @@ from enum import Enum
 from decouple import config
 
 from lpipe import sentry
-from lpipe.exceptions import FailButContinue
+from lpipe.exceptions import FailButContinue, FailCatastrophically
 from lpipe.logging import ServerlessLogger
 from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
 
@@ -48,6 +48,20 @@ def return_foobar(**kwargs):
     return "foobar"
 
 
+def test_kwargs_passed_to_default_path_include_all(logger, event, context, **kwargs):
+    try:
+        assert kwargs.get("foo", None) == "bar"
+    except:
+        raise FailButContinue("foo was not set to bar")
+
+
+def test_kwargs_passed_to_default_path(foo, logger, event, context, **kwargs):
+    try:
+        assert foo == "bar"
+    except:
+        raise FailButContinue("foo was not set to bar")
+
+
 def throw_exception(**kwargs):
     try:
         raise Exception("Test event. Please ignore.")
@@ -74,6 +88,8 @@ class Path(Enum):
     TEST_TRIGGER_FIRST = 15
     TEST_TRIGGER_SECOND = 16
     TEST_MULTI_TRIGGER = 17
+    TEST_DEFAULT_PATH = 18
+    TEST_DEFAULT_PATH_INCLUDE_ALL = 19
 
 
 PATHS = {
@@ -133,6 +149,13 @@ PATHS = {
     Path.TEST_TRIGGER_FIRST: [Action(functions=[test_func_trigger_first])],
     Path.TEST_TRIGGER_SECOND: [Action(functions=[return_foobar])],
     Path.TEST_MULTI_TRIGGER: [Action(functions=[test_func_multi_trigger])],
+    Path.TEST_DEFAULT_PATH: [Action(functions=[test_kwargs_passed_to_default_path])],
+    Path.TEST_DEFAULT_PATH_INCLUDE_ALL: [
+        Action(
+            functions=[test_kwargs_passed_to_default_path_include_all],
+            include_all_params=True,
+        )
+    ],
 }
 
 

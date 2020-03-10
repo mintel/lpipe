@@ -302,6 +302,7 @@ class TestProcessEvents:
             (
                 "TEST_FUNC",
                 {
+                    "path": "TEST_FUNC",
                     "payload": [{"foo": "bar"}],
                     "response": {"stats": {"received": 1, "successes": 1}},
                 },
@@ -309,8 +310,25 @@ class TestProcessEvents:
             (
                 "TEST_FUNC_MANY",
                 {
+                    "path": "TEST_FUNC",
                     "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
                     "response": {"stats": {"received": 3, "successes": 3}},
+                },
+            ),
+            (
+                "TEST_KWARGS_PASSED",
+                {
+                    "path": "TEST_DEFAULT_PATH",
+                    "payload": [{"foo": "bar"}],
+                    "response": {"stats": {"received": 1, "successes": 1}},
+                },
+            ),
+            (
+                "TEST_KWARGS_PASSED_FAIL",
+                {
+                    "path": "TEST_DEFAULT_PATH",
+                    "payload": [{"wiz": "bang"}],
+                    "response": {"stats": {"received": 1, "successes": 0}},
                 },
             ),
         ],
@@ -325,7 +343,7 @@ class TestProcessEvents:
             paths=PATHS,
             queue_type=QueueType.SQS,
             debug=True,
-            default_path="TEST_FUNC",
+            default_path=fixture["path"],
         )
         emit_logs(response)
         for k, v in fixture["response"].items():
