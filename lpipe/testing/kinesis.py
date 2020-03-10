@@ -35,25 +35,30 @@ def kinesis_payload(payloads):
 
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
-def create_kinesis_stream(name):
-    utils.call(boto3.client("kinesis").create_stream, StreamName=name, ShardCount=1)
-
-
-def create_kinesis_streams(
-    names: list, waiter_config: dict = {"Delay": 2, "MaxAttempts": 2}
+def create_kinesis_stream(
+    name: str, waiter_config: dict = {"Delay": 2, "MaxAttempts": 2}
 ):
     client = boto3.client("kinesis")
-    for name in names:
-        create_kinesis_stream(name)
-        client.get_waiter("stream_exists").wait(
-            StreamName=name, WaiterConfig=waiter_config
-        )
+    resp = utils.call(client.create_stream, StreamName=name, ShardCount=1)
+    client.get_waiter("stream_exists").wait(StreamName=name, WaiterConfig=waiter_config)
+    return resp
+
+
+def create_kinesis_streams(names: list):
+    return {n: create_kinesis_stream(n) for n in names}
+
+
+@backoff.on_exception(backoff.expo, ClientError, max_time=30)
+def destroy_kinesis_stream(
+    name: str, waiter_config: dict = {"Delay": 2, "MaxAttempts": 2}
+):
+    client = boto3.client("kinesis")
+    resp = utils.call(client.delete_stream, StreamName=name)
+    client.get_waiter("stream_not_exists").wait(
+        StreamName=name, WaiterConfig=waiter_config
+    )
+    return resp
 
 
 def destroy_kinesis_streams(names: list):
-    client = boto3.client("kinesis")
-    for name in names:
-        utils.call(client.delete_stream, StreamName=name)
-        client.get_waiter("stream_not_exists").wait(
-            StreamName=name, WaiterConfig={"Delay": 2, "MaxAttempts": 2}
-        )
+    return {n: destroy_kinesis_stream(n) for n in names}

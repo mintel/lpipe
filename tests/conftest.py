@@ -11,7 +11,7 @@ import lpipe
 
 logger = logging.getLogger()
 localstack = pytest_localstack.patch_fixture(
-    services=["dynamodb", "kinesis", "sqs", "lambda"],
+    services=["dynamodb", "kinesis", "sqs", "s3", "lambda"],
     scope="class",
     autouse=False,
     region_name=fixtures.ENV["AWS_DEFAULT_REGION"],
@@ -72,7 +72,7 @@ def dynamodb_tables():
                 {"AttributeName": "uri", "AttributeType": "S"},
                 {"AttributeName": "timestamp", "AttributeType": "S"},
             ],
-            "TableName": "my-dbd-table",
+            "TableName": "test-dbd-table",
             "KeySchema": [
                 {"AttributeName": "uri", "KeyType": "HASH"},
                 {"AttributeName": "timestamp", "KeyType": "RANGE"},
@@ -95,13 +95,33 @@ def dynamodb_moto(dynamodb_tables, environment):
             lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
 
 
+@pytest.fixture(scope="session")
+def s3_buckets():
+    return ["test-bucket"]
+
+
 @pytest.fixture(scope="class")
-def environment(sqs_queues, kinesis_streams, dynamodb_tables):
+def s3(localstack, s3_buckets):
+    yield lpipe.testing.create_s3_buckets(s3_buckets)
+    lpipe.testing.destroy_s3_buckets(s3_buckets)
+
+
+@pytest.fixture(scope="class")
+def s3_moto(s3_buckets, environment):
+    with lpipe.utils.set_env(environment()):
+        with moto.mock_s3():
+            yield lpipe.testing.create_s3_buckets(s3_buckets)
+            lpipe.testing.destroy_s3_buckets(s3_buckets)
+
+
+@pytest.fixture(scope="class")
+def environment(sqs_queues, kinesis_streams, dynamodb_tables, s3_buckets):
     return lpipe.testing.environment(
         fixtures=fixtures.ENV,
         sqs_queues=sqs_queues,
         kinesis_streams=kinesis_streams,
         dynamodb_tables=dynamodb_tables,
+        s3_buckets=s3_buckets,
     )
 
 

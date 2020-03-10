@@ -42,33 +42,20 @@ def _sqs_queue_exists(q):
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_sqs_queue(q):
-    return utils.call(boto3.client("sqs").create_queue, QueueName=q)["QueueUrl"]
+    resp = utils.call(boto3.client("sqs").create_queue, QueueName=q)["QueueUrl"]
+    while not _sqs_queue_exists(q):
+        sleep(1)
+    return resp
 
 
 def create_sqs_queues(names: list):
-    client = boto3.client("sqs")
-    queues = {}
-    for name in names:
-        queues[name] = create_sqs_queue(name)
-    for name in names:
-        while not _sqs_queue_exists(name):
-            sleep(1)
-    return queues
+    return {n: create_sqs_queue(n) for n in names}
 
 
 @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
 def destroy_sqs_queue(q):
-    client = boto3.client("sqs")
-    return utils.call(client.delete_queue, QueueUrl=sqs.get_queue_url(q))
+    return utils.call(boto3.client("sqs").delete_queue, QueueUrl=sqs.get_queue_url(q))
 
 
 def destroy_sqs_queues(names: list):
-    client = boto3.client("sqs")
-    for name in names:
-        try:
-            destroy_sqs_queue(name)
-        except ClientError as e:
-            code = utils.describe_client_error(e)
-            if code != "QueueDoesNotExist":
-                raise exceptions.TestingException(code) from e
-            raise
+    return {n: destroy_sqs_queue(n) for n in names}
