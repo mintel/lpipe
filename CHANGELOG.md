@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+
+## [2.0.2] - 2020-03-10
 - Refactor most tests to just use moto.
+- Add s3 testing helpers
 
 ## [2.0.1] - 2020-03-05
 - Backfill CHANGELOG
