@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.3] - 2020-03-10
+- Add ability to pass kwargs even if they aren't in the signature
+
 ## [2.0.2] - 2020-03-10
 - Refactor most tests to just use moto.
 - Add s3 testing helpers
