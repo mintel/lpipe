@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.6] - 2020-03-10
+- Print exception class dynamically when catching TypeError.
+
 ## [2.0.5] - 2020-03-10
 - Pass entire payload via event rather than just the event_source_arn.
 

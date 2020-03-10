@@ -203,7 +203,7 @@ def process_event(
                 ) from e
             except TypeError as e:
                 raise InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record} TypeError: {e}"
+                    f"Bad record provided for queue type {queue_type}. {encoded_record} {e.__class__}: {e}"
                 ) from e
 
             with logger.context(bind={"payload": payload.to_dict()}):
