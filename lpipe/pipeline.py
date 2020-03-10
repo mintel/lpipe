@@ -95,9 +95,10 @@ class Action:
 
 
 class Payload:
-    def __init__(self, path, kwargs: dict):
+    def __init__(self, path, kwargs: dict, event_source=None):
         self.path = path
         self.kwargs = kwargs
+        self.event_source = event_source
 
     def validate(self, path_enum: EnumMeta = None):
         if path_enum:
@@ -194,14 +195,15 @@ def process_event(
                 )
                 _path = default_path if default_path else _payload["path"]
                 _kwargs = _payload if default_path else _payload["kwargs"]
-                payload = Payload(_path, _kwargs).validate(path_enum)
+                _event_source = get_event_source(queue_type, encoded_record)
+                payload = Payload(_path, _kwargs, _event_source).validate(path_enum)
             except AssertionError as e:
                 raise InvalidPayloadError(
                     "'path' or 'kwargs' missing from payload."
                 ) from e
             except TypeError as e:
                 raise InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record}"
+                    f"Bad record provided for queue type {queue_type}. {encoded_record} TypeError: {e}"
                 ) from e
 
             with logger.context(bind={"payload": payload.to_dict()}):
@@ -214,6 +216,7 @@ def process_event(
                 logger=logger,
                 event=event,
                 context=context,
+                debug=debug,
             )
             successes += 1
         except FailButContinue as e:
@@ -239,7 +242,13 @@ def process_event(
 
 
 def execute_payload(
-    payload: Payload, path_enum: EnumMeta, paths: dict, logger, event, context
+    payload: Payload,
+    path_enum: EnumMeta,
+    paths: dict,
+    logger,
+    event,
+    context,
+    debug=False,
 ):
     """Execute functions, paths, and shortcuts in a Path.
 
@@ -265,7 +274,7 @@ def execute_payload(
 
             # Build action kwargs and validate type hints
             try:
-                dummy = ["logger", "event", "context"]
+                dummy = ["logger", "event"]
                 action_kwargs = build_action_kwargs(
                     action, {**{k: None for k in dummy}, **payload.kwargs}
                 )
@@ -293,8 +302,11 @@ def execute_payload(
                             **{
                                 **action_kwargs,
                                 "logger": logger,
-                                "event": event,
-                                "context": context,
+                                "event": {
+                                    "event": event,
+                                    "context": context,
+                                    "event_source": payload.event_source,
+                                },
                             }
                         )
 
@@ -317,7 +329,7 @@ def execute_payload(
                             logger.debug(f"Function returned a Payload. Executing. {p}")
                             try:
                                 ret = execute_payload(
-                                    p, path_enum, paths, logger, event, context
+                                    p, path_enum, paths, logger, event, context, debug
                                 )
                             except Exception as e:
                                 logger.debug(f"{e.__class__.__name__} {e}")
@@ -334,14 +346,18 @@ def execute_payload(
                         f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
                     )
                     sentry.capture(e)
+                    if debug:
+                        raise
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
                 _payload = Payload(
-                    clean_path(path_enum, path_descriptor), action_kwargs
+                    clean_path(path_enum, path_descriptor),
+                    action_kwargs,
+                    payload.event_source,
                 ).validate(path_enum)
                 ret = execute_payload(
-                    _payload, path_enum, paths, logger, event, context
+                    _payload, path_enum, paths, logger, event, context, debug
                 )
     elif isinstance(payload.path, Queue):  # SHORTCUT
         queue = payload.path
@@ -514,6 +530,13 @@ def get_records_from_event(queue_type: QueueType, event):
         return event["Records"]
     if queue_type == QueueType.SQS:
         return event["Records"]
+
+
+def get_event_source(queue_type: QueueType, record):
+    if queue_type in (QueueType.RAW, QueueType.KINESIS, QueueType.SQS):
+        return get_nested(record, ["event_source"], None)
+    warnings.warn(f"Unable to fetch event_source for {queue_type} record.")
+    return None
 
 
 def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dict:

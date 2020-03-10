@@ -15,6 +15,8 @@ import requests
 
 from lpipe.exceptions import InvalidPathError
 
+sentinel = object()
+
 
 def hash(encoded_data):
     return hashlib.sha1(encoded_data.encode("utf-8")).hexdigest()
@@ -31,20 +33,22 @@ def batch(iterable, n=1):
         yield iterable[ndx : min(ndx + n, iter_len)]
 
 
-def get_nested(d, keys):
-    """Given a dictionary, fetch a key nested several levels deep."""
+def get_nested(_dict, keys, default=sentinel):
+    """Given a dictionary or object, try to fetch a key nested several levels deep."""
 
-    def _get(head, k):
+    def _get(head, k, d):
         if isinstance(head, dict):
-            return head.get(k, {})
+            return head.get(k, d)
         else:
-            return getattr(head, k, {})
+            return getattr(head, k, d)
 
-    head = d
+    head = _dict
     for k in keys:
-        head = _get(head, k)
-        if not head:
-            return head
+        head = _get(head, k, default)
+        if head is sentinel:
+            raise KeyError(f"{keys}")
+        elif not head:
+            return default
     return head
 
 

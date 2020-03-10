@@ -20,20 +20,32 @@ def test_batch():
     assert iter[2] == [5, 6]
 
 
-def test_dict_helpers():
-    my_dict = {}
+class TestDictHelpers:
+    def test_get(self):
+        my_dict = {"a": {"b": "testval"}}
+        assert utils.get_nested(my_dict, ["a", "b"]) == "testval"
 
-    utils.set_nested(my_dict, ["a", "b", "c", "wiz", "bang"], "test1")
-    assert my_dict == {"a": {"b": {"c": {"wiz": {"bang": "test1"}}}}}
+    def test_get_bad(self):
+        with pytest.raises(KeyError):
+            my_dict = {"a": {"b": "testval"}}
+            utils.get_nested(my_dict, ["a", "b", "c"])
 
-    val = utils.get_nested(my_dict, ["a", "b", "c", "wiz", "bang"])
-    assert val == "test1"
+    def test_get_with_default(self):
+        my_dict = {"a": {"b": "testval"}}
+        assert utils.get_nested(my_dict, ["a", "b"], "foobar") == "testval"
 
-    utils.set_nested(my_dict, ["a", "b", "c", "wiz", "bang"], "test2")
-    assert my_dict == {"a": {"b": {"c": {"wiz": {"bang": "test2"}}}}}
+    def test_get_bad_with_default(self):
+        my_dict = {"a": {"b": "testval"}}
+        assert utils.get_nested(my_dict, ["a", "b", "c"], "foobar") == "foobar"
 
-    val = utils.get_nested(my_dict, ["a", "b", "c", "wiz", "bang"])
-    assert val == "test2"
+    def test_get_bad_with_default_none(self):
+        my_dict = {"a": {"b": "testval"}}
+        assert not utils.get_nested(my_dict, ["a", "b", "c"], None)
+
+    def test_set(self):
+        my_dict = {}
+        utils.set_nested(my_dict, ["a", "b"], "testval")
+        assert my_dict["a"]["b"] == "testval"
 
 
 class Path(Enum):

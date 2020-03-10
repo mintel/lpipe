@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.4] - 2020-03-10
+- `utils.get_nested()` now has the option of setting a default value, and it will raise a KeyError if the requested keys don't exist.
+- Unhandled exceptions will now be raised if debug is true.
+- Move event and context into a single dict pased to functions as kwarg `event`.
+- Pass event source ARN to Payload and, subsequently, to the event dict passed into functions.
+
 ## [2.0.3] - 2020-03-10
 - Add ability to pass kwargs even if they aren't in the signature
 

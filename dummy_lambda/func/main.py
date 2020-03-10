@@ -10,11 +10,12 @@ from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
 sentry.init()
 
 
-def test_func(foo: str, logger, event, context, **kwargs):
+def test_func(foo: str, logger, event, **kwargs):
     if not foo:
         raise Exception("Missing required parameter 'foo'")
     assert isinstance(event, dict)
-    assert context.function_name == "dummy_lambda"
+    assert event["context"].function_name == "my_lambda"
+    assert "event_source" in event
     logger.log("test_func success")
     return True
 
@@ -48,14 +49,14 @@ def return_foobar(**kwargs):
     return "foobar"
 
 
-def test_kwargs_passed_to_default_path_include_all(logger, event, context, **kwargs):
+def test_kwargs_passed_to_default_path_include_all(logger, event, **kwargs):
     try:
         assert kwargs.get("foo", None) == "bar"
     except:
         raise FailButContinue("foo was not set to bar")
 
 
-def test_kwargs_passed_to_default_path(foo, logger, event, context, **kwargs):
+def test_kwargs_passed_to_default_path(foo, logger, event, **kwargs):
     try:
         assert foo == "bar"
     except:
