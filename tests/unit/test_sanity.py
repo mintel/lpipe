@@ -2,6 +2,12 @@ import json
 
 import boto3
 import pytest
+from tests.utils import (
+    check_dynamodb_fixtures,
+    check_kinesis_fixtures,
+    check_s3_fixtures,
+    check_sqs_fixtures,
+)
 
 from lpipe import sqs, testing, utils
 
@@ -13,27 +19,16 @@ def test_top_level_imports():
 class TestMockWithMoto:
     @pytest.mark.usefixtures("kinesis_moto")
     def test_kinesis_fixtures(self, kinesis_streams):
-        client = boto3.client("kinesis")
-        for ks in kinesis_streams:
-            client.put_record(
-                StreamName=ks, Data=json.dumps({"foo": "bar"}), PartitionKey="foobar"
-            )
+        check_kinesis_fixtures(kinesis_streams)
 
     @pytest.mark.usefixtures("sqs_moto")
     def test_sqs_fixtures(self, sqs_queues):
-        client = boto3.client("sqs")
-        for q in sqs_queues:
-            queue_url = sqs.get_queue_url(q)
-            utils.call(
-                client.send_message,
-                QueueUrl=queue_url,
-                MessageBody=json.dumps({"foo": "bar"}),
-            )
+        check_sqs_fixtures(sqs_queues)
 
     @pytest.mark.usefixtures("dynamodb_moto")
     def test_dynamodb_fixtures(self, dynamodb_tables):
-        client = boto3.client("dynamodb")
-        resp = utils.call(testing.backoff_check, func=lambda: client.list_tables())
-        for table in dynamodb_tables:
-            name = table["TableName"]
-            assert name in resp["TableNames"]
+        check_dynamodb_fixtures(dynamodb_tables)
+
+    @pytest.mark.usefixtures("s3_moto")
+    def test_s3_fixtures(self, s3_buckets):
+        check_s3_fixtures(s3_buckets)
