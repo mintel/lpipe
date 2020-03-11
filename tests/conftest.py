@@ -52,16 +52,18 @@ def sqs_queues():
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    yield lpipe.testing.create_sqs_queues(sqs_queues)
-    lpipe.testing.destroy_sqs_queues(sqs_queues)
+    queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
+    yield queue_urls
+    lpipe.testing.destroy_sqs_queues(queue_urls)
 
 
 @pytest.fixture(scope="class")
 def sqs_moto(sqs_queues, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_sqs():
-            yield lpipe.testing.create_sqs_queues(sqs_queues)
-            lpipe.testing.destroy_sqs_queues(sqs_queues)
+            queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
+            yield queue_urls
+            lpipe.testing.destroy_sqs_queues(queue_urls)
 
 
 @pytest.fixture(scope="session")

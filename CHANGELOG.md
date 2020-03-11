@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.9] - 2020-03-10
+- Update SQS testing create utils to create DLQs and redrive policies automatically.
+
 ## [2.0.8] - 2020-03-10
 - Fix reference to event_source_arn in get_event_source()
 

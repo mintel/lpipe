@@ -6,7 +6,7 @@ import boto3
 import botocore
 from decouple import config
 
-from lpipe.utils import batch, call, hash
+from lpipe.utils import batch, call, get_nested, hash
 
 
 def build(message_data, message_group_id=None):
@@ -69,5 +69,12 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 
 @mock_sqs
 def get_queue_url(queue_name):
-    response = call(boto3.client("sqs").get_queue_url, QueueName=queue_name)
-    return response["QueueUrl"]
+    return call(boto3.client("sqs").get_queue_url, QueueName=queue_name)["QueueUrl"]
+
+
+@mock_sqs
+def get_queue_arn(queue_url):
+    return get_nested(
+        call(boto3.client("sqs").get_queue_attributes, QueueUrl=queue_url),
+        ["Attributes", "QueueArn"],
+    )

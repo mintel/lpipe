@@ -9,8 +9,9 @@ def sqs_queues():
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    yield lpipe.testing.create_sqs_queues(sqs_queues)
-    lpipe.testing.destroy_sqs_queues(sqs_queues)
+    queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
+    yield queue_urls
+    lpipe.testing.destroy_sqs_queues(queue_urls)
 ```
 """
 
@@ -41,21 +42,36 @@ def _sqs_queue_exists(q):
 
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
-def create_sqs_queue(q):
-    resp = utils.call(boto3.client("sqs").create_queue, QueueName=q)["QueueUrl"]
+def create_sqs_queue(q, dlq_url=None):
+    client = boto3.client("sqs")
+    attrs = {}
+    if dlq_url:
+        attrs["RedrivePolicy"] = json.dumps(
+            {"deadLetterTargetArn": sqs.get_queue_arn(dlq_url), "maxReceiveCount": 1}
+        )
+    resp = utils.call(client.create_queue, QueueName=q, Attributes=attrs)["QueueUrl"]
     while not _sqs_queue_exists(q):
         sleep(1)
     return resp
 
 
-def create_sqs_queues(names: list):
-    return {n: create_sqs_queue(n) for n in names}
+def create_sqs_queues(names: list, redrive=False):
+    resp = {}
+    for n in names:
+        if redrive:
+            dlq_name = f"{n}-dlq"
+            resp[dlq_name] = create_sqs_queue(dlq_name)
+            resp[n] = create_sqs_queue(n, dlq_url=resp[dlq_name])
+        else:
+            resp[n] = create_sqs_queue(n)
+
+    return resp
 
 
 @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
-def destroy_sqs_queue(q):
-    return utils.call(boto3.client("sqs").delete_queue, QueueUrl=sqs.get_queue_url(q))
+def destroy_sqs_queue(url):
+    return utils.call(boto3.client("sqs").delete_queue, QueueUrl=url)
 
 
-def destroy_sqs_queues(names: list):
-    return {n: destroy_sqs_queue(n) for n in names}
+def destroy_sqs_queues(queues: dict):
+    return {name: destroy_sqs_queue(url) for name, url in queues.items()}
