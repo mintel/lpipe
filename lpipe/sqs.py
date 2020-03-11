@@ -75,6 +75,10 @@ def get_queue_url(queue_name):
 @mock_sqs
 def get_queue_arn(queue_url):
     return get_nested(
-        call(boto3.client("sqs").get_queue_attributes, QueueUrl=queue_url),
+        call(
+            boto3.client("sqs").get_queue_attributes,
+            QueueUrl=queue_url,
+            AttributeNames=["QueueArn"],
+        ),
         ["Attributes", "QueueArn"],
     )
