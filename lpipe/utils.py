@@ -133,7 +133,7 @@ def get_enum_value(e: EnumMeta, k):
     try:
         return e[str(k).split(".")[-1]]
     except KeyError as err:
-        raise InvalidPathError(f"Payload specified an invalid path.") from e
+        raise InvalidPathError(f"Payload specified an invalid path.") from err
 
 
 def _repr(o, attrs=[]):

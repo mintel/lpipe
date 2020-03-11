@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.7] - 2020-03-10
+- Fix bug in `utils.get_enum_path()` when re-raising an error after catching a KeyError.
+
 ## [2.0.6] - 2020-03-10
 - Print exception class dynamically when catching TypeError.
 

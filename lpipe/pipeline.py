@@ -68,7 +68,12 @@ def clean_path(path_enum: EnumMeta, path):
     if isinstance(path, Queue):
         return path
     else:
-        return get_enum_value(path_enum, path)
+        try:
+            return get_enum_value(path_enum, path)
+        except Exception as e:
+            raise InvalidPathError(
+                "Unable to cast your path identifier to an enum."
+            ) from e
 
 
 class Action:
@@ -172,7 +177,7 @@ def process_event(
         try:
             path_enum = Enum("AutoPath", [k.upper() for k in paths.keys()])
             paths = {clean_path(path_enum, k): v for k, v in paths.items()}
-        except Exception as e:
+        except KeyError as e:
             raise InvalidConfigurationError from e
 
     successes = 0
@@ -203,7 +208,7 @@ def process_event(
                 ) from e
             except TypeError as e:
                 raise InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record} {e.__class__}: {e}"
+                    f"Bad record provided for queue type {queue_type}. {encoded_record} {e.__class__.__name__}: {e}"
                 ) from e
 
             with logger.context(bind={"payload": payload.to_dict()}):

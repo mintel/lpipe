@@ -3,7 +3,7 @@ from enum import Enum
 
 import pytest
 
-from lpipe import utils
+from lpipe import exceptions, utils
 
 
 def test_kinesis_hash():
@@ -62,3 +62,16 @@ class Path(Enum):
 )
 def test_get_enum_value(fixture_name, fixture):
     assert utils.get_enum_value(**fixture) == Path.FOO
+
+
+@pytest.mark.parametrize(
+    "fixture_name,fixture,raises",
+    [
+        ("string", "BAD", exceptions.InvalidPathError),
+        ("enum_cast_to_string", "TestPath.BAD", exceptions.InvalidPathError),
+    ],
+)
+def test_get_bad_enum_value(fixture_name, fixture, raises):
+    path_enum = Enum("TestPath", ["FOO", "BAR"])
+    with pytest.raises(raises):
+        utils.get_enum_value(e=path_enum, k=fixture)
