@@ -2,7 +2,6 @@ import json
 import logging
 from functools import wraps
 
-import boto3
 import botocore
 from decouple import config
 

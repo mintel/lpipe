@@ -1,3 +1,4 @@
+import logging
 from functools import wraps
 
 import boto3
@@ -34,7 +35,10 @@ def with_endpoint_url(func):
             return getattr(boto3, func.__name__)(
                 service_name, *args, endpoint_url=endpoint, **kwargs
             )
-        except:
+        except Exception as e:
+            logger.warning(
+                f"Something went wrong when generating a boto3 {func.__name__}: {e.__class__.__name__} {e}"
+            )
             return func(service_name, *args, **kwargs)
 
     return wrapper
