@@ -1,0 +1,61 @@
+import pytest
+from botocore.exceptions import ClientError, NoCredentialsError
+
+from lpipe import _boto3, utils
+
+region_name = "us-east-1"
+fixtures = [
+    ("no_url", {"region_name": region_name}),
+    ("none_url", {"region_name": region_name, "endpoint_url": None}),
+    ("url", {"region_name": region_name, "endpoint_url": "http://localstack:1234"}),
+]
+client_services = ["sqs", "kinesis", "dynamodb", "s3", "lambda"]
+resource_services = ["sqs"]
+
+
+@pytest.mark.parametrize("service_name", client_services)
+@pytest.mark.parametrize("fixture_name,fixture", fixtures)
+def test_client(fixture_name, fixture, service_name, environment):
+    endpoint_url = fixture.get("endpoint_url", None)
+    env = {}
+    if endpoint_url:
+        env["AWS_ENDPOINTS"] = service_name + "=" + endpoint_url
+    with utils.set_env(env):
+        client = _boto3.client(service_name, **fixture)
+        if endpoint_url:
+            assert client.meta.endpoint_url == endpoint_url
+
+
+@pytest.mark.parametrize("service_name", client_services)
+@pytest.mark.parametrize("fixture_name,fixture", fixtures)
+def test_client_no_env(fixture_name, fixture, service_name):
+    endpoint_url = fixture.get("endpoint_url", None)
+    client = _boto3.client(service_name, **fixture)
+    if endpoint_url:
+        assert client.meta.endpoint_url == endpoint_url
+
+
+@pytest.mark.parametrize("service_name", resource_services)
+@pytest.mark.parametrize("fixture_name,fixture", fixtures)
+def test_resource(fixture_name, fixture, service_name, environment):
+    endpoint_url = fixture.get("endpoint_url", None)
+    env = {}
+    if endpoint_url:
+        env["AWS_ENDPOINTS"] = service_name + "=" + endpoint_url
+    with utils.set_env(env):
+        resource = _boto3.resource(service_name, **fixture)
+        assert resource.meta.service_name == service_name
+        client = resource.meta.client
+        if endpoint_url:
+            assert client.meta.endpoint_url == endpoint_url
+
+
+@pytest.mark.parametrize("service_name", resource_services)
+@pytest.mark.parametrize("fixture_name,fixture", fixtures)
+def test_resource_no_env(fixture_name, fixture, service_name):
+    endpoint_url = fixture.get("endpoint_url", None)
+    resource = _boto3.resource(service_name, **fixture)
+    assert resource.meta.service_name == service_name
+    client = resource.meta.client
+    if endpoint_url:
+        assert client.meta.endpoint_url == endpoint_url

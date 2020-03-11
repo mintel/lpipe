@@ -6,6 +6,7 @@ import boto3
 import botocore
 from decouple import config
 
+from lpipe import _boto3
 from lpipe.utils import batch, call, get_nested, hash
 
 
@@ -48,7 +49,7 @@ def batch_put_messages(
 ):
     """Put messages into a sqs queue, batched by the maximum of 10."""
     assert batch_size <= 10  # send_message_batch will fail otherwise
-    client = boto3.client("sqs")
+    client = _boto3.client("sqs")
     responses = []
     for b in batch(messages, batch_size):
         responses.append(
@@ -69,14 +70,14 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 
 @mock_sqs
 def get_queue_url(queue_name):
-    return call(boto3.client("sqs").get_queue_url, QueueName=queue_name)["QueueUrl"]
+    return call(_boto3.client("sqs").get_queue_url, QueueName=queue_name)["QueueUrl"]
 
 
 @mock_sqs
 def get_queue_arn(queue_url):
     return get_nested(
         call(
-            boto3.client("sqs").get_queue_attributes,
+            _boto3.client("sqs").get_queue_attributes,
             QueueUrl=queue_url,
             AttributeNames=["QueueArn"],
         ),
