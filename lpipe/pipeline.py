@@ -539,7 +539,7 @@ def get_records_from_event(queue_type: QueueType, event):
 
 def get_event_source(queue_type: QueueType, record):
     if queue_type in (QueueType.RAW, QueueType.KINESIS, QueueType.SQS):
-        return get_nested(record, ["event_source"], None)
+        return get_nested(record, ["event_source_arn"], None)
     warnings.warn(f"Unable to fetch event_source for {queue_type} record.")
     return None
 

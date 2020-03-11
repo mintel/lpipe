@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         event=event,
         context=context,
         paths=PATHS,
-        queue_type=QueueType.KINESIS,
+        queue_type=QueueType.SQS,
     )
 
 ```
