@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.8] - 2020-03-10
+- Fix reference to event_source_arn in get_event_source()
+
 ## [2.0.7] - 2020-03-10
 - Fix bug in `utils.get_enum_path()` when re-raising an error after catching a KeyError.
 
