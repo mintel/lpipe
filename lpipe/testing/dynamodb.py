@@ -18,13 +18,14 @@ def dynamodb_tables():
         }
     ]
 
-
 @pytest.fixture(scope="class")
 def dynamodb(localstack, dynamodb_tables):
-    yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
-    lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+    with lpipe.testing.setup_dynamodb(dynamodb_tables) as tables:
+        yield tables
 ```
 """
+
+from contextlib import contextmanager
 
 import backoff
 import boto3
@@ -62,3 +63,11 @@ def destroy_dynamodb_tables(dynamodb_tables):
     client = boto3.client("dynamodb")
     for table in dynamodb_tables:
         destroy_dynamodb_table(table)
+
+
+@contextmanager
+def setup_dynamodb(tables):
+    try:
+        yield create_dynamodb_tables(tables)
+    finally:
+        destroy_dynamodb_tables(tables)

@@ -1,3 +1,16 @@
+"""
+Example Usage:
+
+```python
+@pytest.fixture(scope="class")
+def s3(localstack, s3_buckets):
+    with lpipe.testing.setup_s3(s3_buckets) as buckets:
+        yield buckets
+```
+"""
+
+from contextlib import contextmanager
+
 import backoff
 import boto3
 from botocore.exceptions import ClientError, ConnectionClosedError
@@ -29,3 +42,11 @@ def destroy_s3_bucket(b: str):
 
 def destroy_s3_buckets(names: list):
     return {n: destroy_s3_bucket(n) for n in names}
+
+
+@contextmanager
+def setup_s3(names):
+    try:
+        yield create_s3_buckets(names)
+    finally:
+        destroy_s3_buckets(names)

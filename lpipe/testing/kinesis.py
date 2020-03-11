@@ -6,16 +6,16 @@ Example Usage
 def kinesis_streams():
     return ["TEST_KINESIS_STREAM"]
 
-
 @pytest.fixture(scope="class")
 def kinesis(localstack, kinesis_streams):
-    yield lpipe.testing.create_kinesis_streams(kinesis_streams)
-    lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+    with lpipe.testing.setup_kinesis(kinesis_streams) as streams:
+        yield streams
 ```
 """
 
 import base64
 import json
+from contextlib import contextmanager
 
 import backoff
 import boto3
@@ -62,3 +62,11 @@ def destroy_kinesis_stream(
 
 def destroy_kinesis_streams(names: list):
     return {n: destroy_kinesis_stream(n) for n in names}
+
+
+@contextmanager
+def setup_kinesis(names):
+    try:
+        yield create_kinesis_streams(names)
+    finally:
+        destroy_kinesis_streams(names)

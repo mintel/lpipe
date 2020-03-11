@@ -4,11 +4,11 @@ Example Usage
 ```python
 @pytest.fixture(scope="class")
 def lam(localstack, environment):
-    yield lpipe.testing.create_lambda(
-        runtime="python3.6",
-        environment=environment(MOCK_AWS=True),
-    )
-    lpipe.testing.destroy_lambda()
+    with lpipe.testing.setup_awslambda(
+                runtime="python3.6",
+                environment=environment(MOCK_AWS=True),
+            ) as lam:
+        yield lam
 
 @pytest.mark.usefixtures("lam")
 def test_lambda():
@@ -18,6 +18,7 @@ def test_lambda():
 """
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 
 import boto3
@@ -33,6 +34,7 @@ def create_lambda(
     handler: str = "main.lambda_handler",
     path: str = "dist/build.zip",
     environment: dict = {},
+    **kwargs,
 ):
     def clean_env(env):
         for k, v in env.items():
@@ -59,7 +61,7 @@ def create_lambda(
         )
 
 
-def destroy_lambda(name: str = "my_lambda"):
+def destroy_lambda(name: str = "my_lambda", **kwargs):
     return utils.call(boto3.client("lambda").delete_function, FunctionName=name)
 
 
@@ -80,3 +82,11 @@ def invoke_lambda(name: str, payload: dict, **kwargs):
         pass
     emit_logs(body)
     return response, body
+
+
+@contextmanager
+def setup_awslambda(**kwargs):
+    try:
+        yield create_lambda(**kwargs)
+    finally:
+        destroy_lambda(**kwargs)

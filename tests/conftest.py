@@ -33,16 +33,16 @@ def kinesis_streams():
 
 @pytest.fixture(scope="class")
 def kinesis(localstack, kinesis_streams):
-    yield lpipe.testing.create_kinesis_streams(kinesis_streams)
-    lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+    with lpipe.testing.setup_kinesis(kinesis_streams) as streams:
+        yield streams
 
 
 @pytest.fixture(scope="class")
 def kinesis_moto(kinesis_streams, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_kinesis():
-            yield lpipe.testing.create_kinesis_streams(kinesis_streams)
-            lpipe.testing.destroy_kinesis_streams(kinesis_streams)
+            with lpipe.testing.setup_kinesis(kinesis_streams) as streams:
+                yield streams
 
 
 @pytest.fixture(scope="session")
@@ -52,18 +52,16 @@ def sqs_queues():
 
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
-    yield queue_urls
-    lpipe.testing.destroy_sqs_queues(queue_urls)
+    with lpipe.testing.setup_sqs(sqs_queues, redrive=True) as queues:
+        yield queues
 
 
 @pytest.fixture(scope="class")
 def sqs_moto(sqs_queues, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_sqs():
-            queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
-            yield queue_urls
-            lpipe.testing.destroy_sqs_queues(queue_urls)
+            with lpipe.testing.setup_sqs(sqs_queues, redrive=True) as queues:
+                yield queues
 
 
 @pytest.fixture(scope="session")
@@ -85,16 +83,16 @@ def dynamodb_tables():
 
 @pytest.fixture(scope="class")
 def dynamodb(localstack, dynamodb_tables):
-    yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
-    lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+    with lpipe.testing.setup_dynamodb(dynamodb_tables) as tables:
+        yield tables
 
 
 @pytest.fixture(scope="class")
 def dynamodb_moto(dynamodb_tables, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_dynamodb2():
-            yield lpipe.testing.create_dynamodb_tables(dynamodb_tables)
-            lpipe.testing.destroy_dynamodb_tables(dynamodb_tables)
+            with lpipe.testing.setup_dynamodb(dynamodb_tables) as tables:
+                yield tables
 
 
 @pytest.fixture(scope="session")
@@ -104,16 +102,16 @@ def s3_buckets():
 
 @pytest.fixture(scope="class")
 def s3(localstack, s3_buckets):
-    yield lpipe.testing.create_s3_buckets(s3_buckets)
-    lpipe.testing.destroy_s3_buckets(s3_buckets)
+    with lpipe.testing.setup_s3(s3_buckets) as buckets:
+        yield buckets
 
 
 @pytest.fixture(scope="class")
 def s3_moto(s3_buckets, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_s3():
-            yield lpipe.testing.create_s3_buckets(s3_buckets)
-            lpipe.testing.destroy_s3_buckets(s3_buckets)
+            with lpipe.testing.setup_s3(s3_buckets) as buckets:
+                yield buckets
 
 
 @pytest.fixture(scope="class")
@@ -135,9 +133,9 @@ def set_environment(environment):
 
 @pytest.fixture(scope="class")
 def lam(localstack, environment):
-    yield lpipe.testing.create_lambda(
+    with lpipe.testing.setup_awslambda(
         path="dummy_lambda/dist/build.zip",
         runtime="python3.6",
         environment=environment(MOCK_AWS=True),
-    )
-    lpipe.testing.destroy_lambda()
+    ) as lam:
+        yield lam

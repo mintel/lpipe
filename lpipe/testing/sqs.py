@@ -6,23 +6,24 @@ Example Usage
 def sqs_queues():
     return ["TEST_SQS_QUEUE"]
 
-
 @pytest.fixture(scope="class")
 def sqs(localstack, sqs_queues):
-    queue_urls = lpipe.testing.create_sqs_queues(sqs_queues, redrive=True)
-    yield queue_urls
-    lpipe.testing.destroy_sqs_queues(queue_urls)
+    with lpipe.testing.setup_s3(s3_buckets) as buckets:
+        yield buckets
 ```
 """
 
 import json
+import logging
+from contextlib import contextmanager
 from time import sleep
 
 import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from .. import exceptions, sqs, utils
+from .. import exceptions, utils
+from ..sqs import get_queue_arn, get_queue_url
 
 
 def sqs_payload(payloads):
@@ -35,9 +36,10 @@ def sqs_payload(payloads):
 
 def _sqs_queue_exists(q):
     try:
-        sqs.get_queue_url(q)
+        get_queue_url(q)
         return True
     except:
+        logging.getLogger().info(f"Queue {q} does not exist yet.")
         return False
 
 
@@ -47,12 +49,12 @@ def create_sqs_queue(q, dlq_url=None):
     attrs = {}
     if dlq_url:
         attrs["RedrivePolicy"] = json.dumps(
-            {"deadLetterTargetArn": sqs.get_queue_arn(dlq_url), "maxReceiveCount": 1}
+            {"deadLetterTargetArn": get_queue_arn(dlq_url), "maxReceiveCount": 1}
         )
-    resp = utils.call(client.create_queue, QueueName=q, Attributes=attrs)["QueueUrl"]
+    resp = utils.call(client.create_queue, QueueName=q, Attributes=attrs)
     while not _sqs_queue_exists(q):
         sleep(1)
-    return resp
+    return resp["QueueUrl"]
 
 
 def create_sqs_queues(names: list, redrive=False):
@@ -75,3 +77,12 @@ def destroy_sqs_queue(url):
 
 def destroy_sqs_queues(queues: dict):
     return {name: destroy_sqs_queue(url) for name, url in queues.items()}
+
+
+@contextmanager
+def setup_sqs(names, redrive=False):
+    queues = create_sqs_queues(names, redrive=redrive)
+    try:
+        yield queues
+    finally:
+        destroy_sqs_queues(queues)
