@@ -67,6 +67,20 @@ Any errors that don't inherit from one of the two classes above will be logged a
 
 
 
+## Batch Processing
+
+### SQS
+
+When processing messages from an SQS queue, we will wait to raise any errors until all the messages in a batch are tried.
+* Successful Records will be deleted from the invoking queue
+* Failed records will raise an exception which ultimately triggers the SQS redrive policy.
+
+### Everything else...
+
+If you're using any other invocation method, please consider setting your batch size to 1.
+
+
+
 ## Advanced
 
 #### Paths

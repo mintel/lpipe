@@ -5,6 +5,7 @@ import json
 import logging
 import shlex
 import warnings
+from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
 from typing import Callable, Union, get_type_hints
@@ -22,7 +23,14 @@ from lpipe.exceptions import (
     LambdaPipelineException,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import AutoEncoder, _repr, batch, get_enum_value, get_nested
+from lpipe.utils import (
+    AutoEncoder,
+    _repr,
+    batch,
+    exception_to_str,
+    get_enum_value,
+    get_nested,
+)
 
 
 class QueueType(Enum):
@@ -180,15 +188,16 @@ def process_event(
         except KeyError as e:
             raise InvalidConfigurationError from e
 
-    successes = 0
+    successful_records = []
     records = get_records_from_event(queue_type, event)
     try:
         assert isinstance(records, list)
     except AssertionError as e:
-        logger.error(f"'records' is not a list {e}")
+        logger.error(f"'records' is not a list {exception_to_str(e)}")
         return build_response(0, 0, logger)
 
     output = []
+    exceptions = []
     for encoded_record in records:
         ret = None
         try:
@@ -208,12 +217,13 @@ def process_event(
                 ) from e
             except TypeError as e:
                 raise InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record} {e.__class__.__name__}: {e}"
+                    f"Bad record provided for queue type {queue_type}. {encoded_record} {exception_to_str(e)}"
                 ) from e
 
             with logger.context(bind={"payload": payload.to_dict()}):
                 logger.log(f"Record received.")
 
+            # Run your path/action/functions against the payload found in this record.
             ret = execute_payload(
                 payload=payload,
                 path_enum=path_enum,
@@ -223,22 +233,36 @@ def process_event(
                 context=context,
                 debug=debug,
             )
-            successes += 1
+
+            # Will handle any cleanup necessary for a successful record later.
+            successful_records.append(encoded_record)
         except FailButContinue as e:
             # CAPTURES:
             #    InvalidPayloadError
             #    InvalidPathError
-            # successes += 0
             logger.error(str(e))
             sentry.capture(e)
             continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
-        except FailCatastrophically:
+        except FailCatastrophically as e:
             # CAPTURES:
             #    InvalidConfigurationError
-            raise
+            # raise (later)
+            exceptions.append({"exception": e, "record": encoded_record})
         output.append(ret)
 
-    response = build_response(n_records=len(records), n_ok=successes, logger=logger)
+    response = build_response(
+        n_records=len(records), n_ok=len(successful_records), logger=logger
+    )
+
+    # Handle any cleanup necessary for successful records.
+    cleanup(queue_type, successful_records, logger)
+
+    if exceptions:
+        logger.info(
+            f"Encountered exceptions while handling one or more records. RESPONSE: {response}"
+        )
+        raise FailCatastrophically(exceptions)
+
     if any(output):
         response["output"] = output
     if debug:
@@ -287,7 +311,7 @@ def execute_payload(
                     action_kwargs.pop(k, None)
             except (TypeError, AssertionError) as e:
                 raise InvalidPayloadError(
-                    f"Failed to run {payload.path.name} {action} due to {e}"
+                    f"Failed to run {payload.path.name} {action} due to {exception_to_str(e)}"
                 ) from e
 
             # Run action functions
@@ -325,7 +349,7 @@ def execute_payload(
                                     if isinstance(r, Payload):
                                         _payloads.append(r.validate(path_enum))
                         except Exception as e:
-                            logger.debug(f"{e.__class__.__name__} {e}")
+                            logger.debug(exception_to_str(e))
                             raise FailButContinue(
                                 f"Something went wrong while extracting Payloads from a function return value. {ret}"
                             ) from e
@@ -337,7 +361,7 @@ def execute_payload(
                                     p, path_enum, paths, logger, event, context, debug
                                 )
                             except Exception as e:
-                                logger.debug(f"{e.__class__.__name__} {e}")
+                                logger.debug(exception_to_str(e))
                                 raise FailButContinue(
                                     f"Failed to execute returned Payload. {p}"
                                 ) from e
@@ -348,11 +372,11 @@ def execute_payload(
                     raise
                 except Exception as e:
                     logger.error(
-                        f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {e}"
+                        f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {exception_to_str(e)}"
                     )
                     sentry.capture(e)
                     if debug:
-                        raise
+                        raise FailCatastrophically() from e
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
@@ -383,6 +407,52 @@ def execute_payload(
         )
 
     return ret
+
+
+def cleanup(queue_type, records, logger, **kwargs):
+    """If a record payload is executed without error, handle any cleanup necessary for that record.
+
+    Args:
+        queue_type (QueueType):
+        records (list): records which we succesfully executed
+        logger:
+    """
+    if queue_type == QueueType.SQS:
+        cleanup_sqs_records(records, logger)
+    # If the queue type was not handled, no cleanup was necessary by lpipe.
+
+
+def cleanup_sqs_records(records, logger):
+    base_err_msg = (
+        "Unable to delete successful records messages from SQS queue. AWS should "
+        "still handle this automatically when the lambda finishes executing, but "
+        "this may result in successful messages being sent to the DLQ if any "
+        "other messages fail."
+    )
+    try:
+        Message = namedtuple("Message", ["message_id", "receipt_handle"])
+        messages = defaultdict(list)
+        for record in records:
+            m = Message(
+                message_id=get_nested(record, ["messageId"]),
+                receipt_handle=get_nested(record, ["receiptHandle"]),
+            )
+            messages[get_nested(record, ["eventSourceARN"])].append(m)
+        for k in messages.keys():
+            queue_url = sqs.get_queue_url(k)
+            batch_delete_messages(
+                queue_url,
+                [
+                    {"Id": m.message_id, "ReceiptHandle": m.recepit_handle}
+                    for m in messages
+                ],
+            )
+    except KeyError as e:
+        logger.warning(
+            f"{base_err_msg} If you're testing, this is not an issue. {exception_to_str(e)}"
+        )
+    except Exception as e:
+        logger.warning(f"{base_err_msg} {exception_to_str(e)}")
 
 
 def build_action_kwargs(action: Action, kwargs: dict) -> dict:
@@ -553,7 +623,9 @@ def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dic
         if queue_type == QueueType.SQS:
             payload = get_sqs_payload(record)
     except json.JSONDecodeError as e:
-        raise InvalidPayloadError(f"Payload contained invalid json. {e}") from e
+        raise InvalidPayloadError(
+            f"Payload contained invalid json. {exception_to_str(e)}"
+        ) from e
     if validate:
         for field in ["path", "kwargs"]:
             assert field in payload
