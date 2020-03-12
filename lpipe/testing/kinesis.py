@@ -21,7 +21,7 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from .. import utils
+from .. import _boto3, utils
 
 
 def kinesis_payload(payloads):
@@ -38,7 +38,7 @@ def kinesis_payload(payloads):
 def create_kinesis_stream(
     name: str, waiter_config: dict = {"Delay": 2, "MaxAttempts": 2}
 ):
-    client = boto3.client("kinesis")
+    client = _boto3.client("kinesis")
     resp = utils.call(client.create_stream, StreamName=name, ShardCount=1)
     client.get_waiter("stream_exists").wait(StreamName=name, WaiterConfig=waiter_config)
     return resp
@@ -52,7 +52,7 @@ def create_kinesis_streams(names: list):
 def destroy_kinesis_stream(
     name: str, waiter_config: dict = {"Delay": 2, "MaxAttempts": 2}
 ):
-    client = boto3.client("kinesis")
+    client = _boto3.client("kinesis")
     resp = utils.call(client.delete_stream, StreamName=name)
     client.get_waiter("stream_not_exists").wait(
         StreamName=name, WaiterConfig=waiter_config

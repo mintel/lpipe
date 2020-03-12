@@ -19,11 +19,11 @@ from contextlib import contextmanager
 from time import sleep
 
 import backoff
-import boto3
 from botocore.exceptions import ClientError
 
-from .. import exceptions, utils
+from .. import _boto3, exceptions, utils
 from ..sqs import get_queue_arn, get_queue_url
+from .utils import backoff_check
 
 
 def sqs_payload(payloads):
@@ -45,15 +45,16 @@ def _sqs_queue_exists(q):
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_sqs_queue(q, dlq_url=None):
-    client = boto3.client("sqs")
+    client = _boto3.client("sqs")
     attrs = {}
     if dlq_url:
         attrs["RedrivePolicy"] = json.dumps(
             {"deadLetterTargetArn": get_queue_arn(dlq_url), "maxReceiveCount": 1}
         )
     resp = utils.call(client.create_queue, QueueName=q, Attributes=attrs)
-    while not _sqs_queue_exists(q):
-        sleep(1)
+    utils.call(
+        backoff_check, func=lambda: _boto3.client("sqs").get_queue_url(QueueName=q)
+    )
     return resp["QueueUrl"]
 
 
@@ -72,7 +73,7 @@ def create_sqs_queues(names: list, redrive=False):
 
 @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
 def destroy_sqs_queue(url):
-    return utils.call(boto3.client("sqs").delete_queue, QueueUrl=url)
+    return utils.call(_boto3.client("sqs").delete_queue, QueueUrl=url)
 
 
 def destroy_sqs_queues(queues: dict):
