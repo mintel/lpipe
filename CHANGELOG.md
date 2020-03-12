@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.12] - 2020-03-11
+- If `AWS_ENDPOINTS` is set with a string as dict (`"key=value,key=value"`) of service names and endpoints, create boto3 clients and resources with the appropriate `endpoint_url` for a service, if provided.
+
 ## [2.0.11] - 2020-03-10
 - Add setup/teardown context managers for all AWS testing utils.
 

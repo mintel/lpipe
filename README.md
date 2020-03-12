@@ -16,13 +16,7 @@ from lpipe import Action, QueueType, process_event
 def test_func(foo: str, **kwargs):
 	pass
 
-PATHS = {
-    "EXAMPLE": [
-      	Action(
-          	functions=[test_func],
-        )
-    ],
-}
+PATHS = {"EXAMPLE": [Action(functions=[test_func])]}
 
 def lambda_handler(event, context):
     return process_event(
@@ -31,7 +25,6 @@ def lambda_handler(event, context):
         paths=PATHS,
         queue_type=QueueType.SQS,
     )
-
 ```
 
 This lambda could now be triggered from a kinesis stream input with the following message.
