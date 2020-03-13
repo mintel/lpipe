@@ -443,7 +443,7 @@ def cleanup_sqs_records(records, logger):
             batch_delete_messages(
                 queue_url,
                 [
-                    {"Id": m.message_id, "ReceiptHandle": m.recepit_handle}
+                    {"Id": m.message_id, "ReceiptHandle": m.receipt_handle}
                     for m in messages
                 ],
             )
