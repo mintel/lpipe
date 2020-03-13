@@ -36,7 +36,7 @@ def with_endpoint_url(func):
                 service_name, *args, endpoint_url=endpoint, **kwargs
             )
         except Exception as e:
-            logger.warning(
+            logging.getLogger().warning(
                 f"Something went wrong when generating a boto3 {func.__name__}: {e.__class__.__name__} {e}"
             )
             return func(service_name, *args, **kwargs)
