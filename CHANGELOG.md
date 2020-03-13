@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.13] - 2020-03-13
+- SQS: If any records fail, delete successful records from the queue before raising an exception.
+- Fix bug in `lpipe._boto.proxy` where logger was undefined.
+
 ## [2.0.12] - 2020-03-11
 - If `AWS_ENDPOINTS` is set with a string as dict (`"key=value,key=value"`) of service names and endpoints, create boto3 clients and resources with the appropriate `endpoint_url` for a service, if provided.
 
