@@ -82,3 +82,10 @@ def get_queue_arn(queue_url):
         ),
         ["Attributes", "QueueArn"],
     )
+
+
+@mock_sqs
+def batch_delete_messages(queue_url, entries):
+    return call(
+        _boto3.client("sqs").batch_delete_messages, QueueUrl=queue_url, Entries=entries
+    )
