@@ -254,10 +254,10 @@ def process_event(
         n_records=len(records), n_ok=len(successful_records), logger=logger
     )
 
-    # Handle any cleanup necessary for successful records.
-    cleanup(queue_type, successful_records, logger)
-
     if exceptions:
+        # Handle any cleanup necessary for successful records before creating an error state.
+        advanced_cleanup(queue_type, successful_records, logger)
+
         logger.info(
             f"Encountered exceptions while handling one or more records. RESPONSE: {response}"
         )
@@ -409,8 +409,8 @@ def execute_payload(
     return ret
 
 
-def cleanup(queue_type, records, logger, **kwargs):
-    """If a record payload is executed without error, handle any cleanup necessary for that record.
+def advanced_cleanup(queue_type, records, logger, **kwargs):
+    """If exceptions were raised, cleanup all successful records before raising.
 
     Args:
         queue_type (QueueType):
