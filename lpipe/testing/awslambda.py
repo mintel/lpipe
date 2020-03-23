@@ -65,7 +65,7 @@ def destroy_lambda(name: str = "my_lambda", **kwargs):
     return utils.call(_boto3.client("lambda").delete_function, FunctionName=name)
 
 
-def invoke_lambda(name: str, payload: dict, **kwargs):
+def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
     defaults = {
         "InvocationType": "RequestResponse",
         "LogType": "Tail",
