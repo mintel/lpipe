@@ -12,7 +12,6 @@ def s3(localstack, s3_buckets):
 from contextlib import contextmanager
 
 import backoff
-import boto3
 from botocore.exceptions import ClientError, ConnectionClosedError
 
 from .. import _boto3, utils

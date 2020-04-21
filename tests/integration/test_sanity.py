@@ -1,6 +1,3 @@
-import json
-
-import boto3
 import pytest
 from tests.utils import (
     check_dynamodb_fixtures,
@@ -8,8 +5,6 @@ from tests.utils import (
     check_s3_fixtures,
     check_sqs_fixtures,
 )
-
-from lpipe import sqs, testing, utils
 
 
 @pytest.mark.postbuild

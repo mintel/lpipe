@@ -1,16 +1,13 @@
 import base64
-import importlib
 import inspect
 import json
 import logging
-import shlex
 import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Callable, Union, get_type_hints
+from typing import Union, get_type_hints
 
-import requests
 from decouple import config
 
 from lpipe import kinesis, sentry, sqs

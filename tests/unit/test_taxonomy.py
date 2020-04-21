@@ -19,15 +19,15 @@ class TestTaxonomyURI:
 
     def test_from_str_invalid_version(self):
         with pytest.raises(InvalidTaxonomyURI):
-            uri = TaxonomyURI.from_str("taxonomy-v/foobar/5678")
+            TaxonomyURI.from_str("taxonomy-v/foobar/5678")
 
     def test_from_str_invalid_type(self):
         with pytest.raises(InvalidTaxonomyURI):
-            uri = TaxonomyURI.from_str("taxonomy-v1/asdf1234/5678")
+            TaxonomyURI.from_str("taxonomy-v1/asdf1234/5678")
 
     def test_from_str_invalid_id(self):
         with pytest.raises(InvalidTaxonomyURI):
-            uri = TaxonomyURI.from_str("taxonomy-v1/foobar/asdf")
+            TaxonomyURI.from_str("taxonomy-v1/foobar/asdf")
 
     def test_build(self):
         uri = TaxonomyURI.build("taxonomy-v1234/foobar/5678")

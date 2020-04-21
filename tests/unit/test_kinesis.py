@@ -1,5 +1,4 @@
 import pytest
-from botocore.exceptions import ClientError, NoCredentialsError
 
 from lpipe import kinesis, utils
 

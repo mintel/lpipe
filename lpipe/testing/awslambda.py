@@ -21,8 +21,6 @@ import json
 from contextlib import contextmanager
 from pathlib import Path
 
-import boto3
-
 from .. import _boto3, utils
 from .utils import emit_logs
 

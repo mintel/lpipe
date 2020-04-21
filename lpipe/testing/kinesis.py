@@ -18,7 +18,6 @@ import json
 from contextlib import contextmanager
 
 import backoff
-import boto3
 from botocore.exceptions import ClientError
 
 from .. import _boto3, utils

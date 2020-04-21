@@ -60,7 +60,7 @@ def destroy_dynamodb_table(config):
 
 
 def destroy_dynamodb_tables(dynamodb_tables):
-    client = _boto3.client("dynamodb")
+    _boto3.client("dynamodb")
     for table in dynamodb_tables:
         destroy_dynamodb_table(table)
 

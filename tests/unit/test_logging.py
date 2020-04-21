@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from lpipe.logging import ServerlessLogger
 from lpipe.testing.utils import emit_logs
 from lpipe.utils import AutoEncoder

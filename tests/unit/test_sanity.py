@@ -1,6 +1,3 @@
-import json
-
-import boto3
 import pytest
 from tests.utils import (
     check_dynamodb_fixtures,
@@ -9,11 +6,9 @@ from tests.utils import (
     check_sqs_fixtures,
 )
 
-from lpipe import sqs, testing, utils
-
 
 def test_top_level_imports():
-    from lpipe import Action, QueueType, process_event, sentry
+    pass
 
 
 class TestMockWithMoto:

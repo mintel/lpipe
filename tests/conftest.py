@@ -1,10 +1,8 @@
-import json
 import logging
 
 import moto
 import pytest
 import pytest_localstack
-from decouple import config
 from tests import fixtures
 
 import lpipe

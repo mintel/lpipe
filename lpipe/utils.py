@@ -1,17 +1,9 @@
-import base64
 import hashlib
-import importlib
 import json
 import logging
 import os
-import shlex
-import sys
-from collections import namedtuple
 from contextlib import contextmanager
 from enum import Enum, EnumMeta
-from pathlib import Path
-
-import requests
 
 from lpipe.exceptions import InvalidPathError
 

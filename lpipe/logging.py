@@ -3,7 +3,7 @@ import time
 from contextlib import ContextDecorator
 
 import structlog
-from structlog import PrintLogger, wrap_logger
+from structlog import wrap_logger
 from structlog.processors import JSONRenderer, TimeStamper
 
 from .utils import _repr

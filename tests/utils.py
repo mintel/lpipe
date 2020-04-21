@@ -1,7 +1,6 @@
 import json
 
 import boto3
-import pytest
 
 from lpipe import sqs, testing, utils
 

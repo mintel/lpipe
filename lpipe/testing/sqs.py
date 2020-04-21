@@ -16,7 +16,6 @@ def sqs(localstack, sqs_queues):
 import json
 import logging
 from contextlib import contextmanager
-from time import sleep
 
 import backoff
 from botocore.exceptions import ClientError

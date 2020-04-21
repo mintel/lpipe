@@ -76,7 +76,7 @@ target/
 
 activate
 
-*build-harness
+*build-harness*
 .DS_Store
 *.tar.gz
 tests/integration/dummy_lambda/Pipfile*

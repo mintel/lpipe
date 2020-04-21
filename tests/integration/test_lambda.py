@@ -1,12 +1,7 @@
-import logging
-
 import pytest
 from decouple import config
 from tests import fixtures
 
-from lpipe import utils
-from lpipe.logging import ServerlessLogger
-from lpipe.pipeline import Action, QueueType, process_event
 from lpipe.testing import invoke_lambda, sqs_payload
 
 

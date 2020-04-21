@@ -11,8 +11,7 @@ build-docs: pipenv
 dist: python/dist
 .PHONY: dist
 
-dist-if:
-	test -f dist/lpipe-*.tar.gz || make dist
+dist-if: python/distif
 .PHONY: dist-if
 
 dummy_lambda/dist/.venv:
