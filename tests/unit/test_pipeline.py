@@ -13,7 +13,6 @@ from lpipe.pipeline import (
     QueueType,
     get_kinesis_payload,
     get_payload_from_record,
-    get_raw_payload,
     get_records_from_event,
     get_sqs_payload,
     process_event,
@@ -218,7 +217,7 @@ class TestPutRecord:
 
 def test_invalid_queue(set_environment):
     with pytest.raises(exceptions.InvalidConfigurationError):
-        response = process_event(
+        process_event(
             event=None,
             context=MockContext(function_name=config("FUNCTION_NAME")),
             paths=None,
@@ -231,7 +230,7 @@ def test_fail_catastrophically(set_environment):
         raise exceptions.FailCatastrophically()
 
     with pytest.raises(exceptions.FailCatastrophically):
-        response = process_event(
+        process_event(
             event=[{"foo": "bar"}],
             context=MockContext(function_name=config("FUNCTION_NAME")),
             paths={"FAIL": [Action(functions=[_fail])]},

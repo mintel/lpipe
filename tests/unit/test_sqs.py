@@ -30,7 +30,7 @@ class TestPutMessages:
             queue_url=queue_url, messages=[{"foo": "bar", "wiz": "bang"}], batch_size=2
         )
         assert len(responses) == 1
-        assert all([check_status(r) for r in responses]) == True
+        assert all([check_status(r) for r in responses])
 
     def test_batch_put_messages_many(self, sqs_queues):
         boto3.client("sqs")
@@ -46,7 +46,7 @@ class TestPutMessages:
             batch_size=2,
         )
         assert len(responses) == 2
-        assert all([check_status(r) for r in responses]) == True
+        assert all([check_status(r) for r in responses])
 
     def test_batch_put_message(self, sqs_queues):
         boto3.client("sqs")
@@ -55,4 +55,4 @@ class TestPutMessages:
             queue_url=queue_url, data={"foo": "bar", "wiz": "bang"}
         )
         assert len(responses) == 1
-        assert all([check_status(r) for r in responses]) == True
+        assert all([check_status(r) for r in responses])

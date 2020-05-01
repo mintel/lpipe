@@ -31,7 +31,7 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from .. import _boto3, exceptions, utils
+from .. import _boto3, utils
 
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)

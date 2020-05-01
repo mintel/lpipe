@@ -20,14 +20,7 @@ from lpipe.exceptions import (
     LambdaPipelineException,
 )
 from lpipe.logging import ServerlessLogger
-from lpipe.utils import (
-    AutoEncoder,
-    _repr,
-    batch,
-    exception_to_str,
-    get_enum_value,
-    get_nested,
-)
+from lpipe.utils import AutoEncoder, _repr, exception_to_str, get_enum_value, get_nested
 
 
 class QueueType(Enum):
@@ -437,7 +430,7 @@ def cleanup_sqs_records(records, logger):
             messages[get_nested(record, ["eventSourceARN"])].append(m)
         for k in messages.keys():
             queue_url = sqs.get_queue_url(k)
-            batch_delete_messages(
+            sqs.batch_delete_messages(
                 queue_url,
                 [
                     {"Id": m.message_id, "ReceiptHandle": m.receipt_handle}

@@ -1,3 +1,5 @@
+import logging
+from contextlib import contextmanager
 from enum import Enum
 
 from decouple import config
@@ -51,14 +53,14 @@ def return_foobar(**kwargs):
 def test_kwargs_passed_to_default_path_include_all(logger, event, **kwargs):
     try:
         assert kwargs.get("foo", None) == "bar"
-    except:
+    except Exception:
         raise FailButContinue("foo was not set to bar")
 
 
 def test_kwargs_passed_to_default_path(foo, logger, event, **kwargs):
     try:
         assert foo == "bar"
-    except:
+    except Exception:
         raise FailButContinue("foo was not set to bar")
 
 
@@ -159,6 +161,39 @@ PATHS = {
 }
 
 
+class StubLogger:
+    """
+    Normally, a structlog logger is created when one isn't passed in, but some weird
+    bug in localstack lambda mocking (in Queue/SHORTCUT block of execute_payload())
+    where structlog fails to import itself.
+    """
+
+    def __init__(self):
+        self.logger = logging.getLogger()
+
+    @contextmanager
+    def context(*args, **kwargs):
+        yield
+
+    def log(self, event, level=logging.INFO, **kwargs):
+        self.logger.log(level, event)
+
+    def debug(self, event, **kwargs):
+        return self.log(event, level=logging.DEBUG, **kwargs)
+
+    def info(self, event, **kwargs):
+        return self.log(event, level=logging.INFO, **kwargs)
+
+    def warning(self, event, **kwargs):
+        return self.log(event, level=logging.WARNING, **kwargs)
+
+    def error(self, event, **kwargs):
+        return self.log(event, level=logging.ERROR, **kwargs)
+
+    def critical(self, event, **kwargs):
+        return self.log(event, level=logging.CRITICAL, **kwargs)
+
+
 @sentry.push_context(
     {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
 )
@@ -170,4 +205,5 @@ def lambda_handler(event, context):
         paths=PATHS,
         queue_type=QueueType.SQS,
         debug=True,
+        logger=StubLogger(),
     )

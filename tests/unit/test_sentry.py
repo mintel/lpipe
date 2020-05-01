@@ -6,7 +6,7 @@ def test_init(set_environment):
 
 
 def test_get_env(set_environment):
-    assert sentry._env("ASDF") == None
+    assert sentry._env("ASDF") is None
     assert sentry._env("ASDF", "FUNCTION_NAME") == "my_lambda"
 
 

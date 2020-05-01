@@ -33,7 +33,7 @@ def create_s3_buckets(names: list):
 def destroy_s3_bucket(b: str):
     client = _boto3.client("s3")
     objects = _boto3.resource("s3").Bucket(b).objects.all()
-    keys = [utils.call(client.delete_object, Bucket=b, Key=o.key) for o in objects]
+    [utils.call(client.delete_object, Bucket=b, Key=o.key) for o in objects]
     resp = utils.call(client.delete_bucket, Bucket=b)
     client.get_waiter("bucket_not_exists").wait(Bucket=b)
     return resp
