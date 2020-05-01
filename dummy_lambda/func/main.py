@@ -53,14 +53,14 @@ def return_foobar(**kwargs):
 def test_kwargs_passed_to_default_path_include_all(logger, event, **kwargs):
     try:
         assert kwargs.get("foo", None) == "bar"
-    except:
+    except Exception:
         raise FailButContinue("foo was not set to bar")
 
 
 def test_kwargs_passed_to_default_path(foo, logger, event, **kwargs):
     try:
         assert foo == "bar"
-    except:
+    except Exception:
         raise FailButContinue("foo was not set to bar")
 
 

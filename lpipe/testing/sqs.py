@@ -20,7 +20,7 @@ from contextlib import contextmanager
 import backoff
 from botocore.exceptions import ClientError
 
-from .. import _boto3, exceptions, utils
+from .. import _boto3, utils
 from ..sqs import get_queue_arn, get_queue_url
 from .utils import backoff_check
 
@@ -37,7 +37,7 @@ def _sqs_queue_exists(q):
     try:
         get_queue_url(q)
         return True
-    except:
+    except Exception:
         logging.getLogger().info(f"Queue {q} does not exist yet.")
         return False
 

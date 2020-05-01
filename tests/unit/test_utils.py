@@ -8,7 +8,7 @@ from lpipe import exceptions, utils
 
 def test_kinesis_hash():
     hash = utils.hash(json.dumps({"foo": "bar"}, sort_keys=True))
-    assert isinstance(hash, str) == True and len(hash) > 0
+    assert isinstance(hash, str) and len(hash) > 0
 
 
 def test_batch():

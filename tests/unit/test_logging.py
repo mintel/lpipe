@@ -7,7 +7,7 @@ from lpipe.utils import AutoEncoder
 
 def test_create_logger():
     logger = ServerlessLogger()
-    assert isinstance(logger, ServerlessLogger) == True
+    assert isinstance(logger, ServerlessLogger)
 
 
 def test_logger_log():
@@ -38,7 +38,7 @@ def test_logger_log_critical():
 def test_create_logger_persist():
     logger = ServerlessLogger()
     logger.persist = True
-    assert isinstance(logger, ServerlessLogger) == True
+    assert isinstance(logger, ServerlessLogger)
 
 
 def test_logger_persist_events():
@@ -69,13 +69,13 @@ def test_logger_persist_emit():
     emit_logs(body)
 
 
-def test_logger_persist_events_action():
+def test_logger_context_action():
     logger = ServerlessLogger()
     with logger.context(bind={"foo": "bar"}, action="my_action"):
         logger.log("TEST")
 
 
-def test_logger_persist_events_action():
+def test_logger_bind_unbind():
     logger = ServerlessLogger()
     logger.bind(foo="bar")
     logger.unbind("foo")

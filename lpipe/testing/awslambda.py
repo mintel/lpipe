@@ -76,7 +76,7 @@ def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
     body = response["Payload"].read().decode("utf-8")
     try:
         body = json.loads(body)
-    except:
+    except Exception:
         pass
     emit_logs(body)
     return response, body
