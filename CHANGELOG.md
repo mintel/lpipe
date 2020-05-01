@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.14] - 2020-05-01
+- Set lpipe.testing.awslambda default lambda name to "my_lambda"
+- Fix formatting and linting errors
+
 ## [2.0.13] - 2020-03-13
 - SQS: If any records fail, delete successful records from the queue before raising an exception.
 - Fix bug in `lpipe._boto.proxy` where logger was undefined.
