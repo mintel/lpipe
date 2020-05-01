@@ -1,8 +1,8 @@
--include $(shell curl -sSL -o .build-harness "https://raw.githubusercontent.com/mintel/build-harness/master/templates/Makefile.build-harness"; echo .build-harness)
+-include $(shell curl -sSL -o .build-harness "https://git.io/mintel-build-harness"; echo .build-harness)
 
-init: init-build-harness
-	@make pipenv
 .PHONY: init
+init: bh/init
+	@$(MAKE) bh/venv pipenv
 
 build-docs: pipenv
 	$(WITH_PIPENV) $(MAKE) -C docs clean html
@@ -64,6 +64,7 @@ release_minor: bumpversion/release_minor
 release_major: bumpversion/release_major
 .PHONY: release_major
 
-clean: pipenv/clean python/clean python/clean/dist clean-build-harness
-	@cd dummy_lambda; make clean
 .PHONY: clean
+clean: python/clean/dist pipenv/clean python/clean
+	@cd dummy_lambda; make clean
+	@$(MAKE) bh/clean

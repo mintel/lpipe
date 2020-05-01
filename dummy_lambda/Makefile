@@ -1,4 +1,4 @@
--include ../.build-harness
+-include $(shell curl -sSL -o ../.build-harness "https://git.io/mintel-build-harness"; echo ../.build-harness)
 
 build: faas/build/python/zip
 .PHONY: build
