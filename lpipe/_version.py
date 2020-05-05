@@ -1,5 +1,5 @@
 __title__ = "lpipe"
-__version__ = "2.0.17"
+__version__ = "2.0.18"
 __summary__ = "Lambda toolkit and message pipeline."
 __author__ = "Mintel"
 __author_email__ = "everest@mintel.com"
