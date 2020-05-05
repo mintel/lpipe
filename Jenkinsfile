@@ -1,4 +1,4 @@
-@Library('everest-shared') _
+@Library('everest-shared@better_python_package_publish') _
 node('docker&&virtualenv') {
     properties([
         buildDiscarder(
