@@ -317,6 +317,9 @@ def execute_payload(
                         }
                     ):
                         logger.log("Executing function.")
+                    with logger.context(
+                        bind={"path": payload.path.name, "function": f.__name__}
+                    ):
                         ret = f(
                             **{
                                 **action_kwargs,
