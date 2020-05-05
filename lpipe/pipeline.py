@@ -309,17 +309,10 @@ def execute_payload(
                 assert isinstance(f, FunctionType)
                 try:
                     # TODO: if ret, set _last_output
-                    with logger.context(
-                        bind={
-                            "kwargs": action_kwargs,
-                            "path": payload.path.name,
-                            "function": f.__name__,
-                        }
-                    ):
+                    _log_context = {"path": payload.path.name, "function": f.__name__}
+                    with logger.context(bind={**_log_context, "kwargs": action_kwargs}):
                         logger.log("Executing function.")
-                    with logger.context(
-                        bind={"path": payload.path.name, "function": f.__name__}
-                    ):
+                    with logger.context(bind=_log_context):
                         ret = f(
                             **{
                                 **action_kwargs,
