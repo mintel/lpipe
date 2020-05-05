@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.0.15] - 2020-05-05
+- To prevent log explosion, stop adding message kwargs by default to logger passed into user's functions.
+
 ## [2.0.14] - 2020-05-01
 - Set lpipe.testing.awslambda default lambda name to "my_lambda"
 - Fix formatting and linting errors
