@@ -1,13 +1,13 @@
-class LambdaPipelineException(Exception):
+class LpipeBaseException(Exception):
     pass
 
 
 # FLOW CONTROL
-class FailButContinue(LambdaPipelineException):
+class FailButContinue(LpipeBaseException):
     pass
 
 
-class FailCatastrophically(LambdaPipelineException):
+class FailCatastrophically(LpipeBaseException):
     pass
 
 

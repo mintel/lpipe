@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [2.0.0] - 2020-03-05
 - `context` is now a required argument of `process_event()`
 - Allow `process_event()` without a `path_enum`/`Enum`. One will be automatically generated based on the `paths` provided.
-- Refactor and document exception flow control. All lpipe errors will now inherit from `LambdaPipelineException`.
+- Refactor and document exception flow control. All lpipe errors will now inherit from `LpipeBaseException`.
 - Move setup and tear-down testing utilities out of `conftest.py` and into `lpipe.testing` so they can be used consistently by all projects implementing lpipe.
 - Add example of using moto to mock boto3.
 

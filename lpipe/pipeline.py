@@ -17,7 +17,7 @@ from lpipe.exceptions import (
     InvalidConfigurationError,
     InvalidPathError,
     InvalidPayloadError,
-    LambdaPipelineException,
+    LpipeBaseException,
 )
 from lpipe.logging import ServerlessLogger
 from lpipe.utils import AutoEncoder, _repr, exception_to_str, get_enum_value, get_nested
@@ -351,7 +351,7 @@ def execute_payload(
                                 raise FailButContinue(
                                     f"Failed to execute returned Payload. {p}"
                                 ) from e
-                except LambdaPipelineException:
+                except LpipeBaseException:
                     # CAPTURES:
                     #    FailButContinue
                     #    FailCatastrophically
