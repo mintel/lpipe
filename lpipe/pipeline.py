@@ -328,33 +328,7 @@ def execute_payload(
                                 },
                             }
                         )
-
-                    if ret:
-                        _payloads = []
-                        try:
-                            if isinstance(ret, Payload):
-                                _payloads.append(ret.validate(path_enum))
-                            elif isinstance(ret, list):
-                                for r in ret:
-                                    if isinstance(r, Payload):
-                                        _payloads.append(r.validate(path_enum))
-                        except Exception as e:
-                            logger.debug(exception_to_str(e))
-                            raise FailButContinue(
-                                f"Something went wrong while extracting Payloads from a function return value. {ret}"
-                            ) from e
-
-                        for p in _payloads:
-                            logger.debug(f"Function returned a Payload. Executing. {p}")
-                            try:
-                                ret = execute_payload(
-                                    p, path_enum, paths, logger, event, context, debug
-                                )
-                            except Exception as e:
-                                logger.debug(exception_to_str(e))
-                                raise FailButContinue(
-                                    f"Failed to execute returned Payload. {p}"
-                                ) from e
+                    ret = return_handler(ret, logger)
                 except LpipeBaseException:
                     # CAPTURES:
                     #    FailButContinue
@@ -396,6 +370,33 @@ def execute_payload(
             f"Path should be a string (path name), Path (path Enum), or Queue: {payload.path})"
         )
 
+    return ret
+
+
+def return_handler(ret, logger):
+    if not ret:
+        return ret
+    _payloads = []
+    try:
+        if isinstance(ret, Payload):
+            _payloads.append(ret.validate(path_enum))
+        elif isinstance(ret, list):
+            for r in ret:
+                if isinstance(r, Payload):
+                    _payloads.append(r.validate(path_enum))
+    except Exception as e:
+        logger.debug(exception_to_str(e))
+        raise FailButContinue(
+            f"Something went wrong while extracting Payloads from a function return value. {ret}"
+        ) from e
+
+    for p in _payloads:
+        logger.debug(f"Function returned a Payload. Executing. {p}")
+        try:
+            ret = execute_payload(p, path_enum, paths, logger, event, context, debug)
+        except Exception as e:
+            logger.debug(exception_to_str(e))
+            raise FailButContinue(f"Failed to execute returned Payload. {p}") from e
     return ret
 
 
