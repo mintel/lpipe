@@ -6,7 +6,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Union, get_type_hints
+from typing import Callable, Union, get_type_hints
 
 from decouple import config
 
@@ -288,6 +288,10 @@ def execute_payload(
         payload.path = clean_path(path_enum, payload.path)
 
     if isinstance(payload.path, Enum):  # PATH
+        # Allow someone to simplify their definition of a Path to a list of functions.
+        if all([isinstance(f, Callable) for f in paths[payload.path]]):
+            paths[payload.path] = [Action(functions=action)]
+
         for action in paths[payload.path]:
             assert isinstance(action, Action)
 
@@ -451,11 +455,32 @@ def build_action_kwargs(action: Action, kwargs: dict) -> dict:
     Returns:
         dict: validated kwargs required by action
     """
-    action_kwargs = {}
-    if not action.required_params and action.functions:
-        action_kwargs = validate_signature(action.functions, kwargs)
-    elif action.required_params and isinstance(action.required_params, list):
-        for param in action.required_params:
+    action_kwargs = build_kwargs(
+        functions=action.functions,
+        required_params=action.required_params,
+        kwargs=kwargs,
+    )
+    if action.include_all_params:
+        action_kwargs.update(kwargs)
+    return action_kwargs
+
+
+def build_kwargs(kwargs: dict, functions: list, required_params: list = None) -> dict:
+    """Build dictionary of kwargs for the union of function signatures.
+
+    Args:
+        functions (list): functions which a particular action should call
+        required_params (list): manually defined parameters
+        kargs (dict): kwargs provided in the event's message
+
+    Returns:
+        dict: validated kwargs required by action
+    """
+    kwargs_union = {}
+    if not required_params and functions:
+        kwargs_union = validate_signature(functions, kwargs)
+    elif required_params and isinstance(required_params, list):
+        for param in required_params:
             param_name = param[0] if isinstance(param, tuple) else param
             try:
                 # Assert required field was provided.
@@ -465,20 +490,16 @@ def build_action_kwargs(action: Action, kwargs: dict) -> dict:
 
             # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
             if isinstance(param, tuple) and len(param) == 2:
-                action_kwargs[param[1]] = kwargs[param[0]]
+                kwargs_union[param[1]] = kwargs[param[0]]
             else:
-                action_kwargs[param] = kwargs[param]
-    elif not action.required_params:
+                kwargs_union[param] = kwargs[param]
+    elif not required_params:
         return {}
     else:
         raise InvalidPayloadError(
             "You either didn't provide functions or required_params was not an instance of list or NoneType."
         )
-
-    if action.include_all_params:
-        action_kwargs.update(kwargs)
-
-    return action_kwargs
+    return kwargs_union
 
 
 def _merge(functions: list, iter):

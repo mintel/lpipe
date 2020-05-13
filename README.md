@@ -11,19 +11,19 @@ This project was borne out of a desire to support directed-graph workflows on FA
 At its most basic, your lambda would require no more than this.
 
 ```python
-from lpipe import Action, QueueType, process_event
+import lpipe
 
 def test_func(foo: str, **kwargs):
 	pass
 
-PATHS = {"EXAMPLE": [Action(functions=[test_func])]}
-
 def lambda_handler(event, context):
-    return process_event(
+    return lpipe.process_event(
         event=event,
         context=context,
-        paths=PATHS,
-        queue_type=QueueType.SQS,
+        paths={
+            "EXAMPLE": [test_func]
+        },
+        queue_type=lpipe.QueueType.SQS,
     )
 ```
 
