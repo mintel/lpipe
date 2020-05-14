@@ -6,13 +6,11 @@ python:
 services:
   - docker
 install:
-  - make init build-test-lambda
+  - make init
+  - make build-test-lambda
 jobs:
   include:
     - stage: test
       script: make pytest
     - stage: deploy
       script: make bh/debug
-stages:
-  - test
-  - deploy
