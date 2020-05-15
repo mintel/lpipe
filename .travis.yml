@@ -46,6 +46,7 @@ jobs:
           secure: fInRzePpgtFSPWtYx2loMKae3Wzhm0lRijhQL69/BCPqkPmH2wphs5cSxL3KrsvtOHlD7tTRFZWZmume4l6shHOr1Z/79yxMi+IzGX608y3EwliA1Y8mUF0a+L8mjwEi0sOa00pHlvrnfJ/pQ81x/QHOFAUCz2/D6kEqUggYSNDwFN109rBhxLGo4WZ8gJNZ5UeeKgVOefenJk1/AZrTJ3QKm7cvwfjC+Nolt4e0CY+5CSjNVrSXY6fU5PYs3fAJP4x/Y+rhlfluS61Gsgibi/RYp5f675GxJdsA/LPcK2Pndr4XsjsjKMYs7dHSzg2Xk4DQ9VQA8yfljXD7hybxTR5egszgvWQT9Lc0WZpx7T+Lzu8RZMCue0WQBVTVMkEOFG8kqXQLnYOSyZS11HP+yqulxqwhWfifspfarEUU4qYaZErkIjSfpePYkYDTvL89bPFfXEfEqD2SqSx2/1pfW33+fgRfHsv8coAs6Z/v63zz9bBiLamlmGJH4zjOrIvh4m7EIUglXqlgpcIoZxdpnHyeCK0MoyFU/WTsXFsPfDL4DB/OPga3hTecuGaJ+KkDZr9hSdd1YLL6S9t38i7lHw0jis6xaFnzmn42LE96cOtOmyttEwkYq2RtnGtV34p+H9HMLclNvdDqQK5ZsZMzHlIRzEtB/9sMQeoMdcVG3gY=
         distributions: 'sdist bdist_wheel'
         skip_existing: true
+        skip_cleanup: true
         on:
           tags: true
           all_branches: true
