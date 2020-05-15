@@ -32,6 +32,10 @@ setup(
     maintainer_email=__author_email__,
     license="APACHE",
     url=__uri__,
+    project_urls={
+        "Bug Tracker": "https://github.com/mintel/lpipe/issues",
+        "Source Code": "https://github.com/mintel/lpipe",
+    },
     packages=find_packages(where=HERE, exclude=["dummy_lambda", "tests", "tests.*"]),
     description=__summary__,
     long_description=read("README.md"),
