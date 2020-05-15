@@ -1,4 +1,4 @@
-# lpipe
+# lpipe ![](https://travis-ci.com/mintel/lpipe.svg?branch=master)
 
 **lpipe** provides a simple set of tools for writing clearly defined, multi-function AWS Lambdas in Python.
 
