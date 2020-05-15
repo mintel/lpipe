@@ -25,14 +25,10 @@ jobs:
       deploy: []
 
     - stage: test
-      python: 3.6
       services:
         - docker
       install: make init
       before_script: make build-test-lambda
-      script:
-        - make pytest/k/unit
-        - make pytest/k/integration
-      after_success:
-        - codecov
+      script: make pytest/k/unit pytest/k/integration
+      after_success: codecov
       deploy: []
