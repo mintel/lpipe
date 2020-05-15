@@ -7,10 +7,7 @@ services:
   - docker
 install:
   - make init
+before_script:
   - make build-test-lambda
-jobs:
-  include:
-    - stage: test
-      script: make pytest
-    - stage: deploy
-      script: make bh/debug
+script:
+  - make pytest
