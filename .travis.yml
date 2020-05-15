@@ -1,11 +1,32 @@
+services:
+  - docker
 language: python
 python:
   - "3.6"
   - "3.7"
   - "3.8"
-services:
-  - docker
+
+stages:
+  - lint
+  - test
+#   - deploy
+
 install:
   - make init
+before_script:
+  - make build-test-lambda
 script:
-  - make testall
+  - make pytest/k/unit
+  - make pytest/k/integration
+after_success:
+  - codecov
+
+jobs:
+  include:
+    - stage: lint
+      python: 3.6
+      services: []
+      install: make init
+      script: make python/lint
+      after_success: []
+      deploy: []

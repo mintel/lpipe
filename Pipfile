@@ -15,6 +15,7 @@ structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
+codecov = "*"
 isort = "*"
 moto = "*"
 pipenv = "*"
