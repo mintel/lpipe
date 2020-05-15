@@ -92,6 +92,7 @@ class Path(Enum):
     TEST_MULTI_TRIGGER = 17
     TEST_DEFAULT_PATH = 18
     TEST_DEFAULT_PATH_INCLUDE_ALL = 19
+    TEST_BARE_FUNCS = 20
 
 
 PATHS = {
@@ -115,6 +116,7 @@ PATHS = {
         Action(functions=[test_func_no_params], paths=[Path.TEST_FUNC_BLANK_PARAMS]),
         Action(paths=[Path.TEST_FUNC_BLANK_PARAMS]),
     ],
+    Path.TEST_BARE_FUNCS: [test_func, test_func_no_params],
     Path.TEST_RENAME_PARAM: [
         Action(
             required_params=[

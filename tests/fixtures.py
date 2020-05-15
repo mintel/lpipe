@@ -45,6 +45,10 @@ DATA = {
         "payload": [{"path": "MULTI_TEST_FUNC_NO_PARAMS", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
+    "TEST_BARE_FUNCS": {
+        "payload": [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
     "RENAME_PARAM": {
         "payload": [{"path": "TEST_RENAME_PARAM", "kwargs": {"bar": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},

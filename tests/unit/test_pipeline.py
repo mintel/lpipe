@@ -358,7 +358,9 @@ class TestProcessEvents:
 
         # Simulate a PATHS dictionary where the user didn't define and use an enumeration.
         _PATHS = {
-            str(path).split(".")[-1]: [a.copy() for a in actions]
+            str(path).split(".")[-1]: [
+                a.copy() if isinstance(a, Action) else a for a in actions
+            ]
             for path, actions in deepcopy(PATHS).items()
         }
 
