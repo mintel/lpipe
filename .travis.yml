@@ -27,7 +27,7 @@ jobs:
     - stage: lint
       python: 3.6
       services: []
-      install: make init
+      before_script: []
       script: make python/lint
       after_success: []
       deploy: []
@@ -36,9 +36,8 @@ jobs:
       if: tag =~ ^v
       python: 3.6
       services: []
-      before_install: []
-      install: make requirements.txt requirements-dev.txt
-      script: 'true'
+      before_script: []
+      script: make requirements.txt requirements-dev.txt
       after_success: []
       deploy:
         provider: pypi
