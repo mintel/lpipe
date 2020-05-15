@@ -6,7 +6,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Callable, Union, get_type_hints
+from typing import Union, get_type_hints
 
 from decouple import config
 
@@ -289,7 +289,7 @@ def execute_payload(
 
     if isinstance(payload.path, Enum):  # PATH
         # Allow someone to simplify their definition of a Path to a list of functions.
-        if all([isinstance(f, Callable) for f in paths[payload.path]]):
+        if all([isinstance(f, FunctionType) for f in paths[payload.path]]):
             paths[payload.path] = [Action(functions=action)]
 
         for action in paths[payload.path]:
