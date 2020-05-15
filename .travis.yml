@@ -20,8 +20,7 @@ jobs:
       python: 3.6
       services: []
       install: make init
-      script:
-        - make python/lint
+      script: make python/lint
       after_success: []
       deploy: []
 
@@ -32,7 +31,6 @@ jobs:
       install: make init
       before_script: make build-test-lambda
       script:
-        - make python/lint
         - make pytest/k/unit
         - make pytest/k/integration
       after_success:
