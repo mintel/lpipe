@@ -10,20 +10,9 @@ stages:
   - lint
   - test
 #   - deploy
-#
-# install:
-#   - make init
-#
-# before_script:
-#   - make build-test-lambda
-#
-# script:
-#   - make python/lint
-#   - make pytest/k/unit
-#   - make pytest/k/integration
-#
-# after_success:
-#   - codecov
+
+install:
+  - make init
 
 jobs:
   include:
@@ -41,6 +30,7 @@ jobs:
       services:
         - docker
       install: make init
+      before_script: make build-test-lambda
       script:
         - make python/lint
         - make pytest/k/unit
