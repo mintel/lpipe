@@ -44,7 +44,7 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Framework :: Pytest",
         "Intended Audience :: Developers",
-        "Topic :: Software Development :: Testing",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
@@ -53,6 +53,6 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Operating System :: OS Independent",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
     ],
 )
