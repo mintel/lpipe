@@ -17,7 +17,7 @@ before_script:
   - make build-test-lambda
 script:
   - make pytest/k/unit
-  - pytest/k/integration
+  - make pytest/k/integration
 after_success:
   - codecov
 
