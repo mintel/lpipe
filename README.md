@@ -1,4 +1,5 @@
-# lpipe [![](https://travis-ci.com/mintel/lpipe.svg?branch=master)](https://travis-ci.com/github/mintel/lpipe)
+# lpipe 
+[![PyPI version](https://img.shields.io/pypi/v/lpipe.svg)](https://pypi.org/project/lpipe/) [![TravisCI build status](https://travis-ci.com/mintel/lpipe.svg?branch=master)](https://travis-ci.com/github/mintel/lpipe) [![Code Coverage](https://img.shields.io/codecov/c/github/mintel/lpipe.svg)](https://codecov.io/gh/mintel/lpipe)
 
 **lpipe** provides a simple set of tools for writing clearly defined, multi-function AWS Lambdas in Python.
 
