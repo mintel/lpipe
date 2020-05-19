@@ -8,7 +8,7 @@ from structlog import wrap_logger
 from structlog.processors import JSONRenderer, TimeStamper
 
 import lpipe.exceptions
-from lpipe.utils import _repr
+from lpipe import utils
 
 
 class LPLogger:
@@ -23,7 +23,7 @@ class LPLogger:
         self.persist = False
 
     def _json(self):
-        return _repr(self)
+        return utils.repr(self)
 
     def bind(self, **kwargs):
         """Bind context data to logger by forwarding to structlog.
