@@ -56,7 +56,7 @@ def lambda_handler(event, context):
         paths={
             "EXAMPLE": [test_func]
         },
-		default_path="EXAMPLE",
+        default_path="EXAMPLE",
         queue_type=lpipe.QueueType.SQS,
     )
 ```
