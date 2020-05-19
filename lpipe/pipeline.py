@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import List, Union
+from typing import Any, List, Union
 
 import lpipe.exceptions
 import lpipe.logging
@@ -39,7 +39,7 @@ class Queue:
 
     """
 
-    def __init__(self, type, path, name=None, url=None):
+    def __init__(self, type: QueueType, path: str, name: str = None, url: str = None):
         assert name or url
         assert isinstance(type, QueueType)
         self.type = type
@@ -53,7 +53,11 @@ class Queue:
 
 class Action:
     def __init__(
-        self, functions=[], paths=[], required_params=None, include_all_params=False
+        self,
+        functions: List[FunctionType] = [],
+        paths: List[Union[str, Enum]] = [],
+        required_params=None,
+        include_all_params=False,
     ):
         assert functions or paths
         self.functions = functions
@@ -75,7 +79,7 @@ class Action:
 
 
 class Payload:
-    def __init__(self, path, kwargs: dict, event_source=None):
+    def __init__(self, path: Union[Enum, str], kwargs: dict, event_source=None):
         self.path = path
         self.kwargs = kwargs
         self.event_source = event_source
@@ -96,7 +100,9 @@ class Payload:
         return utils.repr(self, ["path", "kwargs"])
 
 
-def normalize_path(path_enum: EnumMeta, path: Union[str, Queue, Enum]):
+def normalize_path(
+    path_enum: EnumMeta, path: Union[str, Queue, Enum]
+) -> Union[Queue, Enum]:
     if isinstance(path, Queue):
         return path
     else:
@@ -108,11 +114,11 @@ def normalize_path(path_enum: EnumMeta, path: Union[str, Queue, Enum]):
             ) from e
 
 
-def normalize_paths(path_enum: EnumMeta, paths: dict):
+def normalize_paths(path_enum: EnumMeta, paths: dict) -> dict:
     return {normalize_path(path_enum, k): v for k, v in paths.items()}
 
 
-def normalize_actions(actions: List[Union[FunctionType, Action]]):
+def normalize_actions(actions: List[Union[FunctionType, Action]]) -> List[Action]:
     """Normalize a path definition to a list of Action objects
 
     Args:
@@ -156,8 +162,8 @@ def process_event(
     path_enum: EnumMeta = None,
     default_path=None,
     logger=None,
-    debug=False,
-):
+    debug: bool = False,
+) -> dict:
     """Process an AWS Lambda event.
 
     Args:
@@ -272,8 +278,8 @@ def execute_payload(
     logger,
     event,
     context,
-    debug=False,
-):
+    debug: bool = False,
+) -> Any:
     """Execute functions, paths, and shortcuts in a Path.
 
     Args:
@@ -379,8 +385,8 @@ def execute_payload(
 
 
 def return_handler(
-    ret, path_enum: EnumMeta, paths: dict, logger, event, context, debug
-):
+    ret, path_enum: EnumMeta, paths: dict, logger, event, context, debug: bool
+) -> Any:
     if not ret:
         return ret
     _payloads = []
@@ -409,7 +415,7 @@ def return_handler(
     return ret
 
 
-def advanced_cleanup(queue_type, records, logger, **kwargs):
+def advanced_cleanup(queue_type: QueueType, records: list, logger, **kwargs):
     """If exceptions were raised, cleanup all successful records before raising.
 
     Args:
@@ -422,7 +428,7 @@ def advanced_cleanup(queue_type, records, logger, **kwargs):
     # If the queue type was not handled, no cleanup was necessary by lpipe.
 
 
-def cleanup_sqs_records(records, logger):
+def cleanup_sqs_records(records: list, logger):
     base_err_msg = (
         "Unable to delete successful records messages from SQS queue. AWS should "
         "still handle this automatically when the lambda finishes executing, but "
