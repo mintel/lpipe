@@ -5,7 +5,8 @@ from functools import wraps
 import botocore
 from decouple import config
 
-from lpipe import _boto3, utils
+import lpipe.contrib.boto3
+from lpipe import utils
 from lpipe.contrib import mindictive
 
 
@@ -48,7 +49,7 @@ def batch_put_messages(
 ):
     """Put messages into a sqs queue, batched by the maximum of 10."""
     assert batch_size <= 10  # send_message_batch will fail otherwise
-    client = _boto3.client("sqs")
+    client = lpipe.contrib.boto3.client("sqs")
     responses = []
     for b in utils.batch(messages, batch_size):
         responses.append(
@@ -69,16 +70,16 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 
 @mock_sqs
 def get_queue_url(queue_name):
-    return utils.call(_boto3.client("sqs").get_queue_url, QueueName=queue_name)[
-        "QueueUrl"
-    ]
+    return utils.call(
+        lpipe.contrib.boto3.client("sqs").get_queue_url, QueueName=queue_name
+    )["QueueUrl"]
 
 
 @mock_sqs
 def get_queue_arn(queue_url):
     return mindictive.get_nested(
         utils.call(
-            _boto3.client("sqs").get_queue_attributes,
+            lpipe.contrib.boto3.client("sqs").get_queue_attributes,
             QueueUrl=queue_url,
             AttributeNames=["QueueArn"],
         ),
@@ -89,5 +90,7 @@ def get_queue_arn(queue_url):
 @mock_sqs
 def batch_delete_messages(queue_url, entries):
     return utils.call(
-        _boto3.client("sqs").batch_delete_messages, QueueUrl=queue_url, Entries=entries
+        lpipe.contrib.boto3.client("sqs").batch_delete_messages,
+        QueueUrl=queue_url,
+        Entries=entries,
     )

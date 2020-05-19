@@ -14,12 +14,13 @@ from contextlib import contextmanager
 import backoff
 from botocore.exceptions import ClientError, ConnectionClosedError
 
-from .. import _boto3, utils
+import lpipe.contrib.boto3
+from lpipe import utils
 
 
 @backoff.on_exception(backoff.expo, (ClientError, ConnectionClosedError), max_time=30)
 def create_s3_bucket(b: str):
-    client = _boto3.client("s3")
+    client = lpipe.contrib.boto3.client("s3")
     resp = utils.call(client.create_bucket, Bucket=b)
     client.get_waiter("bucket_exists").wait(Bucket=b)
     return resp
@@ -31,8 +32,8 @@ def create_s3_buckets(names: list):
 
 @backoff.on_exception(backoff.expo, (ClientError, ConnectionClosedError), max_time=30)
 def destroy_s3_bucket(b: str):
-    client = _boto3.client("s3")
-    objects = _boto3.resource("s3").Bucket(b).objects.all()
+    client = lpipe.contrib.boto3.client("s3")
+    objects = lpipe.contrib.boto3.resource("s3").Bucket(b).objects.all()
     [utils.call(client.delete_object, Bucket=b, Key=o.key) for o in objects]
     resp = utils.call(client.delete_bucket, Bucket=b)
     client.get_waiter("bucket_not_exists").wait(Bucket=b)
