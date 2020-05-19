@@ -112,9 +112,9 @@ def get_enum_value(e: EnumMeta, k):
         ) from err
 
 
-def _repr(o, attrs=[]):
-    desc = ", ".join([f"{a}: {getattr(o, a)}" for a in attrs])
-    return f"{o.__class__.__name__}<{desc}>"
+def repr(o, attrs=[]):
+    desc = ", ".join([f"{a}={getattr(o, a)}" for a in attrs])
+    return f"{o.__class__.__name__}({desc})"
 
 
 def describe_client_error(e):

@@ -48,7 +48,7 @@ class Queue:
         self.url = url
 
     def __repr__(self):
-        return utils._repr(self, ["type", "name", "url"])
+        return utils.repr(self, ["type", "name", "url"])
 
 
 class Action:
@@ -62,7 +62,7 @@ class Action:
         self.include_all_params = include_all_params
 
     def __repr__(self):
-        return utils._repr(self, ["functions", "paths"])
+        return utils.repr(self, ["functions", "paths"])
 
     def copy(self):
         return type(self)(
@@ -93,7 +93,7 @@ class Payload:
         return {"path": self.path, "kwargs": self.kwargs}
 
     def __repr__(self):
-        return utils._repr(self, ["path", "kwargs"])
+        return utils.repr(self, ["path", "kwargs"])
 
 
 def normalize_path(path_enum: EnumMeta, path: Union[str, Queue, Enum]):
