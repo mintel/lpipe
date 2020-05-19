@@ -166,6 +166,7 @@ lpipe.Action(required_params, functions, paths)
 | `required_params` | `list` | (optional if functions is set, required if ONLY paths is set) A list of kwarg keys to expect. |
 | `functions` | `list` | (optional if paths is set) A list of functions to run with the provided kwargs. |
 | `paths` | `list` | (optional if functions is set) A list of path names (to be run in the current lambda instance) or Queues to push messages to. |
+| `include_all_params` | `bool` | If true, pass all kwargs to every function/path in this Action. |
 
 ##### Example
 
