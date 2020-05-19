@@ -1,30 +1,19 @@
 import base64
-import inspect
 import json
-import logging
 import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Union, get_type_hints
+from typing import List, Union
 
-from decouple import config
-
-from lpipe import kinesis, sentry, sqs
-from lpipe.exceptions import (
-    FailButContinue,
-    FailCatastrophically,
-    InvalidConfigurationError,
-    InvalidPathError,
-    InvalidPayloadError,
-    LpipeBaseException,
-)
-from lpipe.logging import ServerlessLogger
-from lpipe.utils import AutoEncoder, _repr, exception_to_str, get_enum_value, get_nested
+import lpipe.exceptions
+import lpipe.logging
+from lpipe import signature, utils
+from lpipe.contrib import kinesis, mindictive, sentry, sqs
 
 
 class QueueType(Enum):
-    RAW = 1
+    RAW = 1  # This may be a Cloudwatch or manually triggered event
     KINESIS = 2
     SQS = 3
 
@@ -59,19 +48,7 @@ class Queue:
         self.url = url
 
     def __repr__(self):
-        return _repr(self, ["type", "name", "url"])
-
-
-def clean_path(path_enum: EnumMeta, path):
-    if isinstance(path, Queue):
-        return path
-    else:
-        try:
-            return get_enum_value(path_enum, path)
-        except Exception as e:
-            raise InvalidPathError(
-                "Unable to cast your path identifier to an enum."
-            ) from e
+        return utils._repr(self, ["type", "name", "url"])
 
 
 class Action:
@@ -85,7 +62,7 @@ class Action:
         self.include_all_params = include_all_params
 
     def __repr__(self):
-        return _repr(self, ["functions", "paths"])
+        return utils._repr(self, ["functions", "paths"])
 
     def copy(self):
         return type(self)(
@@ -106,7 +83,7 @@ class Payload:
     def validate(self, path_enum: EnumMeta = None):
         if path_enum:
             assert isinstance(
-                clean_path(path_enum, self.path), path_enum
+                normalize_path(path_enum, self.path), path_enum
             ) or isinstance(self.path, Queue)
         else:
             assert isinstance(self.path, Queue)
@@ -116,16 +93,58 @@ class Payload:
         return {"path": self.path, "kwargs": self.kwargs}
 
     def __repr__(self):
-        return _repr(self, ["path", "kwargs"])
+        return utils._repr(self, ["path", "kwargs"])
 
 
-def build_response(n_records, n_ok, logger) -> dict:
+def normalize_path(path_enum: EnumMeta, path: Union[str, Queue, Enum]):
+    if isinstance(path, Queue):
+        return path
+    else:
+        try:
+            return utils.get_enum_value(path_enum, path)
+        except Exception as e:
+            raise lpipe.exceptions.InvalidPathError(
+                "Unable to cast your path identifier to an enum."
+            ) from e
+
+
+def normalize_paths(path_enum: EnumMeta, paths: dict):
+    return {normalize_path(path_enum, k): v for k, v in paths.items()}
+
+
+def normalize_actions(actions: List[Union[FunctionType, Action]]):
+    """Normalize a path definition to a list of Action objects
+
+    Args:
+        actions (list): a list of FunctionType or Action objects
+
+    Returns:
+        list: a list of Action objects
+    """
+    # Allow someone to simplify their definition of a Path to a list of functions.
+    if all([isinstance(a, FunctionType) for a in actions]):
+        return [Action(functions=actions)]
+    return actions
+
+
+def normalize_path_enum(paths: dict, path_enum: EnumMeta = None):
+    """If path_enum was not provided, generate one automatically."""
+    if not path_enum:
+        try:
+            path_enum = utils.generate_enum(paths)
+            paths = normalize_paths(path_enum, paths)
+        except KeyError as e:
+            raise lpipe.exceptions.InvalidConfigurationError from e
+    return path_enum, paths
+
+
+def build_event_response(n_records, n_ok, logger) -> dict:
     response = {
         "event": "Finished.",
         "stats": {"received": n_records, "successes": n_ok},
     }
     if hasattr(logger, "events") and logger.events:
-        response["logs"] = json.dumps(logger.events, cls=AutoEncoder)
+        response["logs"] = json.dumps(logger.events, cls=utils.AutoEncoder)
     return response
 
 
@@ -151,43 +170,28 @@ def process_event(
         logger:
         debug (bool):
     """
-    try:
-        if not logger:
-            logger = ServerlessLogger(
-                level=logging.DEBUG if debug else logging.INFO,
-                process=getattr(
-                    context, "function_name", config("FUNCTION_NAME", default=None)
-                ),
-            )
-
-        if debug and isinstance(logger, ServerlessLogger):
-            logger.persist = True
-    except Exception as e:
-        raise InvalidConfigurationError("Failed to initialize logger.") from e
-
+    logger = lpipe.logging.setup(logger=logger, context=context, debug=debug)
     logger.debug(f"Event received. queue: {queue_type}, event: {event}")
+
     try:
         assert isinstance(queue_type, QueueType)
     except AssertionError as e:
-        raise InvalidConfigurationError(f"Invalid queue type '{queue_type}'") from e
+        raise lpipe.exceptions.InvalidConfigurationError(
+            f"Invalid queue type '{queue_type}'"
+        ) from e
 
-    if not path_enum:
-        try:
-            path_enum = Enum("AutoPath", [k.upper() for k in paths.keys()])
-            paths = {clean_path(path_enum, k): v for k, v in paths.items()}
-        except KeyError as e:
-            raise InvalidConfigurationError from e
+    path_enum, paths = normalize_path_enum(path_enum=path_enum, paths=paths)
 
     successful_records = []
     records = get_records_from_event(queue_type, event)
     try:
         assert isinstance(records, list)
     except AssertionError as e:
-        logger.error(f"'records' is not a list {exception_to_str(e)}")
-        return build_response(0, 0, logger)
+        logger.error(f"'records' is not a list {utils.exception_to_str(e)}")
+        return build_event_response(0, 0, logger)
 
-    output = []
-    exceptions = []
+    _output = []
+    _exceptions = []
     for encoded_record in records:
         ret = None
         try:
@@ -202,16 +206,16 @@ def process_event(
                 _event_source = get_event_source(queue_type, encoded_record)
                 payload = Payload(_path, _kwargs, _event_source).validate(path_enum)
             except AssertionError as e:
-                raise InvalidPayloadError(
+                raise lpipe.exceptions.InvalidPayloadError(
                     "'path' or 'kwargs' missing from payload."
                 ) from e
             except TypeError as e:
-                raise InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record} {exception_to_str(e)}"
+                raise lpipe.exceptions.InvalidPayloadError(
+                    f"Bad record provided for queue type {queue_type}. {encoded_record} {utils.exception_to_str(e)}"
                 ) from e
 
             with logger.context(bind={"payload": payload.to_dict()}):
-                logger.log(f"Record received.")
+                logger.log("Record received.")
 
             # Run your path/action/functions against the payload found in this record.
             ret = execute_payload(
@@ -224,39 +228,40 @@ def process_event(
                 debug=debug,
             )
 
-            # Will handle any cleanup necessary for a successful record later.
+            # Will handle cleanup for successful records later, if necessary.
             successful_records.append(encoded_record)
-        except FailButContinue as e:
+        except lpipe.exceptions.FailButContinue as e:
             # CAPTURES:
-            #    InvalidPayloadError
-            #    InvalidPathError
+            #    lpipe.exceptions.InvalidPayloadError
+            #    lpipe.exceptions.InvalidPathError
             logger.error(str(e))
             sentry.capture(e)
             continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
-        except FailCatastrophically as e:
+        except lpipe.exceptions.FailCatastrophically as e:
             # CAPTURES:
-            #    InvalidConfigurationError
+            #    lpipe.exceptions.InvalidConfigurationError
             # raise (later)
-            exceptions.append({"exception": e, "record": encoded_record})
-        output.append(ret)
+            _exceptions.append({"exception": e, "record": encoded_record})
+        _output.append(ret)
 
-    response = build_response(
+    response = build_event_response(
         n_records=len(records), n_ok=len(successful_records), logger=logger
     )
 
-    if exceptions:
-        # Handle any cleanup necessary for successful records before creating an error state.
+    if _exceptions:
+        # Handle cleanup for successful records, if necessary, before creating an error state.
         advanced_cleanup(queue_type, successful_records, logger)
 
         logger.info(
             f"Encountered exceptions while handling one or more records. RESPONSE: {response}"
         )
-        raise FailCatastrophically(exceptions)
+        raise lpipe.exceptions.FailCatastrophically(_exceptions)
 
-    if any(output):
-        response["output"] = output
+    if any(_output):
+        response["output"] = _output
     if debug:
-        response["debug"] = json.dumps({"records": records}, cls=AutoEncoder)
+        response["debug"] = json.dumps({"records": records}, cls=utils.AutoEncoder)
+
     return response
 
 
@@ -280,17 +285,15 @@ def execute_payload(
         context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
     """
     if not logger:
-        logger = ServerlessLogger()
+        logger = lpipe.logging.LPLogger()
 
     ret = None
 
     if not isinstance(payload.path, path_enum):
-        payload.path = clean_path(path_enum, payload.path)
+        payload.path = normalize_path(path_enum, payload.path)
 
     if isinstance(payload.path, Enum):  # PATH
-        # Allow someone to simplify their definition of a Path to a list of functions.
-        if all([isinstance(f, FunctionType) for f in paths[payload.path]]):
-            paths[payload.path] = [Action(functions=action)]
+        paths[payload.path] = normalize_actions(paths[payload.path])
 
         for action in paths[payload.path]:
             assert isinstance(action, Action)
@@ -304,8 +307,8 @@ def execute_payload(
                 for k in dummy:
                     action_kwargs.pop(k, None)
             except (TypeError, AssertionError) as e:
-                raise InvalidPayloadError(
-                    f"Failed to run {payload.path.name} {action} due to {exception_to_str(e)}"
+                raise lpipe.exceptions.InvalidPayloadError(
+                    f"Failed to run {payload.path.name} {action} due to {utils.exception_to_str(e)}"
                 ) from e
 
             # Run action functions
@@ -331,23 +334,23 @@ def execute_payload(
                     ret = return_handler(
                         ret, path_enum, paths, logger, event, context, debug
                     )
-                except LpipeBaseException:
+                except lpipe.exceptions.LPBaseException:
                     # CAPTURES:
-                    #    FailButContinue
-                    #    FailCatastrophically
+                    #    lpipe.exceptions.FailButContinue
+                    #    lpipe.exceptions.FailCatastrophically
                     raise
                 except Exception as e:
                     logger.error(
-                        f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {exception_to_str(e)}"
+                        f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {utils.exception_to_str(e)}"
                     )
                     sentry.capture(e)
                     if debug:
-                        raise FailCatastrophically() from e
+                        raise lpipe.exceptions.FailCatastrophically() from e
 
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
                 _payload = Payload(
-                    clean_path(path_enum, path_descriptor),
+                    normalize_path(path_enum, path_descriptor),
                     action_kwargs,
                     payload.event_source,
                 ).validate(path_enum)
@@ -389,8 +392,8 @@ def return_handler(
                 if isinstance(r, Payload):
                     _payloads.append(r.validate(path_enum))
     except Exception as e:
-        logger.debug(exception_to_str(e))
-        raise FailButContinue(
+        logger.debug(utils.exception_to_str(e))
+        raise lpipe.exceptions.FailButContinue(
             f"Something went wrong while extracting Payloads from a function return value. {ret}"
         ) from e
 
@@ -399,8 +402,10 @@ def return_handler(
         try:
             ret = execute_payload(p, path_enum, paths, logger, event, context, debug)
         except Exception as e:
-            logger.debug(exception_to_str(e))
-            raise FailButContinue(f"Failed to execute returned Payload. {p}") from e
+            logger.debug(utils.exception_to_str(e))
+            raise lpipe.exceptions.FailButContinue(
+                f"Failed to execute returned Payload. {p}"
+            ) from e
     return ret
 
 
@@ -429,10 +434,10 @@ def cleanup_sqs_records(records, logger):
         messages = defaultdict(list)
         for record in records:
             m = Message(
-                message_id=get_nested(record, ["messageId"]),
-                receipt_handle=get_nested(record, ["receiptHandle"]),
+                message_id=mindictive.get_nested(record, ["messageId"]),
+                receipt_handle=mindictive.get_nested(record, ["receiptHandle"]),
             )
-            messages[get_nested(record, ["eventSourceARN"])].append(m)
+            messages[mindictive.get_nested(record, ["eventSourceARN"])].append(m)
         for k in messages.keys():
             queue_url = sqs.get_queue_url(k)
             sqs.batch_delete_messages(
@@ -444,10 +449,10 @@ def cleanup_sqs_records(records, logger):
             )
     except KeyError as e:
         logger.warning(
-            f"{base_err_msg} If you're testing, this is not an issue. {exception_to_str(e)}"
+            f"{base_err_msg} If you're testing, this is not an issue. {utils.exception_to_str(e)}"
         )
     except Exception as e:
-        logger.warning(f"{base_err_msg} {exception_to_str(e)}")
+        logger.warning(f"{base_err_msg} {utils.exception_to_str(e)}")
 
 
 def build_action_kwargs(action: Action, kwargs: dict) -> dict:
@@ -483,7 +488,7 @@ def build_kwargs(kwargs: dict, functions: list, required_params: list = None) ->
     """
     kwargs_union = {}
     if not required_params and functions:
-        kwargs_union = validate_signature(functions, kwargs)
+        kwargs_union = signature.validate(functions, kwargs)
     elif required_params and isinstance(required_params, list):
         for param in required_params:
             param_name = param[0] if isinstance(param, tuple) else param
@@ -491,7 +496,9 @@ def build_kwargs(kwargs: dict, functions: list, required_params: list = None) ->
                 # Assert required field was provided.
                 assert param_name in kwargs
             except AssertionError as e:
-                raise InvalidPayloadError(f"Missing param '{param_name}'") from e
+                raise lpipe.exceptions.InvalidPayloadError(
+                    f"Missing param '{param_name}'"
+                ) from e
 
             # Set param in kwargs. If the param is a tuple, use the [1] as the new key.
             if isinstance(param, tuple) and len(param) == 2:
@@ -501,95 +508,10 @@ def build_kwargs(kwargs: dict, functions: list, required_params: list = None) ->
     elif not required_params:
         return {}
     else:
-        raise InvalidPayloadError(
+        raise lpipe.exceptions.InvalidPayloadError(
             "You either didn't provide functions or required_params was not an instance of list or NoneType."
         )
     return kwargs_union
-
-
-def _merge(functions: list, iter):
-    """Get a set of attributes describing several functions.
-
-    Args:
-        functions (list): list of functions (FunctionType)
-
-    Raises:
-        TypeError: If two functions have the same parameter name with different types or defaults.
-    """
-    output = {}
-    for f in functions:
-        assert isinstance(f, FunctionType)
-        i = iter(f)
-        for k, v in i.items():
-            if k in output:
-                try:
-                    assert v == output[k]
-                except AssertionError as e:
-                    raise TypeError(
-                        f"Incompatible functions {functions}: {k} represented as both {v} and {output[k]}"
-                    ) from e
-            else:
-                output[k] = v
-    return output
-
-
-def _merge_signatures(functions: list):
-    """Create a combined list of function parameters."""
-    return _merge(functions, lambda f: inspect.signature(f).parameters)
-
-
-def _merge_type_hints(functions: list):
-    """Create a combined list of function parameter type hints."""
-    return _merge(functions, lambda f: get_type_hints(f))
-
-
-def _get_defaults(signature):
-    """Create a dict of function parameters with defaults."""
-    return {
-        k: v.default
-        for k, v in signature.items()
-        if v.default is not inspect.Parameter.empty
-    }
-
-
-def validate_signature(functions: list, params: dict) -> dict:
-    """Validate and build kwargs for a set of functions based on their signatures.
-
-    Args:
-        functions (list): functions
-        params (dict): kwargs provided in the event's message
-
-    Returns:
-        dict: validated kwargs required by the provided set of functions
-    """
-    signature = _merge_signatures(functions)
-    defaults = _get_defaults(signature)
-    hints = _merge_type_hints(functions)
-
-    validated = {}
-    for k, v in signature.items():
-        if k in params:
-            p = params[k]
-            if k in hints:
-                t = hints[k]
-                try:
-                    if hasattr(t, "__origin__") and t.__origin__ is Union:
-                        # https://stackoverflow.com/a/49471187
-                        assert any([isinstance(p, typ) for typ in t.__args__])
-                    else:
-                        assert isinstance(p, t)
-                except AssertionError as e:
-                    raise TypeError(f"Type of {k} should be {t} not {type(p)}.") from e
-                validated[k] = p
-            else:
-                validated[k] = p
-        elif k not in ("kwargs", "args"):
-            try:
-                assert k in defaults
-            except AssertionError as e:
-                raise TypeError(f"{functions} missing required argument: '{k}'") from e
-
-    return validated
 
 
 def get_raw_payload(record) -> dict:
@@ -621,7 +543,7 @@ def get_records_from_event(queue_type: QueueType, event):
 
 def get_event_source(queue_type: QueueType, record):
     if queue_type in (QueueType.RAW, QueueType.KINESIS, QueueType.SQS):
-        return get_nested(record, ["event_source_arn"], None)
+        return mindictive.get_nested(record, ["event_source_arn"], None)
     warnings.warn(f"Unable to fetch event_source for {queue_type} record.")
     return None
 
@@ -635,8 +557,8 @@ def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dic
         if queue_type == QueueType.SQS:
             payload = get_sqs_payload(record)
     except json.JSONDecodeError as e:
-        raise InvalidPayloadError(
-            f"Payload contained invalid json. {exception_to_str(e)}"
+        raise lpipe.exceptions.InvalidPayloadError(
+            f"Payload contained invalid json. {utils.exception_to_str(e)}"
         ) from e
     if validate:
         for field in ["path", "kwargs"]:
@@ -653,4 +575,6 @@ def put_record(queue: Queue, record: dict):
         try:
             return sqs.put_message(queue_url=queue.url, data=record)
         except Exception as e:
-            raise FailCatastrophically(f"Failed to send message to {queue}") from e
+            raise lpipe.exceptions.FailCatastrophically(
+                f"Failed to send message to {queue}"
+            ) from e

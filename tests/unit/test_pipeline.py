@@ -6,6 +6,7 @@ from decouple import config
 from tests import fixtures
 
 from lpipe import exceptions
+from lpipe.contrib.sqs import get_queue_url
 from lpipe.pipeline import (
     Action,
     Payload,
@@ -17,9 +18,7 @@ from lpipe.pipeline import (
     get_sqs_payload,
     process_event,
     put_record,
-    validate_signature,
 )
-from lpipe.sqs import get_queue_url
 from lpipe.testing import (
     MockContext,
     emit_logs,
@@ -119,80 +118,6 @@ class TestPayload:
     def test_queue_payload(self, fixture_name, fixture):
         q = Queue(**fixture)
         Payload(q, {"foo": "bar"}).validate()
-
-
-class TestValidateSignature:
-    def test_no_hints(self):
-        def _test_func(a, b, c, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": 3}
-
-    def test_no_hints_raises(self):
-        def _test_func(a, b, c, **kwargs):
-            pass
-
-        params = {"b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
-
-    def test_mixed_hints(self):
-        def _test_func(a: str, b, c, **kwargs):
-            pass
-
-        params = {"a": "foo", "b": 2, "c": 3}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": "foo", "b": 2, "c": 3}
-
-    def test_mixed_hints_raises(self):
-        def _test_func(a: str, b, c, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
-
-    def test_hints_defaults(self):
-        def _test_func(a, b, c: str = "asdf", **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2}
-
-    def test_hints_defaults_override(self):
-        def _test_func(a, b, c: str = "asdf", **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": "foobar"}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": "foobar"}
-
-    def test_hint_with_none_default(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2}
-
-    def test_hint_with_none_default_but_set(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": "foobar"}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": "foobar"}
-
-    def test_hint_with_none_default_raises(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
 
 
 @pytest.mark.usefixtures("sqs_moto", "kinesis_moto")

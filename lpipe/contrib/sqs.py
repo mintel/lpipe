@@ -5,13 +5,13 @@ from functools import wraps
 import botocore
 from decouple import config
 
-from lpipe import _boto3
-from lpipe.utils import batch, call, get_nested, hash
+from lpipe import _boto3, utils
+from lpipe.contrib import mindictive
 
 
 def build(message_data, message_group_id=None):
     data = json.dumps(message_data, sort_keys=True)
-    msg = {"Id": hash(data), "MessageBody": data}
+    msg = {"Id": utils.hash(data), "MessageBody": data}
     if message_group_id:
         msg["MessageGroupId"] = str(message_group_id)
     return msg
@@ -50,9 +50,9 @@ def batch_put_messages(
     assert batch_size <= 10  # send_message_batch will fail otherwise
     client = _boto3.client("sqs")
     responses = []
-    for b in batch(messages, batch_size):
+    for b in utils.batch(messages, batch_size):
         responses.append(
-            call(
+            utils.call(
                 client.send_message_batch,
                 QueueUrl=queue_url,
                 Entries=[build(message, message_group_id) for message in b],
@@ -69,13 +69,15 @@ def put_message(queue_url, data, message_group_id=None, **kwargs):
 
 @mock_sqs
 def get_queue_url(queue_name):
-    return call(_boto3.client("sqs").get_queue_url, QueueName=queue_name)["QueueUrl"]
+    return utils.call(_boto3.client("sqs").get_queue_url, QueueName=queue_name)[
+        "QueueUrl"
+    ]
 
 
 @mock_sqs
 def get_queue_arn(queue_url):
-    return get_nested(
-        call(
+    return mindictive.get_nested(
+        utils.call(
             _boto3.client("sqs").get_queue_attributes,
             QueueUrl=queue_url,
             AttributeNames=["QueueArn"],
@@ -86,6 +88,6 @@ def get_queue_arn(queue_url):
 
 @mock_sqs
 def batch_delete_messages(queue_url, entries):
-    return call(
+    return utils.call(
         _boto3.client("sqs").batch_delete_messages, QueueUrl=queue_url, Entries=entries
     )

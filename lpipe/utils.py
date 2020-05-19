@@ -5,9 +5,8 @@ import os
 from contextlib import contextmanager
 from enum import Enum, EnumMeta
 
-from lpipe.exceptions import InvalidPathError
-
-sentinel = object()
+import lpipe.exceptions
+from lpipe import contrib
 
 
 def hash(encoded_data):
@@ -25,29 +24,12 @@ def batch(iterable, n=1):
         yield iterable[ndx : min(ndx + n, iter_len)]
 
 
-def get_nested(_dict, keys, default=sentinel):
-    """Given a dictionary or object, try to fetch a key nested several levels deep."""
-
-    def _get(head, k, d):
-        if isinstance(head, dict):
-            return head.get(k, d)
-        else:
-            return getattr(head, k, d)
-
-    head = _dict
-    for k in keys:
-        head = _get(head, k, default)
-        if head is sentinel:
-            raise KeyError(f"{keys}")
-        elif not head:
-            return default
-    return head
+def get_nested(*args, **kwargs):
+    return contrib.mindictive.get_nested(*args, **kwargs)
 
 
-def set_nested(d, keys, value):
-    for key in keys[:-1]:
-        d = d.setdefault(key, {})
-    d[keys[-1]] = value
+def set_nested(*args, **kwargs):
+    return contrib.mindictive.set_nested(*args, **kwargs)
 
 
 def _set_env(env):
@@ -120,12 +102,14 @@ def get_enum_value(e: EnumMeta, k):
         k: The name of an enumerated value
 
     Raises:
-        InvalidPathError: if key `k` is not in Enum `e`
+        lpipe.exceptions.InvalidPathError: if key `k` is not in Enum `e`
     """
     try:
         return e[str(k).split(".")[-1]]
     except KeyError as err:
-        raise InvalidPathError(f"Payload specified an invalid path.") from err
+        raise lpipe.exceptions.InvalidPathError(
+            "Payload specified an invalid path."
+        ) from err
 
 
 def _repr(o, attrs=[]):
@@ -139,3 +123,15 @@ def describe_client_error(e):
 
 def exception_to_str(e):
     return f"{e.__class__.__name__} {e}"
+
+
+def generate_enum(d: dict):
+    """Generate an enumeration of a dictionary's keys.
+
+    Args:
+        d (dict):
+
+    Returns:
+        Enum: enumeration of the keys in dict `d`
+    """
+    return Enum("Auto", [k.upper() for k in d.keys()])

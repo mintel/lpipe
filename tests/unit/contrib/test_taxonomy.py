@@ -1,7 +1,12 @@
 import pytest
 
-from lpipe.exceptions import InvalidTaxonomyURI
-from lpipe.taxonomy import Brand, Company, Product, TaxonomyURI
+from lpipe.contrib.taxonomy import (
+    Brand,
+    Company,
+    InvalidTaxonomyURI,
+    Product,
+    TaxonomyURI,
+)
 
 
 class TestTaxonomyURI:

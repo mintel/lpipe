@@ -2,7 +2,8 @@ import json
 
 import boto3
 
-from lpipe import sqs, testing, utils
+from lpipe import testing, utils
+from lpipe.contrib import sqs
 
 
 def check_kinesis_fixtures(kinesis_streams):

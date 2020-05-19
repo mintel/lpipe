@@ -1,7 +1,7 @@
 import boto3
 import pytest
 
-from lpipe import sqs
+from lpipe.contrib import sqs
 from lpipe.utils import check_status, set_env
 
 

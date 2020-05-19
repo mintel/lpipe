@@ -1,6 +1,7 @@
 import pytest
 
-from lpipe import kinesis, utils
+from lpipe import utils
+from lpipe.contrib import kinesis
 
 
 def test_mock(environment):
