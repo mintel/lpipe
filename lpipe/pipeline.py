@@ -328,7 +328,9 @@ def execute_payload(
                                 },
                             }
                         )
-                    ret = return_handler(ret, logger)
+                    ret = return_handler(
+                        ret, path_enum, paths, logger, event, context, debug
+                    )
                 except LpipeBaseException:
                     # CAPTURES:
                     #    FailButContinue
@@ -373,7 +375,9 @@ def execute_payload(
     return ret
 
 
-def return_handler(ret, logger):
+def return_handler(
+    ret, path_enum: EnumMeta, paths: dict, logger, event, context, debug
+):
     if not ret:
         return ret
     _payloads = []
