@@ -22,7 +22,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import lpipe.contrib.boto3
-from lpipe import utils
+from lpipe.testing.utils import emit_logs
 
 
 def create_lambda(
@@ -80,7 +80,7 @@ def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
         body = json.loads(body)
     except Exception:
         pass
-    utils.emit_logs(body)
+    emit_logs(body)
     return response, body
 
 
