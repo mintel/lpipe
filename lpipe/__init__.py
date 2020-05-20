@@ -2,7 +2,7 @@
 lpipe
 ~~~~~~~~~
 
-Lambda toolkit and message pipeline.
+Lambda Pipeline, a framework for writing clear, minimal Python FAAS
 """
 
 # flake8: noqa
