@@ -8,140 +8,11 @@ from typing import Any, List, Union
 
 import lpipe.exceptions
 import lpipe.logging
-from lpipe import signature, utils
+from lpipe import normalize, signature, utils
+from lpipe.action import Action
 from lpipe.contrib import kinesis, mindictive, sqs
-
-
-class QueueType(Enum):
-    RAW = 1  # This may be a Cloudwatch or manually triggered event
-    KINESIS = 2
-    SQS = 3
-
-
-class Queue:
-    """Represents a queue path in an Action.
-
-    Note:
-        Kinesis uses name.
-        SQS uses name or url.
-
-    Args:
-        type (QueueType)
-        path (str): Value of the "path" field set on the message we'll send to this queue.
-        name (str, optional): Queue name
-        url (str, optional): Queue URL/URI
-
-    Attributes:
-        type (QueueType)
-        path (str)
-        name (str)
-        url (str)
-
-    """
-
-    def __init__(self, type: QueueType, path: str, name: str = None, url: str = None):
-        assert name or url
-        assert isinstance(type, QueueType)
-        self.type = type
-        self.path = path
-        self.name = name
-        self.url = url
-
-    def __repr__(self):
-        return utils.repr(self, ["type", "name", "url"])
-
-
-class Action:
-    def __init__(
-        self,
-        functions: List[FunctionType] = [],
-        paths: List[Union[str, Enum]] = [],
-        required_params=None,
-        include_all_params=False,
-    ):
-        assert functions or paths
-        self.functions = functions
-        self.paths = paths
-        self.required_params = required_params
-        self.include_all_params = include_all_params
-
-    def __repr__(self):
-        return utils.repr(self, ["functions", "paths"])
-
-    def copy(self):
-        return type(self)(
-            functions=self.functions,
-            paths=[
-                p if isinstance(p, Queue) else str(p).split(".")[-1] for p in self.paths
-            ],
-            required_params=self.required_params,
-        )
-
-
-class Payload:
-    def __init__(self, path: Union[Enum, str], kwargs: dict, event_source=None):
-        self.path = path
-        self.kwargs = kwargs
-        self.event_source = event_source
-
-    def validate(self, path_enum: EnumMeta = None):
-        if path_enum:
-            assert isinstance(
-                normalize_path(path_enum, self.path), path_enum
-            ) or isinstance(self.path, Queue)
-        else:
-            assert isinstance(self.path, Queue)
-        return self
-
-    def to_dict(self) -> dict:
-        return {"path": self.path, "kwargs": self.kwargs}
-
-    def __repr__(self):
-        return utils.repr(self, ["path", "kwargs"])
-
-
-def normalize_path(
-    path_enum: EnumMeta, path: Union[str, Queue, Enum]
-) -> Union[Queue, Enum]:
-    if isinstance(path, Queue):
-        return path
-    else:
-        try:
-            return utils.get_enum_value(path_enum, path)
-        except Exception as e:
-            raise lpipe.exceptions.InvalidPathError(
-                "Unable to cast your path identifier to an enum."
-            ) from e
-
-
-def normalize_paths(path_enum: EnumMeta, paths: dict) -> dict:
-    return {normalize_path(path_enum, k): v for k, v in paths.items()}
-
-
-def normalize_actions(actions: List[Union[FunctionType, Action]]) -> List[Action]:
-    """Normalize a path definition to a list of Action objects
-
-    Args:
-        actions (list): a list of FunctionType or Action objects
-
-    Returns:
-        list: a list of Action objects
-    """
-    # Allow someone to simplify their definition of a Path to a list of functions.
-    if all([isinstance(a, FunctionType) for a in actions]):
-        return [Action(functions=actions)]
-    return actions
-
-
-def normalize_path_enum(paths: dict, path_enum: EnumMeta = None):
-    """If path_enum was not provided, generate one automatically."""
-    if not path_enum:
-        try:
-            path_enum = utils.generate_enum(paths)
-            paths = normalize_paths(path_enum, paths)
-        except KeyError as e:
-            raise lpipe.exceptions.InvalidConfigurationError from e
-    return path_enum, paths
+from lpipe.payload import Payload
+from lpipe.queue import Queue, QueueType
 
 
 def build_event_response(n_records, n_ok, logger) -> dict:
@@ -188,7 +59,7 @@ def process_event(
             f"Invalid queue type '{queue_type}'"
         ) from e
 
-    path_enum, paths = normalize_path_enum(path_enum=path_enum, paths=paths)
+    path_enum, paths = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
 
     successful_records = []
     records = get_records_from_event(queue_type, event)
@@ -302,10 +173,10 @@ def execute_payload(
     ret = None
 
     if not isinstance(payload.path, path_enum):
-        payload.path = normalize_path(path_enum, payload.path)
+        payload.path = normalize.normalize_path(path_enum, payload.path)
 
     if isinstance(payload.path, Enum):  # PATH
-        paths[payload.path] = normalize_actions(paths[payload.path])
+        paths[payload.path] = normalize.normalize_actions(paths[payload.path])
 
         for action in paths[payload.path]:
             assert isinstance(action, Action)
@@ -363,7 +234,7 @@ def execute_payload(
             # Run action paths / shortcuts
             for path_descriptor in action.paths:
                 _payload = Payload(
-                    normalize_path(path_enum, path_descriptor),
+                    normalize.normalize_path(path_enum, path_descriptor),
                     action_kwargs,
                     payload.event_source,
                 ).validate(path_enum)

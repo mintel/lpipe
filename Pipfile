@@ -15,6 +15,7 @@ structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
+autoflake = "*"
 codecov = "*"
 isort = "*"
 moto = "*"

@@ -2,10 +2,14 @@
     "_meta": {
         "hash": {
 <<<<<<< master
+<<<<<<< master
             "sha256": "07b6d1ef1da4d4832905e84b8f70c1b9ac870e93efeef8ea9919c74e0ece4ba8"
 =======
             "sha256": "ccbdce1a73eae44fe54106465da31fa69706667f2244e2976c8cf3f3c7aae960"
 >>>>>>> Don't require sentry in lpipe or test it in main tests
+=======
+            "sha256": "cef003e59983aae761e857c731f3fa6fadf4197e5733e3a67b9d487f2ec13122"
+>>>>>>> Move major classes to their own modules, import all major classes at top level module
         },
         "pipfile-spec": 6,
         "requires": {
@@ -31,6 +35,7 @@
         "boto3": {
             "hashes": [
 <<<<<<< master
+<<<<<<< master
                 "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
                 "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
             ],
@@ -46,17 +51,25 @@
 =======
                 "sha256:3c740de27ca113bcdbf5449d6d221428e5bc529e8e7d8e7dd87790602078c333",
                 "sha256:a396e514eb6ee57994718a7c85d3810bfda23faba01dd80c65e0aba6a5dedb1f"
+=======
+                "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
+                "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
+>>>>>>> Move major classes to their own modules, import all major classes at top level module
             ],
             "index": "pypi",
-            "version": "==1.13.13"
+            "version": "==1.13.14"
         },
         "botocore": {
             "hashes": [
-                "sha256:5227e7a6d9d88560bae22149dc0d87b71679cf9c63ad79bf37bb2b7cd8e07db0",
-                "sha256:babc267e4ff043f3e722f9b0103fd808934519f9148ef7360c255d1aefcb96d7"
+                "sha256:a8e4cb8ed5a7e59fce935c9a550ccf616e9d5a053d02c374832610c2e377ca92",
+                "sha256:c8a5647069f978ae664987ebdeffaef0eb2910e88a52fcc8d52c9eb014fed8cc"
             ],
+<<<<<<< master
             "version": "==1.16.13"
 >>>>>>> Don't require sentry in lpipe or test it in main tests
+=======
+            "version": "==1.16.14"
+>>>>>>> Move major classes to their own modules, import all major classes at top level module
         },
         "certifi": {
             "hashes": [
@@ -185,6 +198,13 @@
             ],
             "version": "==19.3.0"
         },
+        "autoflake": {
+            "hashes": [
+                "sha256:680cb9dade101ed647488238ccb8b8bfb4369b53d58ba2c8cdf7d5d54e01f95b"
+            ],
+            "index": "pypi",
+            "version": "==1.3.1"
+        },
         "aws-sam-translator": {
             "hashes": [
                 "sha256:0dabd2fd57e63fca1cdd511fa73e9fe4f9ca869f5cbcd5749a0c0c9c532a0b2a",
@@ -217,6 +237,7 @@
         "boto3": {
             "hashes": [
 <<<<<<< master
+<<<<<<< master
                 "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
                 "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
             ],
@@ -232,17 +253,25 @@
 =======
                 "sha256:3c740de27ca113bcdbf5449d6d221428e5bc529e8e7d8e7dd87790602078c333",
                 "sha256:a396e514eb6ee57994718a7c85d3810bfda23faba01dd80c65e0aba6a5dedb1f"
+=======
+                "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
+                "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
+>>>>>>> Move major classes to their own modules, import all major classes at top level module
             ],
             "index": "pypi",
-            "version": "==1.13.13"
+            "version": "==1.13.14"
         },
         "botocore": {
             "hashes": [
-                "sha256:5227e7a6d9d88560bae22149dc0d87b71679cf9c63ad79bf37bb2b7cd8e07db0",
-                "sha256:babc267e4ff043f3e722f9b0103fd808934519f9148ef7360c255d1aefcb96d7"
+                "sha256:a8e4cb8ed5a7e59fce935c9a550ccf616e9d5a053d02c374832610c2e377ca92",
+                "sha256:c8a5647069f978ae664987ebdeffaef0eb2910e88a52fcc8d52c9eb014fed8cc"
             ],
+<<<<<<< master
             "version": "==1.16.13"
 >>>>>>> Don't require sentry in lpipe or test it in main tests
+=======
+            "version": "==1.16.14"
+>>>>>>> Move major classes to their own modules, import all major classes at top level module
         },
         "certifi": {
             "hashes": [
@@ -631,6 +660,13 @@
                 "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"
             ],
             "version": "==2.20"
+        },
+        "pyflakes": {
+            "hashes": [
+                "sha256:0d94e0e05a19e57a99444b6ddcf9a6eb2e5c68d3ca1e98e90707af8152c90a92",
+                "sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8"
+            ],
+            "version": "==2.2.0"
         },
         "pygments": {
             "hashes": [

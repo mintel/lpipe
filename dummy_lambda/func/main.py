@@ -6,7 +6,7 @@ from decouple import config
 
 # from lpipe.contrib import sentry
 from lpipe.exceptions import FailButContinue
-from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
+from lpipe import Action, Payload, Queue, QueueType, process_event
 
 # sentry.init()
 
