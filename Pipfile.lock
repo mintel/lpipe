@@ -1,7 +1,11 @@
 {
     "_meta": {
         "hash": {
+<<<<<<< master
             "sha256": "07b6d1ef1da4d4832905e84b8f70c1b9ac870e93efeef8ea9919c74e0ece4ba8"
+=======
+            "sha256": "ccbdce1a73eae44fe54106465da31fa69706667f2244e2976c8cf3f3c7aae960"
+>>>>>>> Don't require sentry in lpipe or test it in main tests
         },
         "pipfile-spec": 6,
         "requires": {
@@ -26,6 +30,7 @@
         },
         "boto3": {
             "hashes": [
+<<<<<<< master
                 "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
                 "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
             ],
@@ -38,6 +43,20 @@
                 "sha256:c8a5647069f978ae664987ebdeffaef0eb2910e88a52fcc8d52c9eb014fed8cc"
             ],
             "version": "==1.16.14"
+=======
+                "sha256:3c740de27ca113bcdbf5449d6d221428e5bc529e8e7d8e7dd87790602078c333",
+                "sha256:a396e514eb6ee57994718a7c85d3810bfda23faba01dd80c65e0aba6a5dedb1f"
+            ],
+            "index": "pypi",
+            "version": "==1.13.13"
+        },
+        "botocore": {
+            "hashes": [
+                "sha256:5227e7a6d9d88560bae22149dc0d87b71679cf9c63ad79bf37bb2b7cd8e07db0",
+                "sha256:babc267e4ff043f3e722f9b0103fd808934519f9148ef7360c255d1aefcb96d7"
+            ],
+            "version": "==1.16.13"
+>>>>>>> Don't require sentry in lpipe or test it in main tests
         },
         "certifi": {
             "hashes": [
@@ -197,6 +216,7 @@
         },
         "boto3": {
             "hashes": [
+<<<<<<< master
                 "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87",
                 "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"
             ],
@@ -209,6 +229,20 @@
                 "sha256:c8a5647069f978ae664987ebdeffaef0eb2910e88a52fcc8d52c9eb014fed8cc"
             ],
             "version": "==1.16.14"
+=======
+                "sha256:3c740de27ca113bcdbf5449d6d221428e5bc529e8e7d8e7dd87790602078c333",
+                "sha256:a396e514eb6ee57994718a7c85d3810bfda23faba01dd80c65e0aba6a5dedb1f"
+            ],
+            "index": "pypi",
+            "version": "==1.13.13"
+        },
+        "botocore": {
+            "hashes": [
+                "sha256:5227e7a6d9d88560bae22149dc0d87b71679cf9c63ad79bf37bb2b7cd8e07db0",
+                "sha256:babc267e4ff043f3e722f9b0103fd808934519f9148ef7360c255d1aefcb96d7"
+            ],
+            "version": "==1.16.13"
+>>>>>>> Don't require sentry in lpipe or test it in main tests
         },
         "certifi": {
             "hashes": [
