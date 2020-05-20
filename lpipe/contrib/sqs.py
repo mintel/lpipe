@@ -88,9 +88,9 @@ def get_queue_arn(queue_url):
 
 
 @mock_sqs
-def batch_delete_messages(queue_url, entries):
+def delete_message_batch(queue_url, entries):
     return utils.call(
-        lpipe.contrib.boto3.client("sqs").batch_delete_messages,
+        lpipe.contrib.boto3.client("sqs").delete_message_batch,
         QueueUrl=queue_url,
         Entries=entries,
     )
