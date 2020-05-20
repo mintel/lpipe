@@ -34,15 +34,6 @@ def sqs_payload(payloads):
     return {"Records": records}
 
 
-def _sqs_queue_exists(q):
-    try:
-        get_queue_url(q)
-        return True
-    except Exception:
-        logging.getLogger().info(f"Queue {q} does not exist yet.")
-        return False
-
-
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_sqs_queue(q, dlq_url=None):
     client = lpipe.contrib.boto3.client("sqs")
