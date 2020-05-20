@@ -85,4 +85,8 @@ DATA = {
         "payload": [{"path": "TEST_MULTI_TRIGGER", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
+    "TRIGGER_PATH_WITH_ERROR": {
+        "payload": [{"path": "TEST_TRIGGER_ERROR", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 0}},
+    },
 }

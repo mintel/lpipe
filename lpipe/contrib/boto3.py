@@ -5,15 +5,18 @@ import boto3
 from decouple import config
 
 
-def _to_dict(s: str) -> dict:
+def _to_dict(s: str, delimiter: str = ",") -> dict:
     try:
         return (
-            {kv[0]: kv[1] for kv in [kv.strip().split("=") for kv in s.split(",")]}
+            {
+                kv[0]: kv[1]
+                for kv in [kv.strip().split("=") for kv in s.split(delimiter)]
+            }
             if s
             else {}
         )
     except IndexError as e:
-        raise Exception(f'Unable to cast "{s}" to dict.') from e
+        raise ValueError(f'Unable to cast "{s}" to dict.') from e
 
 
 def with_endpoint_url(func):

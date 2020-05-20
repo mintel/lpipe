@@ -1,17 +1,17 @@
 from copy import deepcopy
 from enum import Enum
 
+import botocore
 import pytest
 from decouple import config
 from tests import fixtures
 
 from lpipe import exceptions
+from lpipe.action import Action
 from lpipe.contrib.sqs import get_queue_url
+from lpipe.payload import Payload
 from lpipe.pipeline import (
-    Action,
-    Payload,
-    Queue,
-    QueueType,
+    get_event_source,
     get_kinesis_payload,
     get_payload_from_record,
     get_records_from_event,
@@ -19,6 +19,7 @@ from lpipe.pipeline import (
     process_event,
     put_record,
 )
+from lpipe.queue import Queue, QueueType
 from lpipe.testing import (
     MockContext,
     emit_logs,
@@ -65,6 +66,12 @@ def test_get_records_from_event(fixture_name, fixture):
     assert len(records) == len(event_records)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_get_event_source_invalid():
+    # with pytest.raises(UserWarning):
+    assert get_event_source(None, {}) is None
+
+
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
@@ -81,6 +88,11 @@ def test_get_payload_from_record(fixture_name, fixture):
         get_payload_from_record(fixture["queue_type"], r) for r in event_records
     ]
     assert payload_records == records
+
+
+def test_get_payload_from_record_invalid():
+    with pytest.raises(exceptions.InvalidPayloadError):
+        get_payload_from_record(QueueType.RAW, "badjsonstring")
 
 
 @pytest.mark.parametrize(
@@ -138,6 +150,18 @@ class TestPutRecord:
         queue = Queue(type=QueueType.SQS, path="FOO", name=queue_name)
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
+
+    def test_sqs_fail_to_discover_url(self, set_environment):
+        queue = Queue(type=QueueType.SQS, path="FOO", name="badqueue")
+        fixture = {"path": queue.path, "kwargs": {}}
+        with pytest.raises(botocore.exceptions.ClientError):
+            put_record(queue=queue, record=fixture)
+
+    def test_fail_to_send(self, set_environment):
+        queue = Queue(type=QueueType.SQS, path="FOO", url="badqueue")
+        fixture = {"path": queue.path, "kwargs": {}}
+        with pytest.raises(exceptions.FailCatastrophically):
+            put_record(queue=queue, record=fixture)
 
 
 def test_invalid_queue(set_environment):

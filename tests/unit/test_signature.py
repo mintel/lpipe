@@ -3,6 +3,28 @@ import pytest
 from lpipe import signature
 
 
+class TestMerge:
+    def test_merge(self):
+        def f1(a: int, b: dict):
+            pass
+
+        def f2(a: int, c: str, d: list):
+            pass
+
+        output = signature._merge_signatures([f1, f2])
+        print(f"{output}")
+
+    def test_merge_param_clash(self):
+        def f1(a: int, b: dict):
+            pass
+
+        def f2(a: str):
+            pass
+
+        with pytest.raises(TypeError):
+            signature._merge_signatures([f1, f2])
+
+
 class TestValidateSignature:
     def test_no_hints(self):
         def _test_func(a, b, c, **kwargs):
