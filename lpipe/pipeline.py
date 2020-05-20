@@ -243,7 +243,8 @@ def process_event(
             #    lpipe.exceptions.InvalidPayloadError
             #    lpipe.exceptions.InvalidPathError
             logger.error(str(e))
-            exception_handler(e)
+            if exception_handler:
+                exception_handler(e)
             continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
         except lpipe.exceptions.FailCatastrophically as e:
             # CAPTURES:
@@ -354,7 +355,8 @@ def execute_payload(
                     logger.error(
                         f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {utils.exception_to_str(e)}"
                     )
-                    exception_handler(e)
+                    if exception_handler:
+                        exception_handler(e)
                     if debug:
                         raise lpipe.exceptions.FailCatastrophically() from e
 

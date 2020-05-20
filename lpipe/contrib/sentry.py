@@ -1,9 +1,15 @@
 from contextlib import contextmanager
 from functools import wraps
 
-import sentry_sdk
 from decouple import config
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+except ImportError:
+    raise Exception(
+        "lpipe.contrib.sentry requires the sentry_sdk package, please install it to proceed"
+    )
 
 
 def _set_tags(scope, context):

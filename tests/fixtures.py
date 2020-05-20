@@ -69,10 +69,10 @@ DATA = {
         "payload": [{"path": "TEST_FUNC_DEFAULT_PARAM", "kwargs": {"foo": "wiz"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
-    "SENTRY_ERROR": {
-        "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
-        "response": {"stats": {"received": 1, "successes": 0}},
-    },
+    # "SENTRY_ERROR": {
+    #     "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
+    #     "response": {"stats": {"received": 1, "successes": 0}},
+    # },
     "MANUAL_OUTPUT": {
         "payload": [{"path": "TEST_RET", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 1}, "output": ["foobar"]},

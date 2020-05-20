@@ -10,7 +10,7 @@ boto3 = "*"
 python-dateutil = "*"
 python-decouple = "*"
 requests = "*"
-sentry-sdk = "*"
+# sentry-sdk = "*"
 structlog = "*"
 
 [dev-packages]
