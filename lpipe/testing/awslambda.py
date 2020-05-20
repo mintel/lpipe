@@ -22,8 +22,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import lpipe.contrib.boto3
-from lpipe.testing import utils as testing_utils
 from lpipe import utils
+from lpipe.testing import utils as testing_utils
 
 
 def create_lambda(
