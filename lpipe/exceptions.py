@@ -1,13 +1,13 @@
-class LpipeBaseException(Exception):
+class LPBaseException(Exception):
     pass
 
 
 # FLOW CONTROL
-class FailButContinue(LpipeBaseException):
+class FailButContinue(LPBaseException):
     pass
 
 
-class FailCatastrophically(LpipeBaseException):
+class FailCatastrophically(LPBaseException):
     pass
 
 
@@ -26,13 +26,4 @@ class InvalidPayloadError(FailButContinue):
 
 # TESTING
 class TestingException(Exception):
-    pass
-
-
-# OTHER
-class InvalidTaxonomyURI(Exception):
-    pass
-
-
-class GraphQLError(Exception):
     pass

@@ -3,13 +3,15 @@ import time
 from contextlib import ContextDecorator
 
 import structlog
+from decouple import config
 from structlog import wrap_logger
 from structlog.processors import JSONRenderer, TimeStamper
 
-from .utils import _repr
+import lpipe.exceptions
+from lpipe import utils
 
 
-class ServerlessLogger:
+class LPLogger:
     def __init__(self, level=logging.INFO, **kwargs):
         self._logger = wrap_logger(
             structlog.get_logger(),
@@ -21,7 +23,7 @@ class ServerlessLogger:
         self.persist = False
 
     def _json(self):
-        return _repr(self)
+        return utils.repr(self)
 
     def bind(self, **kwargs):
         """Bind context data to logger by forwarding to structlog.
@@ -137,3 +139,22 @@ class LoggerContext(ContextDecorator):
         self.log._logger = self.initial_log_logger
         self.initial_log_logger = None
         self.start = None
+
+
+def setup(context, logger=None, debug: bool = False):
+    try:
+        if not logger:
+            logger = LPLogger(
+                level=logging.DEBUG if debug else logging.INFO,
+                process=getattr(
+                    context, "function_name", config("FUNCTION_NAME", default=None)
+                ),
+            )
+
+        if debug and isinstance(logger, LPLogger):
+            logger.persist = True
+    except Exception as e:
+        raise lpipe.exceptions.InvalidConfigurationError(
+            "Failed to initialize logger."
+        ) from e
+    return logger

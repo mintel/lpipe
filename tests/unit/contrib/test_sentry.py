@@ -1,4 +1,4 @@
-from lpipe import sentry
+from lpipe.contrib import sentry
 
 
 def test_init(set_environment):

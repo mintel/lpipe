@@ -21,7 +21,7 @@ import backoff
 from botocore.exceptions import ClientError
 
 from .. import _boto3, utils
-from ..sqs import get_queue_arn, get_queue_url
+from ..contrib.sqs import get_queue_arn, get_queue_url
 from .utils import backoff_check
 
 
