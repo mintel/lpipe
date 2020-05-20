@@ -24,6 +24,7 @@ pytest-cov = "*"
 pytest-localstack = "*"
 pytest-xdist = "*"
 recommonmark = "*"
+sentry_sdk = "*"
 sphinx = "*"
 wheel = "*"
 
