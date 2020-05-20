@@ -6,11 +6,10 @@ import pytest
 from decouple import config
 from tests import fixtures
 
-from lpipe import exceptions, normalize, signature, utils
+from lpipe import exceptions
 from lpipe.action import Action
-from lpipe.payload import Payload
-from lpipe.queue import Queue, QueueType
 from lpipe.contrib.sqs import get_queue_url
+from lpipe.payload import Payload
 from lpipe.pipeline import (
     get_event_source,
     get_kinesis_payload,
@@ -20,6 +19,7 @@ from lpipe.pipeline import (
     process_event,
     put_record,
 )
+from lpipe.queue import Queue, QueueType
 from lpipe.testing import (
     MockContext,
     emit_logs,

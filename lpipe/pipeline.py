@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Any, List, Union
+from typing import Any
 
 import lpipe.exceptions
 import lpipe.logging
