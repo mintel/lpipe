@@ -69,7 +69,7 @@ def test_get_records_from_event(fixture_name, fixture):
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_get_event_source_invalid():
     # with pytest.raises(UserWarning):
-    assert get_event_source(None, {}) == None
+    assert get_event_source(None, {}) is None
 
 
 @pytest.mark.parametrize(
