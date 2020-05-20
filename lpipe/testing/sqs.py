@@ -20,9 +20,10 @@ from contextlib import contextmanager
 import backoff
 from botocore.exceptions import ClientError
 
-from .. import _boto3, utils
-from ..contrib.sqs import get_queue_arn, get_queue_url
-from .utils import backoff_check
+import lpipe.contrib.boto3
+from lpipe import utils
+from lpipe.contrib.sqs import get_queue_arn, get_queue_url
+from lpipe.testing.utils import backoff_check
 
 
 def sqs_payload(payloads):
@@ -44,7 +45,7 @@ def _sqs_queue_exists(q):
 
 @backoff.on_exception(backoff.expo, ClientError, max_time=30)
 def create_sqs_queue(q, dlq_url=None):
-    client = _boto3.client("sqs")
+    client = lpipe.contrib.boto3.client("sqs")
     attrs = {}
     if dlq_url:
         attrs["RedrivePolicy"] = json.dumps(
@@ -52,7 +53,8 @@ def create_sqs_queue(q, dlq_url=None):
         )
     resp = utils.call(client.create_queue, QueueName=q, Attributes=attrs)
     utils.call(
-        backoff_check, func=lambda: _boto3.client("sqs").get_queue_url(QueueName=q)
+        backoff_check,
+        func=lambda: lpipe.contrib.boto3.client("sqs").get_queue_url(QueueName=q),
     )
     return resp["QueueUrl"]
 
@@ -72,7 +74,7 @@ def create_sqs_queues(names: list, redrive=False):
 
 @backoff.on_exception(backoff.expo, ClientError, max_tries=3)
 def destroy_sqs_queue(url):
-    return utils.call(_boto3.client("sqs").delete_queue, QueueUrl=url)
+    return utils.call(lpipe.contrib.boto3.client("sqs").delete_queue, QueueUrl=url)
 
 
 def destroy_sqs_queues(queues: dict):

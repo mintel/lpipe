@@ -21,8 +21,9 @@ import json
 from contextlib import contextmanager
 from pathlib import Path
 
-from .. import _boto3, utils
-from .utils import emit_logs
+import lpipe.contrib.boto3
+from lpipe import utils
+from lpipe.testing import utils as testing_utils
 
 
 def create_lambda(
@@ -48,7 +49,7 @@ def create_lambda(
     with open(str(Path().absolute() / path), "rb") as f:
         zipped_code = f.read()
         utils.call(
-            _boto3.client("lambda").create_function,
+            lpipe.contrib.boto3.client("lambda").create_function,
             FunctionName=name,
             Runtime=runtime,
             Role=role,
@@ -60,7 +61,9 @@ def create_lambda(
 
 
 def destroy_lambda(name: str = "my_lambda", **kwargs):
-    return utils.call(_boto3.client("lambda").delete_function, FunctionName=name)
+    return utils.call(
+        lpipe.contrib.boto3.client("lambda").delete_function, FunctionName=name
+    )
 
 
 def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
@@ -69,7 +72,7 @@ def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
         "LogType": "Tail",
         "Payload": json.dumps(payload).encode(),
     }
-    response = _boto3.client("lambda").invoke(
+    response = lpipe.contrib.boto3.client("lambda").invoke(
         FunctionName=name, **{**defaults, **kwargs}
     )
     utils.check_status(response, keys=["StatusCode"])
@@ -78,7 +81,7 @@ def invoke_lambda(name: str = "my_lambda", payload: dict = {}, **kwargs):
         body = json.loads(body)
     except Exception:
         pass
-    emit_logs(body)
+    testing_utils.emit_logs(body)
     return response, body
 
 
