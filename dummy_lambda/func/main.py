@@ -36,14 +36,14 @@ def test_func_trigger_first(logger, **kwargs):
 
 
 def test_func_multi_trigger(logger, **kwargs):
-    try:
-        return [
-            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
-            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
-        ]
-    except Exception as e:
-        logger.log("Failed to return multiple payloads.")
-        raise FailButContinue from e
+    return [
+        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+    ]
+
+
+def test_func_trigger_error(logger, **kwargs):
+    return Payload(Path.TEST_RAISE, kwargs)
 
 
 def return_foobar(**kwargs):
@@ -93,9 +93,11 @@ class Path(Enum):
     TEST_TRIGGER_FIRST = 15
     TEST_TRIGGER_SECOND = 16
     TEST_MULTI_TRIGGER = 17
-    TEST_DEFAULT_PATH = 18
-    TEST_DEFAULT_PATH_INCLUDE_ALL = 19
-    TEST_BARE_FUNCS = 20
+    TEST_TRIGGER_ERROR = 18
+    TEST_DEFAULT_PATH = 19
+    TEST_DEFAULT_PATH_INCLUDE_ALL = 20
+    TEST_BARE_FUNCS = 21
+    TEST_RAISE = 22
 
 
 PATHS = {
@@ -163,6 +165,8 @@ PATHS = {
             include_all_params=True,
         )
     ],
+    Path.TEST_TRIGGER_ERROR: [test_func_trigger_error],
+    Path.TEST_RAISE: [throw_exception],
 }
 
 
