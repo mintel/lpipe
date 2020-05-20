@@ -3,6 +3,25 @@ import pytest
 import lpipe.contrib.boto3
 from lpipe import utils
 
+
+@pytest.mark.parametrize(
+    "fixture_name,fixture",
+    [
+        ("valid_empty", {"input": "", "output": {}, "raises": None}),
+        ("valid", {"input": "a=b,c=d", "output": {"a": "b", "c": "d"}, "raises": None}),
+        ("invalid", {"input": "asdf", "output": None, "raises": ValueError}),
+    ],
+)
+def test_to_dict(fixture_name, fixture):
+    raises = fixture.get("raises", None)
+    if raises:
+        with pytest.raises(raises):
+            output = lpipe.contrib.boto3._to_dict(fixture["input"])
+    else:
+        output = lpipe.contrib.boto3._to_dict(fixture["input"])
+        assert output == fixture["output"]
+
+
 region_name = "us-east-1"
 fixtures = [
     ("no_url", {"region_name": region_name}),
