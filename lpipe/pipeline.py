@@ -9,7 +9,7 @@ from typing import Any, List, Union
 import lpipe.exceptions
 import lpipe.logging
 from lpipe import signature, utils
-from lpipe.contrib import kinesis, mindictive, sentry, sqs
+from lpipe.contrib import kinesis, mindictive, sqs
 
 
 class QueueType(Enum):
@@ -163,6 +163,7 @@ def process_event(
     default_path=None,
     logger=None,
     debug: bool = False,
+    exception_handler: FunctionType = None,
 ) -> dict:
     """Process an AWS Lambda event.
 
@@ -175,6 +176,7 @@ def process_event(
         default_path: A string or Enum which will be run for every message received.
         logger:
         debug (bool):
+        exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
     """
     logger = lpipe.logging.setup(logger=logger, context=context, debug=debug)
     logger.debug(f"Event received. queue: {queue_type}, event: {event}")
@@ -241,7 +243,7 @@ def process_event(
             #    lpipe.exceptions.InvalidPayloadError
             #    lpipe.exceptions.InvalidPathError
             logger.error(str(e))
-            sentry.capture(e)
+            exception_handler(e)
             continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
         except lpipe.exceptions.FailCatastrophically as e:
             # CAPTURES:
@@ -279,6 +281,7 @@ def execute_payload(
     event,
     context,
     debug: bool = False,
+    exception_handler: FunctionType = None,
 ) -> Any:
     """Execute functions, paths, and shortcuts in a Path.
 
@@ -289,6 +292,8 @@ def execute_payload(
         logger:
         event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
         context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        debug (bool):
+        exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
     """
     if not logger:
         logger = lpipe.logging.LPLogger()
@@ -349,7 +354,7 @@ def execute_payload(
                     logger.error(
                         f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {utils.exception_to_str(e)}"
                     )
-                    sentry.capture(e)
+                    exception_handler(e)
                     if debug:
                         raise lpipe.exceptions.FailCatastrophically() from e
 
