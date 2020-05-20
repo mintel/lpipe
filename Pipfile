@@ -6,11 +6,9 @@ name = "pypi"
 [packages]
 backoff = "*"
 boto3 = "*"
-# TODO: jsonschema = "*"
 python-dateutil = "*"
 python-decouple = "*"
 requests = "*"
-# sentry-sdk = "*"
 structlog = "*"
 
 [dev-packages]
