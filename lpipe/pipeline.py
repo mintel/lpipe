@@ -59,7 +59,7 @@ def process_event(
             f"Invalid queue type '{queue_type}'"
         ) from e
 
-    path_enum, paths = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
+    paths, path_enum = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
 
     successful_records = []
     records = get_records_from_event(queue_type, event)

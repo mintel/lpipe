@@ -14,7 +14,6 @@ def sqs(localstack, sqs_queues):
 """
 
 import json
-import logging
 from contextlib import contextmanager
 
 import backoff
@@ -22,7 +21,7 @@ from botocore.exceptions import ClientError
 
 import lpipe.contrib.boto3
 from lpipe import utils
-from lpipe.contrib.sqs import get_queue_arn, get_queue_url
+from lpipe.contrib.sqs import get_queue_arn
 from lpipe.testing.utils import backoff_check
 
 

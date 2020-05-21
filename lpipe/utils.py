@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from enum import Enum, EnumMeta
 
 import lpipe.exceptions
-from lpipe import contrib
+from lpipe.contrib import mindictive
 
 
 def hash(encoded_data):
@@ -22,14 +22,6 @@ def batch(iterable, n=1):
     iter_len = len(iterable)
     for ndx in range(0, iter_len, n):
         yield iterable[ndx : min(ndx + n, iter_len)]
-
-
-def get_nested(*args, **kwargs):
-    return contrib.mindictive.get_nested(*args, **kwargs)
-
-
-def set_nested(*args, **kwargs):
-    return contrib.mindictive.set_nested(*args, **kwargs)
 
 
 def _set_env(env):
@@ -60,20 +52,19 @@ def set_env(env):
 
 
 class AutoEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            if isinstance(obj, Enum):
-                return str(obj)
-            if isinstance(obj, bytes):
-                return obj.decode("utf-8")
-            return obj._json()
-        except AttributeError:
-            return json.JSONEncoder.default(self, obj)
+    def default(self, o):
+        if isinstance(o, Enum):
+            return str(o)
+        if isinstance(o, bytes):
+            return o.decode("utf-8")
+        if hasattr(o, "_json"):
+            return o._json()
+        return json.JSONEncoder.default(self, o)
 
 
 def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
     """Check status of an AWS API response."""
-    status = get_nested(response, keys)
+    status = mindictive.get_nested(response, keys)
     assert status // 100 == code
     return status
 
@@ -94,7 +85,7 @@ def call(_callable, *args, **kwargs):
     return resp
 
 
-def get_enum_value(e: EnumMeta, k):
+def get_enum_value(e: EnumMeta, k) -> Enum:
     """Get the value of an enum key.
 
     Args:
@@ -105,7 +96,7 @@ def get_enum_value(e: EnumMeta, k):
         lpipe.exceptions.InvalidPathError: if key `k` is not in Enum `e`
     """
     try:
-        return e[str(k).split(".")[-1]]
+        return e[str(k).split(".")[-1].upper()]
     except KeyError as err:
         raise lpipe.exceptions.InvalidPathError(
             "Payload specified an invalid path."
@@ -118,6 +109,7 @@ def repr(o, attrs=[]):
 
 
 def describe_client_error(e):
+    """Get the error code for a boto3 response exception."""
     return e.response.get("Error", {}).get("Code")
 
 
