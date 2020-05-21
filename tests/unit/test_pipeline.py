@@ -21,7 +21,6 @@ from lpipe.pipeline import (
 )
 from lpipe.queue import Queue, QueueType
 
-
 exception_handler = lambda e: None
 
 

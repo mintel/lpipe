@@ -1,6 +1,7 @@
-import pytest
 from enum import Enum, EnumMeta
 from typing import Callable
+
+import pytest
 
 import lpipe
 import lpipe.exceptions
