@@ -2,18 +2,11 @@ import logging
 
 import moto
 import pytest
-import pytest_localstack
 from tests import fixtures
 
 import lpipe
 
 logger = logging.getLogger()
-localstack = pytest_localstack.patch_fixture(
-    services=["dynamodb", "kinesis", "sqs", "s3", "lambda"],
-    scope="class",
-    autouse=False,
-    region_name=fixtures.ENV["AWS_DEFAULT_REGION"],
-)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -30,13 +23,7 @@ def kinesis_streams():
 
 
 @pytest.fixture(scope="class")
-def kinesis(localstack, kinesis_streams):
-    with lpipe.testing.setup_kinesis(kinesis_streams) as streams:
-        yield streams
-
-
-@pytest.fixture(scope="class")
-def kinesis_moto(kinesis_streams, environment):
+def kinesis(kinesis_streams, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_kinesis():
             with lpipe.testing.setup_kinesis(kinesis_streams) as streams:
@@ -49,13 +36,7 @@ def sqs_queues():
 
 
 @pytest.fixture(scope="class")
-def sqs(localstack, sqs_queues):
-    with lpipe.testing.setup_sqs(sqs_queues, redrive=True) as queues:
-        yield queues
-
-
-@pytest.fixture(scope="class")
-def sqs_moto(sqs_queues, environment):
+def sqs(sqs_queues, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_sqs():
             with lpipe.testing.setup_sqs(sqs_queues, redrive=True) as queues:
@@ -80,13 +61,7 @@ def dynamodb_tables():
 
 
 @pytest.fixture(scope="class")
-def dynamodb(localstack, dynamodb_tables):
-    with lpipe.testing.setup_dynamodb(dynamodb_tables) as tables:
-        yield tables
-
-
-@pytest.fixture(scope="class")
-def dynamodb_moto(dynamodb_tables, environment):
+def dynamodb(dynamodb_tables, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_dynamodb2():
             with lpipe.testing.setup_dynamodb(dynamodb_tables) as tables:
@@ -99,13 +74,7 @@ def s3_buckets():
 
 
 @pytest.fixture(scope="class")
-def s3(localstack, s3_buckets):
-    with lpipe.testing.setup_s3(s3_buckets) as buckets:
-        yield buckets
-
-
-@pytest.fixture(scope="class")
-def s3_moto(s3_buckets, environment):
+def s3(s3_buckets, environment):
     with lpipe.utils.set_env(environment()):
         with moto.mock_s3():
             with lpipe.testing.setup_s3(s3_buckets) as buckets:
@@ -127,13 +96,3 @@ def environment(sqs_queues, kinesis_streams, dynamodb_tables, s3_buckets):
 def set_environment(environment):
     with lpipe.utils.set_env(environment()):
         yield
-
-
-@pytest.fixture(scope="class")
-def lam(localstack, environment):
-    with lpipe.testing.setup_awslambda(
-        path="dummy_lambda/dist/build.zip",
-        runtime="python3.6",
-        environment=environment(MOCK_AWS=True),
-    ) as lam:
-        yield lam
