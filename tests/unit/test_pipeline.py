@@ -21,7 +21,9 @@ from lpipe.pipeline import (
 )
 from lpipe.queue import Queue, QueueType
 
-exception_handler = lambda e: None
+
+def exception_handler(e):
+    pass
 
 
 @pytest.mark.parametrize(
