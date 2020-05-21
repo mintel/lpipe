@@ -82,7 +82,7 @@ class TestAutoEncoder:
         data = {FakePath.FOO: "wizbang"}
         with pytest.raises(TypeError):
             # python's json module WILL NOT encode dicts with non-str keys
-            encoded = json.dumps(data, cls=utils.AutoEncoder)
+            json.dumps(data, cls=utils.AutoEncoder)
 
     def test_bytes(self):
         data = {"foo": b"bar"}
@@ -92,12 +92,12 @@ class TestAutoEncoder:
 
     def test_obj_json(self):
         class TestObj:
-            def __init__(self, f, l):
-                self.f = f
-                self.l = l
+            def __init__(self, first, last):
+                self.first = first
+                self.last = last
 
             def _json(self):
-                return f"{self.f} {self.l}"
+                return f"{self.first} {self.last}"
 
         data = {"foo": TestObj("John", "Doe")}
         encoded = json.dumps(data, cls=utils.AutoEncoder)
@@ -111,4 +111,4 @@ class TestAutoEncoder:
         data = {"foo": TestObj()}
         with pytest.raises(TypeError):
             # Just checking that the default json encoder is called
-            encoded = json.dumps(data, cls=utils.AutoEncoder)
+            json.dumps(data, cls=utils.AutoEncoder)

@@ -1,11 +1,11 @@
-from enum import Enum, EnumMeta
+from enum import Enum
 from typing import Callable
 
 import pytest
 
 import lpipe
 import lpipe.exceptions
-from lpipe import action, normalize, queue, utils
+from lpipe import action, normalize, queue
 
 fake_enum = Enum("Auto", ["FOO", "BAR"])
 fake_queue = queue.Queue(type=queue.QueueType.SQS, name="foobar", path="wizbang")
@@ -92,8 +92,12 @@ def test_normalize_paths(fixture_name, fixture):
 
 class TestNormalizeActions:
     def test_functions(self):
-        fake_func = lambda x: None
-        fake_func2 = lambda y: None
+        def fake_func(x):
+            pass
+
+        def fake_func2(y):
+            pass
+
         funcs = [fake_func, fake_func2]
         output = normalize.normalize_actions(funcs)
         assert isinstance(output, list)
@@ -101,8 +105,6 @@ class TestNormalizeActions:
         assert output[0].functions == funcs
 
     def test_actions(self):
-        fake_func = lambda x: None
-        fake_func2 = lambda y: None
         actions = [action.Action(paths=["FOO"]), action.Action(paths=["BAR"])]
         output = normalize.normalize_actions(actions)
         assert output == actions
