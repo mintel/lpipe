@@ -9,6 +9,10 @@ DATA = {
         "payload": [{}],
         "response": {"stats": {"received": 1, "successes": 0}},
     },
+    "RECORDS_NOT_A_LIST": {
+        "payload": {},
+        "response": {"stats": {"received": 0, "successes": 0}},
+    },
     "FUNC": {
         "payload": [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
@@ -27,6 +31,10 @@ DATA = {
     },
     "FUNC_BLANK_PARAMS": {
         "payload": [{"path": "TEST_FUNC_BLANK_PARAMS", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "FUNC_LOWER_CASE": {
+        "payload": [{"path": "test_func", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "PATH": {
@@ -87,6 +95,26 @@ DATA = {
     },
     "TRIGGER_PATH_WITH_ERROR": {
         "payload": [{"path": "TEST_TRIGGER_ERROR", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 0}},
+    },
+    "DEFAULT_PATH_FUNC": {
+        "path": "TEST_FUNC",
+        "payload": [{"foo": "bar"}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PATH_FUNC_MANY": {
+        "path": "TEST_FUNC",
+        "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
+        "response": {"stats": {"received": 3, "successes": 3}},
+    },
+    "DEFAULT_PATH_KWARGS_PASSED": {
+        "path": "TEST_DEFAULT_PATH",
+        "payload": [{"foo": "bar"}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PATH_KWARGS_PASSED_ERROR": {
+        "path": "TEST_DEFAULT_PATH",
+        "payload": [{"wiz": "bang"}],
         "response": {"stats": {"received": 1, "successes": 0}},
     },
 }

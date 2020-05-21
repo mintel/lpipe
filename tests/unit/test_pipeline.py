@@ -6,7 +6,7 @@ import pytest
 from decouple import config
 from tests import fixtures
 
-from lpipe import exceptions
+from lpipe import exceptions, testing
 from lpipe.action import Action
 from lpipe.contrib.sqs import get_queue_url
 from lpipe.payload import Payload
@@ -20,22 +20,18 @@ from lpipe.pipeline import (
     put_record,
 )
 from lpipe.queue import Queue, QueueType
-from lpipe.testing import (
-    MockContext,
-    emit_logs,
-    kinesis_payload,
-    raw_payload,
-    sqs_payload,
-)
 
 
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "decode_func": get_sqs_payload}),
+        ("sqs", {"encode_func": testing.sqs_payload, "decode_func": get_sqs_payload}),
         (
             "kinesis",
-            {"encode_func": kinesis_payload, "decode_func": get_kinesis_payload},
+            {
+                "encode_func": testing.kinesis_payload,
+                "decode_func": get_kinesis_payload,
+            },
         ),
     ],
 )
@@ -54,9 +50,12 @@ def test_encode_payload(fixture_name, fixture):
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
-        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
-        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "kinesis",
+            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+        ),
+        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
     ],
 )
 def test_get_records_from_event(fixture_name, fixture):
@@ -75,9 +74,12 @@ def test_get_event_source_invalid():
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
-        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
-        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "kinesis",
+            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+        ),
+        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
     ],
 )
 def test_get_payload_from_record(fixture_name, fixture):
@@ -168,7 +170,7 @@ def test_invalid_queue(set_environment):
     with pytest.raises(exceptions.InvalidConfigurationError):
         process_event(
             event=None,
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
             paths=None,
             queue_type="badqueue",
         )
@@ -181,7 +183,7 @@ def test_fail_catastrophically(set_environment):
     with pytest.raises(exceptions.FailCatastrophically):
         process_event(
             event=[{"foo": "bar"}],
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
             paths={"FAIL": [Action(functions=[_fail])]},
             queue_type=QueueType.RAW,
             default_path="FAIL",
@@ -191,109 +193,38 @@ def test_fail_catastrophically(set_environment):
 @pytest.mark.usefixtures("sqs_moto", "kinesis_moto")
 class TestProcessEvents:
     @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_raw(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.RAW,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_kinesis(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=kinesis_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.KINESIS,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_sqs(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.SQS,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture",
+        "queue_name,queue",
         [
+            ("raw", {"type": QueueType.RAW, "encoder": testing.raw_payload}),
+            ("sqs", {"type": QueueType.SQS, "encoder": testing.sqs_payload}),
             (
-                "TEST_FUNC",
-                {
-                    "path": "TEST_FUNC",
-                    "payload": [{"foo": "bar"}],
-                    "response": {"stats": {"received": 1, "successes": 1}},
-                },
-            ),
-            (
-                "TEST_FUNC_MANY",
-                {
-                    "path": "TEST_FUNC",
-                    "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
-                    "response": {"stats": {"received": 3, "successes": 3}},
-                },
-            ),
-            (
-                "TEST_KWARGS_PASSED",
-                {
-                    "path": "TEST_DEFAULT_PATH",
-                    "payload": [{"foo": "bar"}],
-                    "response": {"stats": {"received": 1, "successes": 1}},
-                },
-            ),
-            (
-                "TEST_KWARGS_PASSED_FAIL",
-                {
-                    "path": "TEST_DEFAULT_PATH",
-                    "payload": [{"wiz": "bang"}],
-                    "response": {"stats": {"received": 1, "successes": 0}},
-                },
+                "kinesis",
+                {"type": QueueType.KINESIS, "encoder": testing.kinesis_payload},
             ),
         ],
     )
-    def test_process_event_default_path(self, set_environment, fixture_name, fixture):
+    @pytest.mark.parametrize(
+        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
+    )
+    def test_process_event(
+        self, set_environment, fixture_name, fixture, queue_name, queue
+    ):
         from dummy_lambda.func.main import Path, PATHS
 
+        kwargs = {}
+        if fixture.get("path", None):
+            kwargs["default_path"] = fixture["path"]
+
         response = process_event(
-            event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            event=queue["encoder"](fixture["payload"]),
+            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
-            queue_type=QueueType.SQS,
+            queue_type=queue["type"],
             debug=True,
-            default_path=fixture["path"],
+            **kwargs
         )
-        emit_logs(response)
+        testing.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -313,13 +244,18 @@ class TestProcessEvents:
             for path, actions in deepcopy(PATHS).items()
         }
 
+        kwargs = {}
+        if fixture.get("path", None):
+            kwargs["default_path"] = fixture["path"]
+
         response = process_event(
-            event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            event=testing.raw_payload(fixture["payload"]),
+            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
             paths=_PATHS,
             queue_type=QueueType.RAW,
             debug=True,
+            **kwargs
         )
-        emit_logs(response)
+        testing.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v

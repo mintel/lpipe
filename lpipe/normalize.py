@@ -49,4 +49,4 @@ def normalize_path_enum(paths: dict, path_enum: EnumMeta = None):
             paths = normalize_paths(path_enum, paths)
         except KeyError as e:
             raise lpipe.exceptions.InvalidConfigurationError from e
-    return path_enum, paths
+    return paths, path_enum

@@ -16,3 +16,10 @@ def test_push_context(set_environment):
         return True
 
     assert _test_func()
+
+
+def test_capture_exception(set_environment):
+    try:
+        raise Exception("Test event. Please ignore.")
+    except Exception as e:
+        sentry.capture(e)
