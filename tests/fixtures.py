@@ -9,10 +9,6 @@ DATA = {
         "payload": [{}],
         "response": {"stats": {"received": 1, "successes": 0}},
     },
-    "RECORDS_NOT_A_LIST": {
-        "payload": {},
-        "response": {"stats": {"received": 0, "successes": 0}},
-    },
     "FUNC": {
         "payload": [{"path": "TEST_FUNC", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
