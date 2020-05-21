@@ -15,7 +15,7 @@ class TestBuild:
         assert result["Data"] == '{"foo": "bar"}'
 
 
-@pytest.mark.usefixtures("kinesis_moto", "sqs_moto")
+@pytest.mark.usefixtures("kinesis", "sqs")
 class TestPutRecords:
     def test_batch_put_records_single(self, kinesis_streams):
         responses = kinesis.batch_put_records(

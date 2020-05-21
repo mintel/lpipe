@@ -138,7 +138,7 @@ class TestPayload:
         Payload(q, {"foo": "bar"}).validate()
 
 
-@pytest.mark.usefixtures("sqs_moto", "kinesis_moto")
+@pytest.mark.usefixtures("sqs", "kinesis")
 class TestPutRecord:
     def test_kinesis(self, kinesis_streams, set_environment):
         queue = Queue(type=QueueType.KINESIS, path="FOO", name=kinesis_streams[0])
@@ -194,7 +194,7 @@ def test_fail_catastrophically(set_environment):
         )
 
 
-@pytest.mark.usefixtures("sqs_moto", "kinesis_moto")
+@pytest.mark.usefixtures("sqs", "kinesis")
 class TestProcessEvents:
     @pytest.mark.parametrize(
         "queue_name,queue",

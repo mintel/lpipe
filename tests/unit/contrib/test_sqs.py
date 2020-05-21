@@ -21,7 +21,7 @@ class TestBuild:
         assert result["MessageGroupId"] == "10"
 
 
-@pytest.mark.usefixtures("sqs_moto")
+@pytest.mark.usefixtures("sqs")
 class TestPutMessages:
     def test_batch_put_messages_single(self, sqs_queues):
         boto3.client("sqs")
