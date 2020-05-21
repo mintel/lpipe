@@ -22,6 +22,9 @@ from lpipe.pipeline import (
 from lpipe.queue import Queue, QueueType
 
 
+exception_handler = lambda e: None
+
+
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
@@ -222,6 +225,7 @@ class TestProcessEvents:
             paths=PATHS,
             queue_type=queue["type"],
             debug=True,
+            exception_handler=exception_handler,
             **kwargs
         )
         testing.emit_logs(response)
