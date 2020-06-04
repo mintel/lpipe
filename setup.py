@@ -43,7 +43,7 @@ setup(
     setup_requires=["pytest-runner"],
     tests_require=list_requirements("requirements-dev.txt"),
     install_requires=list_requirements("requirements.txt"),
-    extras_require={"sentry": ["sentry-sdk"]},
+    extras_require={"sentry": ["sentry-sdk", "python-decouple"]},
     python_requires=">=3.6",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

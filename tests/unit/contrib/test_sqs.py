@@ -4,6 +4,8 @@ import pytest
 from lpipe.contrib import sqs
 from lpipe.utils import check_status, set_env
 
+from tests import fixtures
+
 
 def test_mock(environment):
     with set_env(environment(MOCK_AWS=True)):
@@ -23,7 +25,8 @@ class TestBuild:
 
 @pytest.mark.usefixtures("sqs")
 class TestPutMessages:
-    def test_batch_put_messages_single(self, sqs_queues):
+    def test_batch_put_messages_single(self):
+        sqs_queues = fixtures.SQS
         boto3.client("sqs")
         queue_url = sqs.get_queue_url(sqs_queues[0])
         responses = sqs.batch_put_messages(
@@ -32,7 +35,8 @@ class TestPutMessages:
         assert len(responses) == 1
         assert all([check_status(r) for r in responses])
 
-    def test_batch_put_messages_many(self, sqs_queues):
+    def test_batch_put_messages_many(self):
+        sqs_queues = fixtures.SQS
         boto3.client("sqs")
         queue_url = sqs.get_queue_url(sqs_queues[0])
         responses = sqs.batch_put_messages(
@@ -48,7 +52,8 @@ class TestPutMessages:
         assert len(responses) == 2
         assert all([check_status(r) for r in responses])
 
-    def test_batch_put_message(self, sqs_queues):
+    def test_batch_put_message(self):
+        sqs_queues = fixtures.SQS
         boto3.client("sqs")
         queue_url = sqs.get_queue_url(sqs_queues[0])
         responses = sqs.put_message(

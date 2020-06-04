@@ -1,4 +1,22 @@
-ENV = {"AWS_DEFAULT_REGION": "us-east-2", "FUNCTION_NAME": "my_lambda"}
+ENV = {
+    "AWS_DEFAULT_REGION": "us-east-2",
+    "FUNCTION_NAME": "my_lambda",
+    "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
+}
+
+SQS = ["test-sqs-queue"]
+
+KINESIS = ["test-kinesis-stream"]
+
+LAMBDA = [
+    {
+        "zip_path": "dummy_lambda/dist/build.zip",
+        "FunctionName": "my_lambda",
+        "Runtime": "python3.6",
+        "Environment": {"test_bool_env_var": True},
+    }
+]
+
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {

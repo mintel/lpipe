@@ -1,7 +1,7 @@
 import json
 
 from lpipe.logging import LPLogger
-from lpipe.testing.utils import emit_logs
+from boto3_fixtures.utils import emit_logs
 from lpipe.utils import AutoEncoder
 
 

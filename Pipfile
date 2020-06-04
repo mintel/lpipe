@@ -1,23 +1,19 @@
-[[source]]
-url = "https://pypi.python.org/simple"
-verify_ssl = true
-name = "pypi"
-
 [packages]
 backoff = "*"
 boto3 = "*"
 python-dateutil = "*"
-python-decouple = "*"
 requests = "*"
 structlog = "*"
 
 [dev-packages]
 advbumpversion = "*"
 autoflake = "*"
+boto3-fixtures = "*"
 codecov = "*"
 isort = "*"
 moto = "*"
 pipenv = "*"
+python-decouple = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-localstack = "*"

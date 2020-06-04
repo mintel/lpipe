@@ -5,7 +5,7 @@
 # from decouple import config
 # from tests import fixtures
 #
-# from lpipe.testing import invoke_lambda, sqs_payload
+# from boto3_fixtures.awslambda import invoke_lambda, sqs_payload
 #
 #
 # @pytest.mark.postbuild
