@@ -1,9 +1,8 @@
 import pytest
+from tests import fixtures
 
 from lpipe import utils
 from lpipe.contrib import kinesis
-
-from tests import fixtures
 
 
 def test_mock(environment):

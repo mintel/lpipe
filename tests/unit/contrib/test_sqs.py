@@ -1,10 +1,9 @@
 import boto3
 import pytest
+from tests import fixtures
 
 from lpipe.contrib import sqs
 from lpipe.utils import check_status, set_env
-
-from tests import fixtures
 
 
 def test_mock(environment):

@@ -8,16 +8,6 @@ SQS = ["test-sqs-queue"]
 
 KINESIS = ["test-kinesis-stream"]
 
-LAMBDA = [
-    {
-        "zip_path": "dummy_lambda/dist/build.zip",
-        "FunctionName": "my_lambda",
-        "Runtime": "python3.6",
-        "Environment": {"test_bool_env_var": True},
-    }
-]
-
-
 DATA = {
     "EMPTY_NO_PAYLOAD": {
         "payload": [],

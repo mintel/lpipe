@@ -9,19 +9,15 @@ import lpipe
 
 logger = logging.getLogger()
 stack_config = {
-    "services": ["sqs", "kinesis", "lambda"],
+    "services": ["sqs", "kinesis"],
     "autouse": False,
     "scope": "class",
     "region_name": fixtures.ENV["AWS_DEFAULT_REGION"],
 }
 aws = b3f.contrib.pytest.moto_fixture(**stack_config)
-
 sqs = b3f.contrib.pytest.service_fixture("sqs", scope="class", queues=fixtures.SQS)
 kinesis = b3f.contrib.pytest.service_fixture(
     "kinesis", scope="class", streams=fixtures.KINESIS
-)
-lam = b3f.contrib.pytest.service_fixture(
-    "lambda", scope="class", lambdas=fixtures.LAMBDA
 )
 
 
