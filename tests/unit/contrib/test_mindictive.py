@@ -29,3 +29,28 @@ class TestDictHelpers:
         my_dict = {}
         mindictive.set_nested(my_dict, ["a", "b"], "testval")
         assert my_dict["a"]["b"] == "testval"
+
+    def test_get_object(self):
+        class FooBar:
+            def __init__(self, asdf):
+                self.asdf = asdf
+
+        my_dict = {"a": {"b": FooBar("testval")}}
+        assert mindictive.get_nested(my_dict, ["a", "b", "asdf"]) == "testval"
+        with pytest.raises(KeyError):
+            mindictive.get_nested(my_dict, ["a", "b", "ghjk"])
+
+    def test_get_object_with_default(self):
+        class FooBar:
+            def __init__(self, asdf):
+                self.asdf = asdf
+
+        my_dict = {"a": {"b": FooBar("testval")}}
+        assert (
+            mindictive.get_nested(my_dict, ["a", "b", "asdf"], "defaultval")
+            == "testval"
+        )
+        assert (
+            mindictive.get_nested(my_dict, ["a", "b", "ghjk"], "defaultval")
+            == "defaultval"
+        )
