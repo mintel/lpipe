@@ -1,6 +1,6 @@
 __title__ = "lpipe"
 __version__ = "2.0.26"
-__summary__ = "Lambda toolkit and message pipeline."
+__summary__ = "AWS Lambda framework for writing clear, minimal Python FAAS"
 __author__ = "Charlie Mathews"
 __author_email__ = "cmathews@mintel.com"
 __maintainer__ = "Charlie Mathews"
