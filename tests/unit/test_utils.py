@@ -47,6 +47,10 @@ class TestDictHelpers:
         utils.set_nested(my_dict, ["a", "b"], "testval")
         assert my_dict["a"]["b"] == "testval"
 
+    def test_get_falsy(self):
+        my_dict = {"a": {"b": 0}}
+        assert utils.get_nested(my_dict, ["a", "b"], None) == 0
+
 
 class Path(Enum):
     FOO = 1
