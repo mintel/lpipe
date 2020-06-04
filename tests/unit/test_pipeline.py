@@ -1,6 +1,7 @@
 from copy import deepcopy
 from enum import Enum
 
+import boto3_fixtures as b3f
 import botocore
 import pytest
 from decouple import config
@@ -140,18 +141,21 @@ class TestPayload:
 
 @pytest.mark.usefixtures("sqs", "kinesis")
 class TestPutRecord:
-    def test_kinesis(self, kinesis_streams, set_environment):
+    def test_kinesis(self, set_environment):
+        kinesis_streams = fixtures.KINESIS
         queue = Queue(type=QueueType.KINESIS, path="FOO", name=kinesis_streams[0])
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
 
-    def test_sqs_by_url(self, sqs_queues, set_environment):
+    def test_sqs_by_url(self, set_environment):
+        sqs_queues = fixtures.SQS
         queue_url = get_queue_url(sqs_queues[0])
         queue = Queue(type=QueueType.SQS, path="FOO", url=queue_url)
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
 
-    def test_sqs_by_name(self, sqs_queues, set_environment):
+    def test_sqs_by_name(self, set_environment):
+        sqs_queues = fixtures.SQS
         queue_name = sqs_queues[0]
         queue = Queue(type=QueueType.SQS, path="FOO", name=queue_name)
         fixture = {"path": queue.path, "kwargs": {}}
@@ -174,7 +178,7 @@ def test_invalid_queue(set_environment):
     with pytest.raises(exceptions.InvalidConfigurationError):
         process_event(
             event=None,
-            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=None,
             queue_type="badqueue",
         )
@@ -187,7 +191,7 @@ def test_fail_catastrophically(set_environment):
     with pytest.raises(exceptions.FailCatastrophically):
         process_event(
             event=[{"foo": "bar"}],
-            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths={"FAIL": [Action(functions=[_fail])]},
             queue_type=QueueType.RAW,
             default_path="FAIL",
@@ -221,7 +225,7 @@ class TestProcessEvents:
 
         response = process_event(
             event=queue["encoder"](fixture["payload"]),
-            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
             queue_type=queue["type"],
@@ -229,7 +233,7 @@ class TestProcessEvents:
             exception_handler=exception_handler,
             **kwargs
         )
-        testing.emit_logs(response)
+        b3f.utils.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -255,12 +259,12 @@ class TestProcessEvents:
 
         response = process_event(
             event=testing.raw_payload(fixture["payload"]),
-            context=testing.MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=_PATHS,
             queue_type=QueueType.RAW,
             debug=True,
             **kwargs
         )
-        testing.emit_logs(response)
+        b3f.utils.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
