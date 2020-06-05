@@ -58,13 +58,13 @@ testall-verbose: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v -n2 --dist=loadscope --log-cli-level=info
 .PHONY: testall-verbose
 
-release_patch: bumpversion/release_patch
+release_patch: changelog/release/patch bumpversion/release_patch
 .PHONY: release_patch
 
-release_minor: bumpversion/release_minor
+release_minor: changelog/release/minor bumpversion/release_minor
 .PHONY: release_minor
 
-release_major: bumpversion/release_major
+release_major: changelog/release/major bumpversion/release_major
 .PHONY: release_major
 
 .PHONY: clean
