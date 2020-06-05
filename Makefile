@@ -36,7 +36,7 @@ fmt: python/fmt
 lint: python/lint
 .PHONY: lint
 
-test: pytest/test
+test: pytest
 .PHONY: test
 
 test-post-build: build-test-lambda pytest/test-post-build
