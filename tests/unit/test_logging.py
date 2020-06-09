@@ -1,48 +1,49 @@
 import json
 
-from lpipe.logging import ServerlessLogger
-from lpipe.testing.utils import emit_logs
+from boto3_fixtures.utils import emit_logs
+
+from lpipe.logging import LPLogger
 from lpipe.utils import AutoEncoder
 
 
 def test_create_logger():
-    logger = ServerlessLogger()
-    assert isinstance(logger, ServerlessLogger)
+    logger = LPLogger()
+    assert isinstance(logger, LPLogger)
 
 
 def test_logger_log():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.log("Test log.")
 
 
 def test_logger_log_info():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.info("Test info.")
 
 
 def test_logger_log_warning():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.warning("Test warning.")
 
 
 def test_logger_log_error():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.error("Test error.")
 
 
 def test_logger_log_critical():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.critical("Test critical.")
 
 
 def test_create_logger_persist():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.persist = True
-    assert isinstance(logger, ServerlessLogger)
+    assert isinstance(logger, LPLogger)
 
 
 def test_logger_persist_events():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.persist = True
     logger.log("TEST")
     for e in logger.events:
@@ -50,7 +51,7 @@ def test_logger_persist_events():
 
 
 def test_logger_persist_events_context():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.persist = True
     with logger.context(bind={"foo": "bar"}):
         logger.log("TEST")
@@ -61,7 +62,7 @@ def test_logger_persist_events_context():
 
 
 def test_logger_persist_emit():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.persist = True
     with logger.context(bind={"foo": "bar"}):
         logger.log("TEST")
@@ -70,17 +71,17 @@ def test_logger_persist_emit():
 
 
 def test_logger_context_action():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     with logger.context(bind={"foo": "bar"}, action="my_action"):
         logger.log("TEST")
 
 
 def test_logger_bind_unbind():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     logger.bind(foo="bar")
     logger.unbind("foo")
 
 
 def test_encode_logger():
-    logger = ServerlessLogger()
+    logger = LPLogger()
     json.dumps(logger, cls=AutoEncoder)

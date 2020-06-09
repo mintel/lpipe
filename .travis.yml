@@ -1,5 +1,3 @@
-services:
-  - docker
 language: python
 python:
   - "3.6"
@@ -13,12 +11,8 @@ stages:
 
 install:
   - make init
-before_script:
-  - make python/dist
-  - make build-test-lambda
 script:
-  - make pytest/k/unit
-  - make pytest/k/integration
+  - make pytest
 after_success:
   - codecov
 

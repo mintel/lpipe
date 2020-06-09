@@ -1,6 +1,8 @@
 import pytest
+from tests import fixtures
 
-from lpipe import kinesis, utils
+from lpipe import utils
+from lpipe.contrib import kinesis
 
 
 def test_mock(environment):
@@ -14,9 +16,10 @@ class TestBuild:
         assert result["Data"] == '{"foo": "bar"}'
 
 
-@pytest.mark.usefixtures("kinesis_moto", "sqs_moto")
+@pytest.mark.usefixtures("kinesis", "sqs")
 class TestPutRecords:
-    def test_batch_put_records_single(self, kinesis_streams):
+    def test_batch_put_records_single(self):
+        kinesis_streams = fixtures.KINESIS
         responses = kinesis.batch_put_records(
             stream_name=kinesis_streams[0],
             records=[{"foo": "bar", "wiz": "bang"}],
@@ -25,7 +28,8 @@ class TestPutRecords:
         assert len(responses) == 1
         assert all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses])
 
-    def test_batch_put_records_many(self, kinesis_streams):
+    def test_batch_put_records_many(self):
+        kinesis_streams = fixtures.KINESIS
         responses = kinesis.batch_put_records(
             stream_name=kinesis_streams[0],
             records=[
@@ -39,7 +43,8 @@ class TestPutRecords:
         assert len(responses) == 2
         assert all([r["ResponseMetadata"]["HTTPStatusCode"] == 200 for r in responses])
 
-    def test_batch_put_record(self, kinesis_streams):
+    def test_batch_put_record(self):
+        kinesis_streams = fixtures.KINESIS
         responses = kinesis.put_record(
             stream_name=kinesis_streams[0], data={"foo": "bar", "wiz": "bang"}
         )

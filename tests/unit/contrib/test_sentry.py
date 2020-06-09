@@ -1,4 +1,4 @@
-from lpipe import sentry
+from lpipe.contrib import sentry
 
 
 def test_init(set_environment):
@@ -16,3 +16,10 @@ def test_push_context(set_environment):
         return True
 
     assert _test_func()
+
+
+def test_capture_exception(set_environment):
+    try:
+        raise Exception("Test event. Please ignore.")
+    except Exception as e:
+        sentry.capture(e)

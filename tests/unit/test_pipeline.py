@@ -1,41 +1,42 @@
 from copy import deepcopy
 from enum import Enum
 
+import boto3_fixtures as b3f
+import botocore
 import pytest
 from decouple import config
 from tests import fixtures
 
-from lpipe import exceptions
+from lpipe import exceptions, testing
+from lpipe.action import Action
+from lpipe.contrib.sqs import get_queue_url
+from lpipe.payload import Payload
 from lpipe.pipeline import (
-    Action,
-    Payload,
-    Queue,
-    QueueType,
+    get_event_source,
     get_kinesis_payload,
     get_payload_from_record,
     get_records_from_event,
     get_sqs_payload,
     process_event,
     put_record,
-    validate_signature,
 )
-from lpipe.sqs import get_queue_url
-from lpipe.testing import (
-    MockContext,
-    emit_logs,
-    kinesis_payload,
-    raw_payload,
-    sqs_payload,
-)
+from lpipe.queue import Queue, QueueType
+
+
+def exception_handler(e):
+    pass
 
 
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "decode_func": get_sqs_payload}),
+        ("sqs", {"encode_func": testing.sqs_payload, "decode_func": get_sqs_payload}),
         (
             "kinesis",
-            {"encode_func": kinesis_payload, "decode_func": get_kinesis_payload},
+            {
+                "encode_func": testing.kinesis_payload,
+                "decode_func": get_kinesis_payload,
+            },
         ),
     ],
 )
@@ -54,9 +55,12 @@ def test_encode_payload(fixture_name, fixture):
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
-        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
-        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "kinesis",
+            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+        ),
+        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
     ],
 )
 def test_get_records_from_event(fixture_name, fixture):
@@ -66,12 +70,21 @@ def test_get_records_from_event(fixture_name, fixture):
     assert len(records) == len(event_records)
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_get_event_source_invalid():
+    # with pytest.raises(UserWarning):
+    assert get_event_source(None, {}) is None
+
+
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": sqs_payload, "queue_type": QueueType.SQS}),
-        ("kinesis", {"encode_func": kinesis_payload, "queue_type": QueueType.KINESIS}),
-        ("raw", {"encode_func": raw_payload, "queue_type": QueueType.RAW}),
+        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "kinesis",
+            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+        ),
+        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
     ],
 )
 def test_get_payload_from_record(fixture_name, fixture):
@@ -82,6 +95,11 @@ def test_get_payload_from_record(fixture_name, fixture):
         get_payload_from_record(fixture["queue_type"], r) for r in event_records
     ]
     assert payload_records == records
+
+
+def test_get_payload_from_record_invalid():
+    with pytest.raises(exceptions.InvalidPayloadError):
+        get_payload_from_record(QueueType.RAW, "badjsonstring")
 
 
 @pytest.mark.parametrize(
@@ -121,105 +139,46 @@ class TestPayload:
         Payload(q, {"foo": "bar"}).validate()
 
 
-class TestValidateSignature:
-    def test_no_hints(self):
-        def _test_func(a, b, c, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": 3}
-
-    def test_no_hints_raises(self):
-        def _test_func(a, b, c, **kwargs):
-            pass
-
-        params = {"b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
-
-    def test_mixed_hints(self):
-        def _test_func(a: str, b, c, **kwargs):
-            pass
-
-        params = {"a": "foo", "b": 2, "c": 3}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": "foo", "b": 2, "c": 3}
-
-    def test_mixed_hints_raises(self):
-        def _test_func(a: str, b, c, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
-
-    def test_hints_defaults(self):
-        def _test_func(a, b, c: str = "asdf", **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2}
-
-    def test_hints_defaults_override(self):
-        def _test_func(a, b, c: str = "asdf", **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": "foobar"}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": "foobar"}
-
-    def test_hint_with_none_default(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2}
-
-    def test_hint_with_none_default_but_set(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": "foobar"}
-        validated_params = validate_signature([_test_func], params)
-        assert validated_params == {"a": 1, "b": 2, "c": "foobar"}
-
-    def test_hint_with_none_default_raises(self):
-        def _test_func(a, b, c: str = None, **kwargs):
-            pass
-
-        params = {"a": 1, "b": 2, "c": 3}
-        with pytest.raises(TypeError):
-            validate_signature([_test_func], params)
-
-
-@pytest.mark.usefixtures("sqs_moto", "kinesis_moto")
+@pytest.mark.usefixtures("sqs", "kinesis")
 class TestPutRecord:
-    def test_kinesis(self, kinesis_streams, set_environment):
+    def test_kinesis(self, set_environment):
+        kinesis_streams = fixtures.KINESIS
         queue = Queue(type=QueueType.KINESIS, path="FOO", name=kinesis_streams[0])
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
 
-    def test_sqs_by_url(self, sqs_queues, set_environment):
+    def test_sqs_by_url(self, set_environment):
+        sqs_queues = fixtures.SQS
         queue_url = get_queue_url(sqs_queues[0])
         queue = Queue(type=QueueType.SQS, path="FOO", url=queue_url)
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
 
-    def test_sqs_by_name(self, sqs_queues, set_environment):
+    def test_sqs_by_name(self, set_environment):
+        sqs_queues = fixtures.SQS
         queue_name = sqs_queues[0]
         queue = Queue(type=QueueType.SQS, path="FOO", name=queue_name)
         fixture = {"path": queue.path, "kwargs": {}}
         put_record(queue=queue, record=fixture)
+
+    def test_sqs_fail_to_discover_url(self, set_environment):
+        queue = Queue(type=QueueType.SQS, path="FOO", name="badqueue")
+        fixture = {"path": queue.path, "kwargs": {}}
+        with pytest.raises(botocore.exceptions.ClientError):
+            put_record(queue=queue, record=fixture)
+
+    def test_fail_to_send(self, set_environment):
+        queue = Queue(type=QueueType.SQS, path="FOO", url="badqueue")
+        fixture = {"path": queue.path, "kwargs": {}}
+        with pytest.raises(exceptions.FailCatastrophically):
+            put_record(queue=queue, record=fixture)
 
 
 def test_invalid_queue(set_environment):
     with pytest.raises(exceptions.InvalidConfigurationError):
         process_event(
             event=None,
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=None,
             queue_type="badqueue",
         )
@@ -232,119 +191,49 @@ def test_fail_catastrophically(set_environment):
     with pytest.raises(exceptions.FailCatastrophically):
         process_event(
             event=[{"foo": "bar"}],
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths={"FAIL": [Action(functions=[_fail])]},
             queue_type=QueueType.RAW,
             default_path="FAIL",
         )
 
 
-@pytest.mark.usefixtures("sqs_moto", "kinesis_moto")
+@pytest.mark.usefixtures("sqs", "kinesis")
 class TestProcessEvents:
     @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_raw(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.RAW,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_kinesis(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=kinesis_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.KINESIS,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
-    )
-    def test_process_event_sqs(self, set_environment, fixture_name, fixture):
-        from dummy_lambda.func.main import Path, PATHS
-
-        response = process_event(
-            event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
-            path_enum=Path,
-            paths=PATHS,
-            queue_type=QueueType.SQS,
-            debug=True,
-        )
-        emit_logs(response)
-        for k, v in fixture["response"].items():
-            assert response[k] == v
-
-    @pytest.mark.parametrize(
-        "fixture_name,fixture",
+        "queue_name,queue",
         [
+            ("raw", {"type": QueueType.RAW, "encoder": testing.raw_payload}),
+            ("sqs", {"type": QueueType.SQS, "encoder": testing.sqs_payload}),
             (
-                "TEST_FUNC",
-                {
-                    "path": "TEST_FUNC",
-                    "payload": [{"foo": "bar"}],
-                    "response": {"stats": {"received": 1, "successes": 1}},
-                },
-            ),
-            (
-                "TEST_FUNC_MANY",
-                {
-                    "path": "TEST_FUNC",
-                    "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
-                    "response": {"stats": {"received": 3, "successes": 3}},
-                },
-            ),
-            (
-                "TEST_KWARGS_PASSED",
-                {
-                    "path": "TEST_DEFAULT_PATH",
-                    "payload": [{"foo": "bar"}],
-                    "response": {"stats": {"received": 1, "successes": 1}},
-                },
-            ),
-            (
-                "TEST_KWARGS_PASSED_FAIL",
-                {
-                    "path": "TEST_DEFAULT_PATH",
-                    "payload": [{"wiz": "bang"}],
-                    "response": {"stats": {"received": 1, "successes": 0}},
-                },
+                "kinesis",
+                {"type": QueueType.KINESIS, "encoder": testing.kinesis_payload},
             ),
         ],
     )
-    def test_process_event_default_path(self, set_environment, fixture_name, fixture):
+    @pytest.mark.parametrize(
+        "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
+    )
+    def test_process_event(
+        self, set_environment, fixture_name, fixture, queue_name, queue
+    ):
         from dummy_lambda.func.main import Path, PATHS
 
+        kwargs = {}
+        if fixture.get("path", None):
+            kwargs["default_path"] = fixture["path"]
+
         response = process_event(
-            event=sqs_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            event=queue["encoder"](fixture["payload"]),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
-            queue_type=QueueType.SQS,
+            queue_type=queue["type"],
             debug=True,
-            default_path=fixture["path"],
+            exception_handler=exception_handler,
+            **kwargs
         )
-        emit_logs(response)
+        b3f.utils.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
 
@@ -364,13 +253,18 @@ class TestProcessEvents:
             for path, actions in deepcopy(PATHS).items()
         }
 
+        kwargs = {}
+        if fixture.get("path", None):
+            kwargs["default_path"] = fixture["path"]
+
         response = process_event(
-            event=raw_payload(fixture["payload"]),
-            context=MockContext(function_name=config("FUNCTION_NAME")),
+            event=testing.raw_payload(fixture["payload"]),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=_PATHS,
             queue_type=QueueType.RAW,
             debug=True,
+            **kwargs
         )
-        emit_logs(response)
+        b3f.utils.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v

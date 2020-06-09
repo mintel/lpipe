@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+- Reduced code complexity
+- Add type hints
+- Increase test coverage
+- Bugfix: lpipe.sqs.delete_message_batch called boto3 incorrectly
+- Breaking: sentry-sdk no longer a required dependency, install with `lpipe = {"extras": ["sentry"], "version": "*"}`, and enable it by setting `process_event(exception_handler=lpipe.contrib.sentry.capture)`
+- Breaking: moved `lpipe.sentry` to `lpipe.contrib.sentry`
+- Breaking: moved `lpipe._boto3` to `lpipe.contrib.boto3`
+- Breaking: removed `lpipe.testing`, use the boto3-fixtures library instead
+- Breaking: removed `lpipe.taxonomy`
+- Breaking: renamed LpipeBaseException to LPBaseException (although, you shouldn't use the base class anyways)
+- Breaking: renamed ServerlessLogger to LPLogger
+- Breaking: renamed `lpipe.utils._repr` to `repr`
+- Semi-Breaking: moved Action, Payload, and Queue classes into their own modules, but they're still imported into the top level module (i.e. `lpipe.Action` still works)
+- Deprecated: moved `lpipe.utils` get_nested, set_nested to `lpipe.contrib.mindictive`, stubs still in place
 
 ## [2.0.15] - 2020-05-05
 - To prevent log explosion, stop adding message kwargs by default to logger passed into user's functions.

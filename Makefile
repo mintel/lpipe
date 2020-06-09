@@ -17,11 +17,14 @@ dist-if: python/distif
 dummy_lambda/dist/.venv:
 	$(WITH_PIPENV) pip install -r <(PIPENV_QUIET=1 pipenv --bare lock -r) --ignore-installed --target $@
 
-build-test-lambda: dist-if
+build-test-lambda: python/distif
 	@make dummy_lambda/dist/.venv
 	pip install dist/lpipe-*.tar.gz --target=dummy_lambda/dist/.venv --upgrade --no-deps --ignore-requires-python
 	@cd dummy_lambda; make build
 .PHONY: build-test-lambda
+
+dummy_lambda/dist/build.zip:
+	$(MAKE) build-test-lambda
 
 isort: env
 	$(WITH_PIPENV) isort --recursive lpipe tests conftest.py setup.py
@@ -33,7 +36,7 @@ fmt: python/fmt
 lint: python/lint
 .PHONY: lint
 
-test: pytest/test
+test: pytest
 .PHONY: test
 
 test-post-build: build-test-lambda pytest/test-post-build
@@ -55,13 +58,13 @@ testall-verbose: pipenv reports/ python/dist build-test-lambda
 	$(WITH_PIPENV) pytest -s -v -n2 --dist=loadscope --log-cli-level=info
 .PHONY: testall-verbose
 
-release_patch: bumpversion/release_patch
+release_patch: changelog/release/patch bumpversion/release_patch
 .PHONY: release_patch
 
-release_minor: bumpversion/release_minor
+release_minor: changelog/release/minor bumpversion/release_minor
 .PHONY: release_minor
 
-release_major: bumpversion/release_major
+release_major: changelog/release/major bumpversion/release_major
 .PHONY: release_major
 
 .PHONY: clean

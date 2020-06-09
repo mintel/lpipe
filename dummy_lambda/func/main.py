@@ -4,11 +4,11 @@ from enum import Enum
 
 from decouple import config
 
-from lpipe import sentry
+from lpipe import Action, Payload, Queue, QueueType, process_event
 from lpipe.exceptions import FailButContinue
-from lpipe.pipeline import Action, Payload, Queue, QueueType, process_event
 
-sentry.init()
+# from lpipe.contrib import sentry
+# sentry.init()
 
 
 def test_func(foo: str, logger, event, **kwargs):
@@ -36,14 +36,14 @@ def test_func_trigger_first(logger, **kwargs):
 
 
 def test_func_multi_trigger(logger, **kwargs):
-    try:
-        return [
-            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
-            Payload(Path.TEST_TRIGGER_SECOND, kwargs),
-        ]
-    except Exception as e:
-        logger.log("Failed to return multiple payloads.")
-        raise FailButContinue from e
+    return [
+        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+    ]
+
+
+def test_func_trigger_error(logger, **kwargs):
+    return Payload(Path.TEST_RAISE, kwargs)
 
 
 def return_foobar(**kwargs):
@@ -53,23 +53,26 @@ def return_foobar(**kwargs):
 def test_kwargs_passed_to_default_path_include_all(logger, event, **kwargs):
     try:
         assert kwargs.get("foo", None) == "bar"
-    except Exception:
-        raise FailButContinue("foo was not set to bar")
+    except AssertionError as e:
+        raise FailButContinue("foo was not set to bar") from e
 
 
 def test_kwargs_passed_to_default_path(foo, logger, event, **kwargs):
     try:
         assert foo == "bar"
-    except Exception:
-        raise FailButContinue("foo was not set to bar")
+    except AssertionError as e:
+        raise FailButContinue("foo was not set to bar") from e
 
 
 def throw_exception(**kwargs):
-    try:
-        raise Exception("Test event. Please ignore.")
-    except Exception as e:
-        sentry.capture(e)
-        raise FailButContinue from e
+    raise Exception()
+
+
+#     try:
+#         raise Exception("Test event. Please ignore.")
+#     except Exception as e:
+#         sentry.capture(e)
+#         raise FailButContinue from e
 
 
 class Path(Enum):
@@ -90,9 +93,11 @@ class Path(Enum):
     TEST_TRIGGER_FIRST = 15
     TEST_TRIGGER_SECOND = 16
     TEST_MULTI_TRIGGER = 17
-    TEST_DEFAULT_PATH = 18
-    TEST_DEFAULT_PATH_INCLUDE_ALL = 19
-    TEST_BARE_FUNCS = 20
+    TEST_TRIGGER_ERROR = 18
+    TEST_DEFAULT_PATH = 19
+    TEST_DEFAULT_PATH_INCLUDE_ALL = 20
+    TEST_BARE_FUNCS = 21
+    TEST_RAISE = 22
 
 
 PATHS = {
@@ -160,6 +165,8 @@ PATHS = {
             include_all_params=True,
         )
     ],
+    Path.TEST_TRIGGER_ERROR: [test_func_trigger_error],
+    Path.TEST_RAISE: [throw_exception],
 }
 
 
@@ -196,9 +203,9 @@ class StubLogger:
         return self.log(event, level=logging.CRITICAL, **kwargs)
 
 
-@sentry.push_context(
-    {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
-)
+# @sentry.push_context(
+#     {"name": config("FUNCTION_NAME"), "environment": config("APP_ENVIRONMENT")}
+# )
 def lambda_handler(event, context):
     return process_event(
         event=event,

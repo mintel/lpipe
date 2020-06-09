@@ -5,9 +5,8 @@ import os
 from contextlib import contextmanager
 from enum import Enum, EnumMeta
 
-from lpipe.exceptions import InvalidPathError
-
-sentinel = object()
+import lpipe.exceptions
+from lpipe.contrib import mindictive
 
 
 def hash(encoded_data):
@@ -23,31 +22,6 @@ def batch(iterable, n=1):
     iter_len = len(iterable)
     for ndx in range(0, iter_len, n):
         yield iterable[ndx : min(ndx + n, iter_len)]
-
-
-def get_nested(_dict, keys, default=sentinel):
-    """Given a dictionary or object, try to fetch a key nested several levels deep."""
-
-    def _get(head, k, d):
-        if isinstance(head, dict):
-            return head.get(k, d)
-        else:
-            return getattr(head, k, d)
-
-    head = _dict
-    for k in keys:
-        head = _get(head, k, default)
-        if head is sentinel:
-            raise KeyError(f"{keys}")
-        elif not head:
-            return default
-    return head
-
-
-def set_nested(d, keys, value):
-    for key in keys[:-1]:
-        d = d.setdefault(key, {})
-    d[keys[-1]] = value
 
 
 def _set_env(env):
@@ -78,20 +52,19 @@ def set_env(env):
 
 
 class AutoEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            if isinstance(obj, Enum):
-                return str(obj)
-            if isinstance(obj, bytes):
-                return obj.decode("utf-8")
-            return obj._json()
-        except AttributeError:
-            return json.JSONEncoder.default(self, obj)
+    def default(self, o):
+        if isinstance(o, Enum):
+            return str(o)
+        if isinstance(o, bytes):
+            return o.decode("utf-8")
+        if hasattr(o, "_json"):
+            return o._json()
+        return json.JSONEncoder.default(self, o)
 
 
 def check_status(response, code=2, keys=["ResponseMetadata", "HTTPStatusCode"]):
     """Check status of an AWS API response."""
-    status = get_nested(response, keys)
+    status = mindictive.get_nested(response, keys)
     assert status // 100 == code
     return status
 
@@ -112,7 +85,7 @@ def call(_callable, *args, **kwargs):
     return resp
 
 
-def get_enum_value(e: EnumMeta, k):
+def get_enum_value(e: EnumMeta, k) -> Enum:
     """Get the value of an enum key.
 
     Args:
@@ -120,22 +93,37 @@ def get_enum_value(e: EnumMeta, k):
         k: The name of an enumerated value
 
     Raises:
-        InvalidPathError: if key `k` is not in Enum `e`
+        lpipe.exceptions.InvalidPathError: if key `k` is not in Enum `e`
     """
     try:
-        return e[str(k).split(".")[-1]]
+        return e[str(k).split(".")[-1].upper()]
     except KeyError as err:
-        raise InvalidPathError(f"Payload specified an invalid path.") from err
+        raise lpipe.exceptions.InvalidPathError(
+            "Payload specified an invalid path."
+        ) from err
 
 
-def _repr(o, attrs=[]):
-    desc = ", ".join([f"{a}: {getattr(o, a)}" for a in attrs])
-    return f"{o.__class__.__name__}<{desc}>"
+def repr(o, attrs=[]):
+    desc = ", ".join([f"{a}={getattr(o, a)}" for a in attrs])
+    return f"{o.__class__.__name__}({desc})"
 
 
 def describe_client_error(e):
+    """Get the error code for a boto3 response exception."""
     return e.response.get("Error", {}).get("Code")
 
 
 def exception_to_str(e):
     return f"{e.__class__.__name__} {e}"
+
+
+def generate_enum(d: dict):
+    """Generate an enumeration of a dictionary's keys.
+
+    Args:
+        d (dict):
+
+    Returns:
+        Enum: enumeration of the keys in dict `d`
+    """
+    return Enum("Auto", [k.upper() for k in d.keys()])

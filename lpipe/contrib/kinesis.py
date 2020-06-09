@@ -5,7 +5,7 @@ from functools import wraps
 import botocore
 from decouple import config
 
-from lpipe import _boto3
+import lpipe.contrib.boto3
 from lpipe.utils import batch, call, hash
 
 
@@ -42,7 +42,7 @@ def mock_kinesis(func):
 @mock_kinesis
 def batch_put_records(stream_name, records, batch_size=500, **kwargs):
     """Put records into a kinesis stream, batched by the maximum of 500."""
-    client = _boto3.client("kinesis")
+    client = lpipe.contrib.boto3.client("kinesis")
     responses = []
     for b in batch(records, batch_size):
         responses.append(

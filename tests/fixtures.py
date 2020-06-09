@@ -1,4 +1,12 @@
-ENV = {"AWS_DEFAULT_REGION": "us-east-2", "FUNCTION_NAME": "my_lambda"}
+ENV = {
+    "AWS_DEFAULT_REGION": "us-east-2",
+    "FUNCTION_NAME": "my_lambda",
+    "SENTRY_DSN": "https://public:private@sentry.localhost:1234/1",
+}
+
+SQS = ["test-sqs-queue"]
+
+KINESIS = ["test-kinesis-stream"]
 
 DATA = {
     "EMPTY_NO_PAYLOAD": {
@@ -27,6 +35,10 @@ DATA = {
     },
     "FUNC_BLANK_PARAMS": {
         "payload": [{"path": "TEST_FUNC_BLANK_PARAMS", "kwargs": {}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "FUNC_LOWER_CASE": {
+        "payload": [{"path": "test_func", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "PATH": {
@@ -69,10 +81,10 @@ DATA = {
         "payload": [{"path": "TEST_FUNC_DEFAULT_PARAM", "kwargs": {"foo": "wiz"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
-    "SENTRY_ERROR": {
-        "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
-        "response": {"stats": {"received": 1, "successes": 0}},
-    },
+    # "SENTRY_ERROR": {
+    #     "payload": [{"path": "TEST_SENTRY", "kwargs": {}}],
+    #     "response": {"stats": {"received": 1, "successes": 0}},
+    # },
     "MANUAL_OUTPUT": {
         "payload": [{"path": "TEST_RET", "kwargs": {}}],
         "response": {"stats": {"received": 1, "successes": 1}, "output": ["foobar"]},
@@ -84,5 +96,29 @@ DATA = {
     "MULTI_TRIGGER_PATH": {
         "payload": [{"path": "TEST_MULTI_TRIGGER", "kwargs": {"foo": "bar"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "TRIGGER_PATH_WITH_ERROR": {
+        "payload": [{"path": "TEST_TRIGGER_ERROR", "kwargs": {"foo": "bar"}}],
+        "response": {"stats": {"received": 1, "successes": 0}},
+    },
+    "DEFAULT_PATH_FUNC": {
+        "path": "TEST_FUNC",
+        "payload": [{"foo": "bar"}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PATH_FUNC_MANY": {
+        "path": "TEST_FUNC",
+        "payload": [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}],
+        "response": {"stats": {"received": 3, "successes": 3}},
+    },
+    "DEFAULT_PATH_KWARGS_PASSED": {
+        "path": "TEST_DEFAULT_PATH",
+        "payload": [{"foo": "bar"}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "DEFAULT_PATH_KWARGS_PASSED_ERROR": {
+        "path": "TEST_DEFAULT_PATH",
+        "payload": [{"wiz": "bang"}],
+        "response": {"stats": {"received": 1, "successes": 0}},
     },
 }
