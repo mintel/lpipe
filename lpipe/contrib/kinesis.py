@@ -6,12 +6,12 @@ import botocore
 from decouple import config
 
 import lpipe.contrib.boto3
-from lpipe.utils import batch, call, hash
+from lpipe import utils
 
 
 def build(record_data):
     data = json.dumps(record_data, sort_keys=True)
-    return {"Data": data, "PartitionKey": hash(data)}
+    return {"Data": data, "PartitionKey": utils.hash(data)}
 
 
 def mock_kinesis(func):
@@ -44,9 +44,9 @@ def batch_put_records(stream_name, records, batch_size=500, **kwargs):
     """Put records into a kinesis stream, batched by the maximum of 500."""
     client = lpipe.contrib.boto3.client("kinesis")
     responses = []
-    for b in batch(records, batch_size):
+    for b in utils.batch(records, batch_size):
         responses.append(
-            call(
+            utils.call(
                 client.put_records,
                 StreamName=stream_name,
                 Records=[build(record) for record in b],
