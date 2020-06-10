@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 - Add type hints
 - Increase test coverage
 - Bugfix: lpipe.sqs.delete_message_batch called boto3 incorrectly
-- Breaking: sentry-sdk no longer a required dependency, install with `lpipe = {extras: ["sentry"], version: "*"}`, and enable it with `process_event(exception_handler=lpipe.contrib.sentry.capture)`
+- Breaking: sentry-sdk no longer a required dependency, install with `lpipe = {extras: ["sentry"], version: "*"}`, and enable it by setting `process_event(exception_handler=lpipe.contrib.sentry.capture)`
 - Breaking: moved `lpipe.sentry` to `lpipe.contrib.sentry`
 - Breaking: moved `lpipe._boto3` to `lpipe.contrib.boto3`
 - Breaking: removed `lpipe.testing`, use the boto3-fixtures library instead
