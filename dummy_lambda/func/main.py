@@ -86,18 +86,19 @@ class Path(Enum):
     MULTI_TEST_FUNC = 8
     MULTI_TEST_FUNC_NO_PARAMS = 9
     TEST_RENAME_PARAM = 10
-    TEST_KINESIS_PATH = 11
-    TEST_SQS_PATH = 12
-    TEST_SENTRY = 13
-    TEST_RET = 14
-    TEST_TRIGGER_FIRST = 15
-    TEST_TRIGGER_SECOND = 16
-    TEST_MULTI_TRIGGER = 17
-    TEST_TRIGGER_ERROR = 18
-    TEST_DEFAULT_PATH = 19
-    TEST_DEFAULT_PATH_INCLUDE_ALL = 20
-    TEST_BARE_FUNCS = 21
-    TEST_RAISE = 22
+    TEST_KINESIS_QUEUE = 11
+    TEST_SQS_QUEUE = 12
+    TEST_SQS_QUEUE_WITHOUT_PATH = 13
+    TEST_SENTRY = 14
+    TEST_RET = 15
+    TEST_TRIGGER_FIRST = 16
+    TEST_TRIGGER_SECOND = 17
+    TEST_MULTI_TRIGGER = 18
+    TEST_TRIGGER_ERROR = 19
+    TEST_DEFAULT_PATH = 20
+    TEST_DEFAULT_PATH_INCLUDE_ALL = 21
+    TEST_BARE_FUNCS = 22
+    TEST_RAISE = 23
 
 
 PATHS = {
@@ -130,7 +131,7 @@ PATHS = {
             functions=[test_func],
         )
     ],
-    Path.TEST_KINESIS_PATH: [
+    Path.TEST_KINESIS_QUEUE: [
         Action(
             required_params=["uri"],
             paths=[
@@ -142,7 +143,7 @@ PATHS = {
             ],
         )
     ],
-    Path.TEST_SQS_PATH: [
+    Path.TEST_SQS_QUEUE: [
         Action(
             required_params=["uri"],
             paths=[
@@ -150,6 +151,12 @@ PATHS = {
                     name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
                 )
             ],
+        )
+    ],
+    Path.TEST_SQS_QUEUE_WITHOUT_PATH: [
+        Action(
+            required_params=["uri"],
+            paths=[Queue(name=config("TEST_SQS_QUEUE"), type=QueueType.SQS)],
         )
     ],
     Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],
