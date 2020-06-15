@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [3.0.3] - 2020-06-15
+- Make 'path' argument optional on the `Queue` class, and update `pipeline.put_record` to send kwargs at the root of the message if no path was set.
+
 ## [3.0.2] - 2020-06-09
 - Added contrib imports to `contrib/__init__.py`
 
