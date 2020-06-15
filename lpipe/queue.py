@@ -31,7 +31,7 @@ class Queue:
     """
 
     def __init__(
-        self, type: queue.QueueType, path: str, name: str = None, url: str = None
+        self, type: queue.QueueType, path: str = None, name: str = None, url: str = None
     ):
         assert name or url
         assert isinstance(type, queue.QueueType)

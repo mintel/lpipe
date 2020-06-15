@@ -253,7 +253,11 @@ def execute_payload(
             }
         ):
             logger.log("Pushing record.")
-        put_record(queue=queue, record={"path": queue.path, "kwargs": payload.kwargs})
+        if queue.path:
+            record = {"path": queue.path, "kwargs": payload.kwargs}
+        else:
+            record = payload.kwargs
+        put_record(queue=queue, record=record)
     else:
         logger.info(
             f"Path should be a string (path name), Path (path Enum), or Queue: {payload.path})"
