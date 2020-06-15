@@ -1,7 +1,6 @@
 import logging
 
 import boto3_fixtures as b3f
-import moto
 import pytest
 from tests import fixtures
 

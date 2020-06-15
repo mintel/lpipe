@@ -1,4 +1,4 @@
-# lpipe 
+# lpipe
 [![PyPI version](https://img.shields.io/pypi/v/lpipe.svg)](https://pypi.org/project/lpipe/) [![TravisCI build status](https://travis-ci.com/mintel/lpipe.svg?branch=master)](https://travis-ci.com/github/mintel/lpipe) [![Code Coverage](https://img.shields.io/codecov/c/github/mintel/lpipe.svg)](https://codecov.io/gh/mintel/lpipe)
 
 **lpipe** provides a simple set of tools for writing clearly defined, multi-function AWS Lambdas in Python.
@@ -207,7 +207,7 @@ lpipe.Queue(type, name, path)
 | `type` | `lpipe.pipeline.QueueType` | |
 | `name` | `str` | Name/identifier of the queue (used by `QueueType.Kinesis`, `QueueType.SQS`) If you include name instead of url for an SQS queue, the queue URL will fetched automatically. |
 | `url`  | `str` | URL/URI of the queue (used by `QueueType.SQS`) |
-| `path` | `str` | A path name, usually to trigger a path in the lambda feeding off of this queue. |
+| `path` | `str` | (optional) A path name, usually to trigger a path in the lambda feeding off of this queue. If this is set, the sent message will be in the standard lpipe format of `{"path": "", "kwargs": {}}`.|
 
 ##### Example
 

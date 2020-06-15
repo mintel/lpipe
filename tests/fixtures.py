@@ -66,11 +66,15 @@ DATA = {
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "KINESIS_OUTPUT": {
-        "payload": [{"path": "TEST_KINESIS_PATH", "kwargs": {"uri": "foo"}}],
+        "payload": [{"path": "TEST_KINESIS_QUEUE", "kwargs": {"uri": "foo"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "SQS_OUTPUT": {
-        "payload": [{"path": "TEST_SQS_PATH", "kwargs": {"uri": "foo"}}],
+        "payload": [{"path": "TEST_SQS_QUEUE", "kwargs": {"uri": "foo"}}],
+        "response": {"stats": {"received": 1, "successes": 1}},
+    },
+    "SQS_OUTPUT_NO_PATH": {
+        "payload": [{"path": "TEST_SQS_QUEUE_WITHOUT_PATH", "kwargs": {"uri": "foo"}}],
         "response": {"stats": {"received": 1, "successes": 1}},
     },
     "DEFAULT_PARAM": {
