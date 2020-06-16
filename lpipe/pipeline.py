@@ -193,7 +193,7 @@ def execute_payload(
                 exception_handler=exception_handler,
             )
 
-    elif isinstance(payload.queue, Queue):  # SHORTCUT
+    elif isinstance(payload.queue, Queue):  # QUEUE (aka SHORTCUT)
         queue = payload.queue
         assert isinstance(queue.type, QueueType)
         if queue.path:
