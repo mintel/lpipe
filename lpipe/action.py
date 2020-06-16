@@ -1,4 +1,3 @@
-from copy import deepcopy
 from enum import Enum
 from types import FunctionType
 from typing import List, Union
@@ -29,6 +28,6 @@ class Action:
         return type(self)(
             functions=self.functions,
             paths=[str(p).split(".")[-1] for p in self.paths],
-            queues=[deepcopy(q) for q in self.queues],
+            queues=self.queues,
             required_params=self.required_params,
         )
