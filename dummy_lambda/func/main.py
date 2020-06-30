@@ -32,18 +32,26 @@ def test_func_default_param(logger, foo: str = "bar", **kwargs):
 
 
 def test_func_trigger_first(logger, **kwargs):
-    return Payload(Path.TEST_TRIGGER_SECOND, kwargs)
+    return Payload(path=Path.TEST_TRIGGER_SECOND, kwargs={})
 
 
 def test_func_multi_trigger(logger, **kwargs):
     return [
-        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
-        Payload(Path.TEST_TRIGGER_SECOND, kwargs),
+        Payload(path=Path.TEST_TRIGGER_SECOND, kwargs={}),
+        Payload(path=Path.TEST_TRIGGER_SECOND, kwargs={}),
+        Payload(
+            queue=Queue(
+                name=config("TEST_KINESIS_STREAM"),
+                type=QueueType.KINESIS,
+                path="TEST_FUNC",
+            ),
+            kwargs={"foo": "bar"},
+        ),
     ]
 
 
 def test_func_trigger_error(logger, **kwargs):
-    return Payload(Path.TEST_RAISE, kwargs)
+    return Payload(path=Path.TEST_RAISE, kwargs={})
 
 
 def return_foobar(**kwargs):
@@ -134,7 +142,7 @@ PATHS = {
     Path.TEST_KINESIS_QUEUE: [
         Action(
             required_params=["uri"],
-            paths=[
+            queues=[
                 Queue(
                     name=config("TEST_KINESIS_STREAM"),
                     type=QueueType.KINESIS,
@@ -146,7 +154,7 @@ PATHS = {
     Path.TEST_SQS_QUEUE: [
         Action(
             required_params=["uri"],
-            paths=[
+            queues=[
                 Queue(
                     name=config("TEST_SQS_QUEUE"), type=QueueType.SQS, path="TEST_FUNC"
                 )
@@ -156,7 +164,7 @@ PATHS = {
     Path.TEST_SQS_QUEUE_WITHOUT_PATH: [
         Action(
             required_params=["uri"],
-            paths=[Queue(name=config("TEST_SQS_QUEUE"), type=QueueType.SQS)],
+            queues=[Queue(name=config("TEST_SQS_QUEUE"), type=QueueType.SQS)],
         )
     ],
     Path.TEST_FUNC_DEFAULT_PARAM: [Action(functions=[test_func_default_param])],

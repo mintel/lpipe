@@ -136,7 +136,7 @@ class TestPayload:
     )
     def test_queue_payload(self, fixture_name, fixture):
         q = Queue(**fixture)
-        Payload(q, {"foo": "bar"}).validate()
+        Payload(queue=q, kwargs={"foo": "bar"}).validate()
 
 
 @pytest.mark.usefixtures("sqs", "kinesis")

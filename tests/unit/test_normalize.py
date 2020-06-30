@@ -29,8 +29,8 @@ def generic_test(fixture: dict, callable: Callable):
             "queue",
             {
                 "input": {"path_enum": fake_enum, "path": fake_queue},
-                "output": fake_queue,
-                "raises": None,
+                "output": None,
+                "raises": lpipe.exceptions.InvalidPathError,
             },
         ),
         (

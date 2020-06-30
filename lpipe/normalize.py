@@ -3,21 +3,16 @@ from types import FunctionType
 from typing import List, Union
 
 import lpipe.exceptions
-from lpipe import action, queue, utils
+from lpipe import action, utils
 
 
-def normalize_path(
-    path_enum: EnumMeta, path: Union[str, queue.Queue, Enum]
-) -> Union[queue.Queue, Enum]:
-    if isinstance(path, queue.Queue):
-        return path
-    else:
-        try:
-            return utils.get_enum_value(path_enum, path)
-        except Exception as e:
-            raise lpipe.exceptions.InvalidPathError(
-                "Unable to cast your path identifier to an enum."
-            ) from e
+def normalize_path(path_enum: EnumMeta, path: Union[str, Enum]) -> Enum:
+    try:
+        return utils.get_enum_value(path_enum, path)
+    except Exception as e:
+        raise lpipe.exceptions.InvalidPathError(
+            "Unable to cast your path identifier to an enum."
+        ) from e
 
 
 def normalize_paths(path_enum: EnumMeta, paths: dict) -> dict:
