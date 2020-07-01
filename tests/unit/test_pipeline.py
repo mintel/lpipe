@@ -284,7 +284,7 @@ class TestProcessEvents:
         from dummy_lambda.func.main import test_func
 
         response = process_event(
-            event=queue["encoder"]({"foo": "bar"}),
+            event=queue["encoder"]([{"foo": "bar"}]),
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             call=test_func,
             queue_type=queue["type"],
@@ -292,6 +292,6 @@ class TestProcessEvents:
         )
         b3f.utils.emit_logs(response)
         # cannibalizing a fixture for this one-off test
-        fixture_response = {"stats": {"received": 1, "successes": 0}}
+        fixture_response = {"stats": {"received": 1, "successes": 1}}
         for k, v in fixture_response.items():
             assert response[k] == v
