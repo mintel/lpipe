@@ -63,8 +63,8 @@ def process_event(
 
     if isinstance(call, FunctionType):
         if not paths:
-            paths = {"DEFAULT_PATH": [call]}
-            default_path = "DEFAULT_PATH"
+            default_path = "AUTO_PATH"
+            paths = {default_path: [call]}
         else:
             raise lpipe.exceptions.InvalidConfigurationError(
                 "If you initialize lpipe with function/callable, you cannot define paths, as you have disabled the directed-graph interface."
