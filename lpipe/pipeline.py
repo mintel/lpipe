@@ -45,7 +45,7 @@ def process_event(
         queue_type (QueueType): The event source type.
         paths (dict): Keys are path names / enums and values are a list of Action objects
         path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
-        default_path: A string or Enum which will be run for every message received.
+        default_path (Union[str, Enum]): The path to be run for every message received.
         call (FunctionType): A callable which, if set and `paths` is not, will disable directed-graph workflow features and default to calling this
         logger:
         debug (bool):
