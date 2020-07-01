@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Any
+from typing import Any, Union
 
 import lpipe.exceptions
 import lpipe.logging
@@ -28,10 +28,11 @@ def build_event_response(n_records, n_ok, logger) -> dict:
 def process_event(
     event,
     context,
-    paths: dict,
     queue_type: QueueType,
+    paths: dict = None,
     path_enum: EnumMeta = None,
-    default_path=None,
+    default_path: Union[str, Enum] = None,
+    call: FunctionType = None,
     logger=None,
     debug: bool = False,
     exception_handler: FunctionType = None,
@@ -41,10 +42,11 @@ def process_event(
     Args:
         event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
         context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        paths (dict): Keys are path names / enums and values are a list of Action objects
         queue_type (QueueType): The event source type.
+        paths (dict): Keys are path names / enums and values are a list of Action objects
         path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
         default_path: A string or Enum which will be run for every message received.
+        call (FunctionType): A callable which, if set and `paths` is not, will disable directed-graph workflow features and default to calling this
         logger:
         debug (bool):
         exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
@@ -58,6 +60,15 @@ def process_event(
         raise lpipe.exceptions.InvalidConfigurationError(
             f"Invalid queue type '{queue_type}'"
         ) from e
+
+    if isinstance(call, FunctionType):
+        if not paths:
+            paths = {"DEFAULT_PATH": [call]}
+            default_path = "DEFAULT_PATH"
+        else:
+            raise lpipe.exceptions.InvalidConfigurationError(
+                "If you initialize lpipe with function/callable, you cannot define paths, as you have essentially disabled the directed-graph interface."
+            )
 
     paths, path_enum = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
 

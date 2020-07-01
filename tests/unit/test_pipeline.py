@@ -268,3 +268,30 @@ class TestProcessEvents:
         b3f.utils.emit_logs(response)
         for k, v in fixture["response"].items():
             assert response[k] == v
+
+    @pytest.mark.parametrize(
+        "queue_name,queue",
+        [
+            ("raw", {"type": QueueType.RAW, "encoder": testing.raw_payload}),
+            ("sqs", {"type": QueueType.SQS, "encoder": testing.sqs_payload}),
+            (
+                "kinesis",
+                {"type": QueueType.KINESIS, "encoder": testing.kinesis_payload},
+            ),
+        ],
+    )
+    def test_process_event_fixed_function(self, set_environment, queue_name, queue):
+        from dummy_lambda.func.main import test_func
+
+        response = process_event(
+            event=queue["encoder"]({"foo": "bar"}),
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
+            call=test_func,
+            queue_type=queue["type"],
+            debug=True,
+        )
+        b3f.utils.emit_logs(response)
+        # cannibalizing a fixture for this one-off test
+        fixture_response = {"stats": {"received": 1, "successes": 0}}
+        for k, v in fixture_response.items():
+            assert response[k] == v
