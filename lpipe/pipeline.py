@@ -67,7 +67,7 @@ def process_event(
             default_path = "DEFAULT_PATH"
         else:
             raise lpipe.exceptions.InvalidConfigurationError(
-                "If you initialize lpipe with function/callable, you cannot define paths, as you have essentially disabled the directed-graph interface."
+                "If you initialize lpipe with function/callable, you cannot define paths, as you have disabled the directed-graph interface."
             )
 
     paths, path_enum = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
