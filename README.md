@@ -21,6 +21,26 @@ def lambda_handler(event, context):
     return lpipe.process_event(
         event=event,
         context=context,
+        call=test_func,
+        queue_type=lpipe.QueueType.SQS,
+    )
+```
+
+This lambda could now be triggered by an SQS queue with the following message.
+
+```python
+{
+  "foo": "bar",
+}
+```
+
+You may also split your lambda into reusable chunks by defining paths.
+
+```python
+def lambda_handler(event, context):
+    return lpipe.process_event(
+        event=event,
+        context=context,
         paths={
             "EXAMPLE": [test_func]
         },
@@ -28,7 +48,7 @@ def lambda_handler(event, context):
     )
 ```
 
-This lambda could now be triggered by an SQS queue with the following message.
+This lambda could now be triggered with.
 
 ```python
 {
