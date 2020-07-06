@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [4.0.2] - 2020-07-06
+- Fix bug in tests caused by change of default_kwargs["event"] to namedtuple
+
 ## [4.0.1] - 2020-07-06
 - format
 
