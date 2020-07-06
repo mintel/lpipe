@@ -281,7 +281,7 @@ lpipe.Queue(type, name, path)
 
 | Argument          | Type | Description                     |
 | ----------------- | ---- | ------------------------------- |
-| `type` | `lpipe.pipeline.QueueType` | |
+| `type` | `lpipe.QueueType` | |
 | `name` | `str` | Name/identifier of the queue (used by `QueueType.Kinesis`, `QueueType.SQS`) If you include name instead of url for an SQS queue, the queue URL will fetched automatically. |
 | `url`  | `str` | URL/URI of the queue (used by `QueueType.SQS`) |
 | `path` | `str` | (optional) A path name, usually to trigger a path in the lambda feeding off of this queue. If this is set, the sent message will be in the standard lpipe format of `{"path": "", "kwargs": {}}`.|
