@@ -87,7 +87,7 @@ See the linked sections in "Advanced" for more details.
 
 There are two message formats you will encounter.
 
-###### Basic
+#### Basic
 
 lpipe will expect this structure if you call it via...
 
@@ -100,7 +100,7 @@ lpipe will expect this structure if you call it via...
 }
 ```
 
-###### Directed Graph
+#### Directed Graph
 
 lpipe will expect this structure if you call it via...
 
