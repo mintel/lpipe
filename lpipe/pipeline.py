@@ -14,7 +14,6 @@ from lpipe.contrib import kinesis, mindictive, sqs
 from lpipe.payload import Payload
 from lpipe.queue import Queue, QueueType
 
-
 PayloadEvent = namedtuple("Event", ["event", "context", "payload"])
 
 
