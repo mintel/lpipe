@@ -307,7 +307,9 @@ def execute_action(
             if exception_handler:
                 exception_handler(e)
             if debug:
-                raise lpipe.exceptions.FailCatastrophically() from e
+                raise lpipe.exceptions.FailCatastrophically(
+                    utils.exception_to_str(e)
+                ) from e
 
     payloads = []
     for _path in action.paths:
