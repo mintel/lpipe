@@ -5,6 +5,16 @@
 
 This project was borne out of a desire to support directed-graph workflows on FAAS. **lpipe** is designed to handle batched events from CloudWatch, Kinesis, or SQS.
 
+### Philosophy
+
+`lpipe` exists to consolidate the boilerplate required for writing high quality Lambdas in Python. Directed-graph message handling is an optional bonus feature.
+
+Features include:
+* Batch message handling
+* Error handling and capture - distinguish exceptions which should poison the queue
+* Validate messages against function signatures
+* Automatically handle partial failures in a batch of messages (SQS)
+* Create directed graph workflows with a combination of one or more lambdas
 
 
 ## Getting Started
@@ -21,6 +31,26 @@ def lambda_handler(event, context):
     return lpipe.process_event(
         event=event,
         context=context,
+        call=test_func,
+        queue_type=lpipe.QueueType.SQS,
+    )
+```
+
+This lambda could now be triggered by an SQS queue with the following message.
+
+```python
+{
+  "foo": "bar",
+}
+```
+
+You may also split your lambda into reusable chunks by defining paths.
+
+```python
+def lambda_handler(event, context):
+    return lpipe.process_event(
+        event=event,
+        context=context,
         paths={
             "EXAMPLE": [test_func]
         },
@@ -28,7 +58,7 @@ def lambda_handler(event, context):
     )
 ```
 
-This lambda could now be triggered by an SQS queue with the following message.
+This lambda could now be triggered with.
 
 ```python
 {
