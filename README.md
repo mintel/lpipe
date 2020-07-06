@@ -19,7 +19,7 @@ Features include:
 
 ## Getting Started
 
-At its most basic, your lambda would require no more than this.
+#### Basic Example
 
 ```python
 import lpipe
@@ -45,6 +45,7 @@ This lambda could now be triggered by an SQS queue with the following message.
 ```
 
 
+
 #### Optionally, create a directed-graph workflow
 
 You may also split your lambda into reusable chunks by defining paths.
@@ -61,7 +62,7 @@ def lambda_handler(event, context):
     )
 ```
 
-This lambda could now be triggered with.
+Trigger with...
 
 ```python
 {
@@ -78,7 +79,41 @@ There are two tools which enable a directed workflow.
 
 * [Payloads](#payloads): Your function may return a `Payload` or `List[Payload]` which will be sequentially executed before continuing
 
-See "Advanced" for more details.
+See the linked sections in "Advanced" for more details.
+
+
+
+## Message Structure
+
+There are two message formats you will encounter.
+
+###### Basic
+
+lpipe will expect this structure if you call it via...
+
+* `process_event(call: FunctionType)`
+* `process_event(paths: dict, default_path: Union[str, Enum])`
+
+```json
+{
+  "foo": "bar",
+}
+```
+
+###### Directed Graph
+
+lpipe will expect this structure if you call it via...
+
+* `process_event(paths: dict)`
+
+```json
+{
+  "path": "EXAMPLE",
+  "kwargs": {
+    "foo": "bar",
+  }
+}
+```
 
 
 
@@ -92,7 +127,7 @@ When processing messages from an SQS queue, we will wait to raise any errors unt
 
 ### Everything else...
 
-If you're using any other invocation method, please consider setting your batch size to 1.
+**If you're using any other invocation source, please consider setting your batch size to 1.**
 
 
 
@@ -206,34 +241,7 @@ Action(
 
 
 
-#### Queues
-
-```python
-lpipe.Queue(type, name, path)
-```
-
-| Argument          | Type | Description                     |
-| ----------------- | ---- | ------------------------------- |
-| `type` | `lpipe.pipeline.QueueType` | |
-| `name` | `str` | Name/identifier of the queue (used by `QueueType.Kinesis`, `QueueType.SQS`) If you include name instead of url for an SQS queue, the queue URL will fetched automatically. |
-| `url`  | `str` | URL/URI of the queue (used by `QueueType.SQS`) |
-| `path` | `str` | (optional) A path name, usually to trigger a path in the lambda feeding off of this queue. If this is set, the sent message will be in the standard lpipe format of `{"path": "", "kwargs": {}}`.|
-
-##### Example
-
-```python
-from lpipe import Queue, QueueType
-
-Queue(
-	type=QueueType.KINESIS,
-  	name="my-stream-name",
-  	path="DO_THING"
-)
-```
-
-
-
-#### Params
+###### Defining Parameters
 
 Parameters can be inferred from your function signatures or explicitly set. If you allow parameters to be inferred, default values are permitted, and type hints will be enforced.
 
@@ -265,36 +273,104 @@ Path.MY_PATH: [
 
 
 
-## Setting A Default Path
+#### Queues
 
-You may run into a situation where you'd like to trigger a lambda with a message that can't conform to the lpipe message format but would still prefer to split your lambda into chunks using lpipe paths.
+```python
+lpipe.Queue(type, name, path)
+```
+
+| Argument          | Type | Description                     |
+| ----------------- | ---- | ------------------------------- |
+| `type` | `lpipe.pipeline.QueueType` | |
+| `name` | `str` | Name/identifier of the queue (used by `QueueType.Kinesis`, `QueueType.SQS`) If you include name instead of url for an SQS queue, the queue URL will fetched automatically. |
+| `url`  | `str` | URL/URI of the queue (used by `QueueType.SQS`) |
+| `path` | `str` | (optional) A path name, usually to trigger a path in the lambda feeding off of this queue. If this is set, the sent message will be in the standard lpipe format of `{"path": "", "kwargs": {}}`.|
+
+##### Example
+
+```python
+from lpipe import Queue, QueueType
+
+Queue(type=QueueType.SQS, name="my-queue-name")
+```
+
+
+
+#### Payloads
+
+If you return `Payload` or `List[Payload]` from a function called by lpipe, the payloads will be sequentially executed before proceeding with other messages. Keep time restrictions in mind when using this feature.
+
+```python
+lpipe.Payload(kwargs, path, queue, event_source)
+```
+
+| Argument       | Type            | Description                |
+| -------------- | --------------- | -------------------------- |
+| `kwargs`       | `dict`          |                            |
+| `path`         | `Enum` or `str` | Optional if `queue` is set |
+| `queue`        | `lpipe.Queue`   | Optional if `path` is set  |
+| `event_source` | `str`           | (optional)                 |
+
+##### Example
+
+```python
+from lpipe import Payload
+
+Payload(
+	kwargs={"lorem": "ipsum"},
+  path="MY_PATH",
+)
+```
+
+
+
+## Advanced Example
+
+Combining all of the features documented above will allow you to chain messages through a complex directed graph of local code and remote services without exceeding the 15 minute limit imposed by AWS Lambda.
+
+This example demonstrates a lambda with two functions. Both can be triggered directly by a message, but one will trigger the other.
 
 ```python
 import lpipe
 
-def test_func(foo: str, **kwargs):
-	return Payload({"foo": foo}, path="EXAMPLE_TWO")
-
-def test_func_two(foo: str, **kwargs):
+def my_func(foo: str, **kwargs):
 	pass
+
+def my_generic_func(foo: str, **kwargs):
+	# pseudo code
+  data = request.get(os.environ["MY_API_URL"], {"foo": foo})
+  # queue up message with another service
+  return Payload(
+    kwargs=data,
+    queue=lpipe.Queue(
+      type=lpipe.QueueType.SQS,
+      name="my-service-queue",
+    ),
+  )
+
+PATHS = {
+    "FIRST_PATH": [
+        Action(functions=[my_func], paths=["GENERIC_REUSABLE_PATH"]),
+    ],
+    "GENERIC_REUSABLE_PATH": [my_generic_func],
+}
 
 def lambda_handler(event, context):
     return lpipe.process_event(
         event=event,
         context=context,
-        paths={
-            "EXAMPLE": [test_func],
-          	"EXAMPLE_TWO": [test_func_two]
-        },
-        default_path="EXAMPLE",
+        paths=PATHS,
         queue_type=lpipe.QueueType.SQS,
     )
 ```
 
-This lambda could now be triggered with the following message.
+Trigger with...
 
 ```python
 {
-  "foo": "bar",
+  "path": "FIRST_PATH",
+  "kwargs": {
+    "foo": "bar",
+  }
 }
 ```

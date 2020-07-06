@@ -9,7 +9,7 @@ class Payload:
         self,
         kwargs: dict,
         path: Union[Enum, str] = None,
-        queue: queue.QueueType = None,
+        queue: queue.Queue = None,
         event_source=None,
     ):
         try:
