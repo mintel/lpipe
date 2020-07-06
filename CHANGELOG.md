@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [4.0.1] - 2020-07-06
+- format
+
 ## [4.0.0] - 2020-07-06
 - Allow user of lpipe to process_event with a callable/function and avoid all directed-graph workflow setup
 - Change Payload to split paths into paths and queues. Update all logic to assume only path strings / enums are in payload.paths.
