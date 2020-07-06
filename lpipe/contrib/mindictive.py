@@ -16,7 +16,7 @@ def get_nested(_dict, keys, default=sentinel):
         if head is sentinel:
             raise KeyError(f"{keys}")
         elif not head:
-            return default
+            return head
     return head
 
 

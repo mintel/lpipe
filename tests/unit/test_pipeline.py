@@ -5,7 +5,6 @@ import boto3_fixtures as b3f
 import botocore
 import pytest
 from decouple import config
-from tests import fixtures
 
 from lpipe import exceptions, testing
 from lpipe.action import Action
@@ -21,6 +20,7 @@ from lpipe.pipeline import (
     put_record,
 )
 from lpipe.queue import Queue, QueueType
+from tests import fixtures
 
 
 def exception_handler(e):
@@ -217,7 +217,7 @@ class TestProcessEvents:
     def test_process_event(
         self, set_environment, fixture_name, fixture, queue_name, queue
     ):
-        from dummy_lambda.func.main import Path, PATHS
+        from dummy_lambda.func.main import PATHS, Path
 
         kwargs = {}
         if fixture.get("path", None):
