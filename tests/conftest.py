@@ -2,9 +2,9 @@ import logging
 
 import boto3_fixtures as b3f
 import pytest
-from tests import fixtures
 
 import lpipe
+from tests import fixtures
 
 logger = logging.getLogger()
 stack_config = {
