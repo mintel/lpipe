@@ -15,6 +15,9 @@ from lpipe.payload import Payload
 from lpipe.queue import Queue, QueueType
 
 
+PayloadEvent = namedtuple("Event", ["event", "context", "payload"])
+
+
 def build_event_response(n_records, n_ok, logger) -> dict:
     response = {
         "event": "Finished.",
@@ -271,7 +274,7 @@ def execute_action(
 
     default_kwargs = {
         "logger": logger,
-        "event": {"event": event, "context": context, "payload": payload},
+        "event": PayloadEvent(event=event, context=context, payload=payload),
     }
 
     # Run action functions
