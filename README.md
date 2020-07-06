@@ -44,6 +44,9 @@ This lambda could now be triggered by an SQS queue with the following message.
 }
 ```
 
+
+#### Optionally, create a directed-graph workflow
+
 You may also split your lambda into reusable chunks by defining paths.
 
 ```python
@@ -69,36 +72,13 @@ This lambda could now be triggered with.
 }
 ```
 
+There are two tools which enable a directed workflow.
 
-## Setting A Default Path
+* [Actions](#actions): A path may be defined as a `List[Action]` containing any functions, paths, or queues
 
-You may run into a situation where you'd like to trigger a lambda with a message that can't conform to the lpipe message format but would still prefer to use lpipe for all it's boilerplate.
+* [Payloads](#payloads): Your function may return a `Payload` or `List[Payload]` which will be sequentially executed before continuing
 
-```python
-import lpipe
-
-def test_func(foo: str, **kwargs):
-	pass
-
-def lambda_handler(event, context):
-    return lpipe.process_event(
-        event=event,
-        context=context,
-        paths={
-            "EXAMPLE": [test_func]
-        },
-        default_path="EXAMPLE",
-        queue_type=lpipe.QueueType.SQS,
-    )
-```
-
-This lambda could now be triggered with the following message.
-
-```python
-{
-  "foo": "bar",
-}
-```
+See "Advanced" for more details.
 
 
 
@@ -281,4 +261,40 @@ Path.MY_PATH: [
         functions=[my_func],
     )
 ],
+```
+
+
+
+## Setting A Default Path
+
+You may run into a situation where you'd like to trigger a lambda with a message that can't conform to the lpipe message format but would still prefer to split your lambda into chunks using lpipe paths.
+
+```python
+import lpipe
+
+def test_func(foo: str, **kwargs):
+	return Payload({"foo": foo}, path="EXAMPLE_TWO")
+
+def test_func_two(foo: str, **kwargs):
+	pass
+
+def lambda_handler(event, context):
+    return lpipe.process_event(
+        event=event,
+        context=context,
+        paths={
+            "EXAMPLE": [test_func],
+          	"EXAMPLE_TWO": [test_func_two]
+        },
+        default_path="EXAMPLE",
+        queue_type=lpipe.QueueType.SQS,
+    )
+```
+
+This lambda could now be triggered with the following message.
+
+```python
+{
+  "foo": "bar",
+}
 ```
