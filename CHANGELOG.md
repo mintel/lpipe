@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [4.0.0] - 2020-07-06
+- Allow user of lpipe to process_event with a callable/function and avoid all directed-graph workflow setup
+- Change Payload to split paths into paths and queues. Update all logic to assume only path strings / enums are in payload.paths.
+- Fix bug in get_nested where head could result in incorrectly returne default value
+- Add more documentation
+
 ## [3.0.3] - 2020-06-15
 - Make 'path' argument optional on the `Queue` class, and update `pipeline.put_record` to send kwargs at the root of the message if no path was set.
 
