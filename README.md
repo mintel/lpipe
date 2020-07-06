@@ -241,7 +241,7 @@ Action(
 
 
 
-###### Defining Parameters
+#### Defining Parameters
 
 Parameters can be inferred from your function signatures or explicitly set. If you allow parameters to be inferred, default values are permitted, and type hints will be enforced.
 
@@ -252,7 +252,7 @@ def test_func(foo: str, bar: int = 42, **kwargs):
 
 Path.MY_PATH: [
     Action(
-        functions=[my_func],
+        functions=[my_func],  # IMPLICIT
     )
 ],
 ```
@@ -265,7 +265,7 @@ def test_func(foo, bar, **kwargs):
 
 Path.MY_PATH: [
     Action(
-        required_params=["foo", "bar"],
+        required_params=["foo", "bar"],  # EXPLICIT
         functions=[my_func],
     )
 ],
