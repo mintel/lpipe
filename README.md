@@ -5,11 +5,8 @@
 
 This project was borne out of a desire to support directed-graph workflows on FAAS. **lpipe** is designed to handle batched events from CloudWatch, Kinesis, or SQS.
 
-### Philosophy
+#### Features
 
-`lpipe` exists to consolidate the boilerplate required for writing high quality Lambdas in Python.
-
-Features include:
 * Batch message handling
 * Error handling and capture - distinguish exceptions which should poison the queue
 * Validate messages against function signatures
