@@ -314,8 +314,8 @@ lpipe.Payload(kwargs, path, queue, event_source)
 from lpipe import Payload
 
 Payload(
-	kwargs={"lorem": "ipsum"},
-  path="MY_PATH",
+    kwargs={"lorem": "ipsum"},
+    path="MY_PATH",
 )
 ```
 
@@ -335,14 +335,14 @@ def my_func(foo: str, **kwargs):
 
 def my_generic_func(foo: str, **kwargs):
 	# pseudo code
-  data = request.get(os.environ["MY_API_URL"], {"foo": foo})
-  # queue up message with another service
-  return Payload(
-    kwargs=data,
-    queue=lpipe.Queue(
-      type=lpipe.QueueType.SQS,
-      name="my-service-queue",
-    ),
+    data = request.get(os.environ["MY_API_URL"], {"foo": foo})
+    # queue up message with another service
+    return Payload(
+      kwargs=data,
+      queue=lpipe.Queue(
+          type=lpipe.QueueType.SQS,
+          name="my-service-queue",
+      ),
   )
 
 PATHS = {
@@ -365,9 +365,9 @@ Trigger with...
 
 ```python
 {
-  "path": "FIRST_PATH",
-  "kwargs": {
-    "foo": "bar",
-  }
+    "path": "FIRST_PATH",
+    "kwargs": {
+        "foo": "bar",
+    }
 }
 ```
