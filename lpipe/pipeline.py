@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Any, Union
+from typing import Any, NamedTuple, Union
 
 import lpipe.exceptions
 import lpipe.logging
@@ -14,8 +14,29 @@ from lpipe.contrib import kinesis, mindictive, sqs
 from lpipe.payload import Payload
 from lpipe.queue import Queue, QueueType
 
-Event = namedtuple("Event", ["event", "context"])
-RESERVED_KEYWORDS = set(["logger", "event", "payload"])
+RESERVED_KEYWORDS = set(["logger", "state", "payload"])
+
+
+class State(NamedTuple):
+    """Represents the state of the call to process_event.
+
+    Args:
+        event (Any): https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        context (Any): https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
+        paths (dict): Keys are path names / enums and values are a list of Action objects
+        path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
+        logger:
+        exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
+        debug (bool):
+    """
+
+    event: Any
+    context: Any
+    paths: dict
+    path_enum: EnumMeta
+    logger: Any
+    debug: bool = False
+    exception_handler: FunctionType = None
 
 
 def build_event_response(n_records, n_ok, logger) -> dict:
@@ -28,9 +49,15 @@ def build_event_response(n_records, n_ok, logger) -> dict:
     return response
 
 
+def log_exception(state: State, e: BaseException):
+    state.logger.error(utils.exception_to_str(e))
+    if state.exception_handler:
+        state.exception_handler(e)
+
+
 def process_event(
-    event,
-    context,
+    event: Any,
+    context: Any,
     queue_type: QueueType,
     paths: dict = None,
     path_enum: EnumMeta = None,
@@ -74,14 +101,23 @@ def process_event(
             )
 
     paths, path_enum = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
+    state = State(
+        event=event,
+        context=context,
+        logger=logger,
+        debug=debug,
+        paths=paths,
+        path_enum=path_enum,
+        exception_handler=exception_handler,
+    )
 
     successful_records = []
-    records = get_records_from_event(queue_type, event)
+    records = get_records_from_event(queue_type, state.event)
     try:
         assert isinstance(records, list)
     except AssertionError as e:
-        logger.error(f"'records' is not a list {utils.exception_to_str(e)}")
-        return build_event_response(0, 0, logger)
+        state.logger.error(f"'records' is not a list {utils.exception_to_str(e)}")
+        return build_event_response(0, 0, state.logger)
 
     _output = []
     _exceptions = []
@@ -89,17 +125,16 @@ def process_event(
         ret = None
         try:
             try:
-                _payload = get_payload_from_record(
+                decoded_record = get_payload_from_record(
                     queue_type=queue_type,
                     record=encoded_record,
                     validate=False if default_path else True,
                 )
-                _path = default_path if default_path else _payload["path"]
-                _kwargs = _payload if default_path else _payload["kwargs"]
-                _event_source = get_event_source(queue_type, encoded_record)
                 payload = Payload(
-                    path=_path, kwargs=_kwargs, event_source=_event_source
-                ).validate(path_enum)
+                    path=default_path if default_path else decoded_record["path"],
+                    kwargs=decoded_record if default_path else decoded_record["kwargs"],
+                    event_source=get_event_source(queue_type, encoded_record),
+                ).validate(state.path_enum)
             except AssertionError as e:
                 raise lpipe.exceptions.InvalidPayloadError(
                     "'path' or 'kwargs' missing from payload."
@@ -109,19 +144,11 @@ def process_event(
                     f"Bad record provided for queue type {queue_type}. {encoded_record} {utils.exception_to_str(e)}"
                 ) from e
 
-            with logger.context(bind={"payload": payload.to_dict()}):
-                logger.log("Record received.")
+            with state.logger.context(bind={"payload": payload.to_dict()}):
+                state.logger.log("Record received.")
 
             # Run your path/action/functions against the payload found in this record.
-            ret = execute_payload(
-                payload=payload,
-                path_enum=path_enum,
-                paths=paths,
-                logger=logger,
-                event=event,
-                context=context,
-                debug=debug,
-            )
+            ret = execute_payload(payload=payload, state=state)
 
             # Will handle cleanup for successful records later, if necessary.
             successful_records.append(encoded_record)
@@ -129,84 +156,54 @@ def process_event(
             # CAPTURES:
             #    lpipe.exceptions.InvalidPayloadError
             #    lpipe.exceptions.InvalidPathError
-            logger.error(str(e))
-            if exception_handler:
-                exception_handler(e)
+            log_exception(state, e)
             continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
         except lpipe.exceptions.FailCatastrophically as e:
             # CAPTURES:
             #    lpipe.exceptions.InvalidConfigurationError
             # raise (later)
-            logger.error(str(e))
-            if exception_handler:
-                exception_handler(e)
+            log_exception(state, e)
             _exceptions.append({"exception": e, "record": encoded_record})
         _output.append(ret)
 
     response = build_event_response(
-        n_records=len(records), n_ok=len(successful_records), logger=logger
+        n_records=len(records), n_ok=len(successful_records), logger=state.logger
     )
 
     if _exceptions:
         # Handle cleanup for successful records, if necessary, before creating an error state.
-        advanced_cleanup(queue_type, successful_records, logger)
+        advanced_cleanup(queue_type, successful_records, state.logger)
         raise lpipe.exceptions.FailCatastrophically(
             f"Encountered catastrophic exceptions while handling one or more records: {response}"
         )
 
     if any(_output):
         response["output"] = _output
-    if debug:
+    if state.debug:
         response["debug"] = json.dumps({"records": records}, cls=utils.AutoEncoder)
 
     return response
 
 
-def execute_payload(
-    payload: Payload,
-    path_enum: EnumMeta,
-    paths: dict,
-    logger,
-    event,
-    context,
-    debug: bool = False,
-    exception_handler: FunctionType = None,
-) -> Any:
+def execute_payload(payload: Payload, state: State) -> Any:
     """Given a Payload, execute Actions in a Path and fire off messages to the payload's Queues.
 
     Args:
         payload (Payload):
-        path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
-        paths (dict): Keys are path names / enums and values are a list of Action objects
-        logger:
-        event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        debug (bool):
-        exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
+        state (State):
     """
-    if not logger:
-        logger = lpipe.logging.LPLogger()
-
     ret = None
 
-    if payload.path is not None and not isinstance(payload.path, path_enum):
-        payload.path = normalize.normalize_path(path_enum, payload.path)
+    if payload.path is not None and not isinstance(payload.path, state.path_enum):
+        payload.path = normalize.normalize_path(state.path_enum, payload.path)
 
     if isinstance(payload.path, Enum):  # PATH
-        paths[payload.path] = normalize.normalize_actions(paths[payload.path])
+        state.paths[payload.path] = normalize.normalize_actions(
+            state.paths[payload.path]
+        )
 
-        for action in paths[payload.path]:
-            ret = execute_action(
-                payload=payload,
-                path_enum=path_enum,
-                paths=paths,
-                action=action,
-                logger=logger,
-                event=event,
-                context=context,
-                debug=debug,
-                exception_handler=exception_handler,
-            )
+        for action in state.paths[payload.path]:
+            ret = execute_action(payload=payload, action=action, state=state)
 
     elif isinstance(payload.queue, Queue):  # QUEUE (aka SHORTCUT)
         queue = payload.queue
@@ -215,7 +212,7 @@ def execute_payload(
             record = {"path": queue.path, "kwargs": payload.kwargs}
         else:
             record = payload.kwargs
-        with logger.context(
+        with state.logger.context(
             bind={
                 "path": queue.path,
                 "queue_type": queue.type,
@@ -223,39 +220,23 @@ def execute_payload(
                 "record": record,
             }
         ):
-            logger.log("Pushing record.")
+            state.logger.log("Pushing record.")
         put_record(queue=queue, record=record)
     else:
-        logger.info(
+        state.logger.info(
             f"Path should be a string (path name), Path (path Enum), or Queue: {payload.path})"
         )
 
     return ret
 
 
-def execute_action(
-    payload: Payload,
-    path_enum: EnumMeta,
-    paths: dict,
-    action: Action,
-    logger,
-    event,
-    context,
-    debug: bool = False,
-    exception_handler: FunctionType = None,
-):
+def execute_action(payload: Payload, action: Action, state: State):
     """Execute functions, paths, and queues (shortcuts) in an Action.
 
     Args:
         payload (Payload):
-        path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
-        paths (dict): Keys are path names / enums and values are a list of Action objects
         action: (Action):
-        logger:
-        event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        debug (bool):
-        exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
+        state (State):
     """
     assert isinstance(action, Action)
     ret = None
@@ -263,8 +244,8 @@ def execute_action(
     # Build action kwargs and validate type hints
     try:
         if RESERVED_KEYWORDS & set(payload.kwargs):
-            logger.warning(
-                f"Payload contains a reserved argument name. Please update your function use a different argument name. Reserved keywords: {reserved_keywords}"
+            state.logger.warning(
+                f"Payload contains a reserved argument name. Please update your function use a different argument name. Reserved keywords: {RESERVED_KEYWORDS}"
             )
         action_kwargs = build_action_kwargs(
             action, {**{k: None for k in RESERVED_KEYWORDS}, **payload.kwargs}
@@ -276,11 +257,7 @@ def execute_action(
             f"Failed to run {payload.path.name} {action} due to {utils.exception_to_str(e)}"
         ) from e
 
-    default_kwargs = {
-        "logger": logger,
-        "event": Event(event=event, context=context),
-        "payload": payload,
-    }
+    default_kwargs = {"logger": state.logger, "state": state, "payload": payload}
 
     # Run action functions
     for f in action.functions:
@@ -288,43 +265,32 @@ def execute_action(
         try:
             # TODO: if ret, set _last_output
             _log_context = {"path": payload.path.name, "function": f.__name__}
-            with logger.context(bind={**_log_context, "kwargs": action_kwargs}):
-                logger.log("Executing function.")
-            with logger.context(bind=_log_context):
+            with state.logger.context(bind={**_log_context, "kwargs": action_kwargs}):
+                state.logger.log("Executing function.")
+            with state.logger.context(bind=_log_context):
                 ret = f(**{**action_kwargs, **default_kwargs})
-            ret = return_handler(
-                ret=ret,
-                path_enum=path_enum,
-                paths=paths,
-                logger=logger,
-                event=event,
-                context=context,
-                debug=debug,
-            )
+            ret = return_handler(ret=ret, state=state)
         except lpipe.exceptions.LPBaseException:
             # CAPTURES:
             #    lpipe.exceptions.FailButContinue
             #    lpipe.exceptions.FailCatastrophically
             raise
         except Exception as e:
-            logger.error(
-                f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception. This is very serious; please update your function to handle this. Reason: {utils.exception_to_str(e)}"
+            state.logger.error(
+                f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception {e.__class__.__name__}. This is very serious; please update your function to handle this."
             )
-            if exception_handler:
-                exception_handler(e)
-            if debug:
-                raise lpipe.exceptions.FailCatastrophically(
-                    utils.exception_to_str(e)
-                ) from e
+            log_exception(state, e)
+            if state.debug:
+                raise lpipe.exceptions.FailCatastrophically() from e
 
     payloads = []
     for _path in action.paths:
         payloads.append(
             Payload(
-                path=normalize.normalize_path(path_enum, _path),
+                path=normalize.normalize_path(state.path_enum, _path),
                 kwargs=action_kwargs,
                 event_source=payload.event_source,
-            ).validate(path_enum)
+            ).validate(state.path_enum)
         )
 
     for _queue in action.queues:
@@ -335,38 +301,36 @@ def execute_action(
         )
 
     for p in payloads:
-        ret = execute_payload(p, path_enum, paths, logger, event, context, debug)
+        ret = execute_payload(payload=p, state=state)
 
     return ret
 
 
-def return_handler(
-    ret: Any, path_enum: EnumMeta, paths: dict, logger, event, context, debug: bool
-) -> Any:
+def return_handler(ret: Any, state: State) -> Any:
     if not ret:
         return ret
     _payloads = []
     try:
         if isinstance(ret, Payload):
-            _payloads.append(ret.validate(path_enum))
+            _payloads.append(ret.validate(state.path_enum))
         elif isinstance(ret, list):
             for r in ret:
                 if isinstance(r, Payload):
-                    _payloads.append(r.validate(path_enum))
+                    _payloads.append(r.validate(state.path_enum))
     except Exception as e:
-        logger.debug(utils.exception_to_str(e))
+        state.logger.debug(utils.exception_to_str(e))
         raise lpipe.exceptions.FailButContinue(
             f"Something went wrong while extracting Payloads from a function return value: {ret}"
         ) from e
 
     if _payloads:
-        logger.debug(f"{len(_payloads)} dynamic payloads received")
+        state.logger.debug(f"{len(_payloads)} dynamic payloads received")
     for p in _payloads:
-        logger.debug(f"Executing dynamic payload: {p}")
+        state.logger.debug(f"executing dynamic payload: {p}")
         try:
-            ret = execute_payload(p, path_enum, paths, logger, event, context, debug)
+            ret = execute_payload(payload=p, state=state)
         except Exception as e:
-            logger.debug(utils.exception_to_str(e))
+            state.logger.debug(utils.exception_to_str(e))
             raise lpipe.exceptions.FailButContinue(
                 f"Failed to execute returned Payload: {p}"
             ) from e
