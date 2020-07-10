@@ -63,7 +63,7 @@ def process_event(
     path_enum: EnumMeta = None,
     default_path: Union[str, Enum] = None,
     call: FunctionType = None,
-    logger=None,
+    logger: Any = None,
     debug: bool = False,
     exception_handler: FunctionType = None,
 ) -> dict:
@@ -230,7 +230,7 @@ def execute_payload(payload: Payload, state: State) -> Any:
     return ret
 
 
-def execute_action(payload: Payload, action: Action, state: State):
+def execute_action(payload: Payload, action: Action, state: State) -> Any:
     """Execute functions, paths, and queues (shortcuts) in an Action.
 
     Args:
