@@ -136,6 +136,7 @@ def process_event(
             # CAPTURES:
             #    lpipe.exceptions.InvalidConfigurationError
             # raise (later)
+            logger.error(str(e))
             if exception_handler:
                 exception_handler(e)
             _exceptions.append({"exception": e, "record": encoded_record})
@@ -148,11 +149,9 @@ def process_event(
     if _exceptions:
         # Handle cleanup for successful records, if necessary, before creating an error state.
         advanced_cleanup(queue_type, successful_records, logger)
-
-        logger.error(
-            f"Encountered exceptions while handling one or more records: {response}"
+        raise lpipe.exceptions.FailCatastrophically(
+            f"Encountered catastrophic exceptions while handling one or more records: {response}"
         )
-        raise lpipe.exceptions.FailCatastrophically(_exceptions)
 
     if any(_output):
         response["output"] = _output
