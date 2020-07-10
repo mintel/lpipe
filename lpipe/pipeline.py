@@ -136,6 +136,8 @@ def process_event(
             # CAPTURES:
             #    lpipe.exceptions.InvalidConfigurationError
             # raise (later)
+            if exception_handler:
+                exception_handler(e)
             _exceptions.append({"exception": e, "record": encoded_record})
         _output.append(ret)
 
