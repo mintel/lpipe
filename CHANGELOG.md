@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [4.1.0] - 2020-07-10
+- Log FailCatastrophically exceptions as they happen instead of all at once
+- Change default parameter passed to functions from `event` to `state`
+
 ## [4.0.3] - 2020-07-10
 - Call exception_handler on FailCatastrophically
 
