@@ -149,8 +149,8 @@ def process_event(
         # Handle cleanup for successful records, if necessary, before creating an error state.
         advanced_cleanup(queue_type, successful_records, logger)
 
-        logger.info(
-            f"Encountered exceptions while handling one or more records. RESPONSE: {response}"
+        logger.error(
+            f"Encountered exceptions while handling one or more records: {response}"
         )
         raise lpipe.exceptions.FailCatastrophically(_exceptions)
 
