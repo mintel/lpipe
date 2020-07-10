@@ -11,11 +11,11 @@ from lpipe.exceptions import FailButContinue
 # sentry.init()
 
 
-def test_func(foo: str, logger, event, **kwargs):
+def test_func(foo: str, logger, event, payload, **kwargs):
     if not foo:
         raise Exception("Missing required parameter 'foo'")
     assert event.context.function_name == "my_lambda"
-    assert isinstance(event.payload, Payload)
+    assert isinstance(payload, Payload)
     logger.log("test_func success")
     return True
 

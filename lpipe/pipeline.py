@@ -14,7 +14,8 @@ from lpipe.contrib import kinesis, mindictive, sqs
 from lpipe.payload import Payload
 from lpipe.queue import Queue, QueueType
 
-PayloadEvent = namedtuple("Event", ["event", "context", "payload"])
+Event = namedtuple("Event", ["event", "context"])
+RESERVED_KEYWORDS = set(["logger", "event", "payload"])
 
 
 def build_event_response(n_records, n_ok, logger) -> dict:
@@ -261,11 +262,14 @@ def execute_action(
 
     # Build action kwargs and validate type hints
     try:
-        dummy = ["logger", "event"]
+        if RESERVED_KEYWORDS & set(payload.kwargs):
+            logger.warning(
+                f"Payload contains a reserved argument name. Please update your function use a different argument name. Reserved keywords: {reserved_keywords}"
+            )
         action_kwargs = build_action_kwargs(
-            action, {**{k: None for k in dummy}, **payload.kwargs}
+            action, {**{k: None for k in RESERVED_KEYWORDS}, **payload.kwargs}
         )
-        for k in dummy:
+        for k in RESERVED_KEYWORDS:
             action_kwargs.pop(k, None)
     except (TypeError, AssertionError) as e:
         raise lpipe.exceptions.InvalidPayloadError(
@@ -274,7 +278,8 @@ def execute_action(
 
     default_kwargs = {
         "logger": logger,
-        "event": PayloadEvent(event=event, context=context, payload=payload),
+        "event": Event(event=event, context=context),
+        "payload": payload,
     }
 
     # Run action functions
