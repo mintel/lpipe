@@ -263,7 +263,7 @@ def execute_action(payload: Payload, action: Action, state: State) -> Any:
     for f in action.functions:
         assert isinstance(f, FunctionType)
         try:
-            # TODO: if ret, set _last_output
+            # TODO: if ret, evaluate viability of passing to next in sequence
             _log_context = {"path": payload.path.name, "function": f.__name__}
             with state.logger.context(bind={**_log_context, "kwargs": action_kwargs}):
                 state.logger.log("Executing function.")
