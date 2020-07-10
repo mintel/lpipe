@@ -11,11 +11,11 @@ from lpipe.exceptions import FailButContinue
 # sentry.init()
 
 
-def test_func(foo: str, logger, event, **kwargs):
+def test_func(foo: str, logger, state, payload, **kwargs):
     if not foo:
         raise Exception("Missing required parameter 'foo'")
-    assert event.context.function_name == "my_lambda"
-    assert isinstance(event.payload, Payload)
+    assert state.context.function_name == "my_lambda"
+    assert isinstance(payload, Payload)
     logger.log("test_func success")
     return True
 
@@ -57,14 +57,14 @@ def return_foobar(**kwargs):
     return "foobar"
 
 
-def test_kwargs_passed_to_default_path_include_all(logger, event, **kwargs):
+def test_kwargs_passed_to_default_path_include_all(logger, state, **kwargs):
     try:
         assert kwargs.get("foo", None) == "bar"
     except AssertionError as e:
         raise FailButContinue("foo was not set to bar") from e
 
 
-def test_kwargs_passed_to_default_path(foo, logger, event, **kwargs):
+def test_kwargs_passed_to_default_path(foo, logger, state, **kwargs):
     try:
         assert foo == "bar"
     except AssertionError as e:
