@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [4.0.3] - 2020-07-10
+- Call exception_handler on FailCatastrophically
+
 ## [4.0.2] - 2020-07-06
 - Fix bug in tests caused by change of default_kwargs["event"] to namedtuple
 
