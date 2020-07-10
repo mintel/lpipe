@@ -323,7 +323,7 @@ Payload(
 
 ## Advanced Example
 
-Combining all of the features documented above will allow you to chain messages through a complex directed graph of local code and remote services without exceeding the 15 minute limit imposed by AWS Lambda.
+Combining all of the features documented above will allow you to chain messages through a directed graph of local code and remote services.
 
 This example demonstrates a lambda with two functions. Both can be triggered directly by a message, but one will trigger the other.
 
@@ -337,7 +337,7 @@ def my_generic_func(foo: str, **kwargs):
 	# pseudo code
     data = request.get(os.environ["MY_API_URL"], {"foo": foo})
     # queue up message with another service
-    return Payload(
+    return lpipe.Payload(
       kwargs=data,
       queue=lpipe.Queue(
           type=lpipe.QueueType.SQS,
