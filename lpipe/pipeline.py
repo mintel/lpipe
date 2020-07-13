@@ -63,7 +63,7 @@ def log_exception(state: State, e: BaseException):
 
 def parse_event(
     event: Any, event_source_type: EventSourceType
-) -> Generator[Tuple[dict, str], None, None]:
+) -> Generator[Tuple[Any, dict, str], None, None]:
     try:
         records = get_records_from_event(event_source_type, event)
         assert isinstance(records, list)
@@ -74,6 +74,7 @@ def parse_event(
     for record in records:
         try:
             yield (
+                record,
                 get_payload_from_record(event_source_type, record),
                 get_event_source(event_source_type, record),
             )
@@ -164,7 +165,9 @@ def process_event(
     _output = []
     _exceptions = []
     try:
-        for record, event_source in parse_event(event, event_source_type):
+        for encoded_record, record, event_source in parse_event(
+            event, event_source_type
+        ):
             n_records += 1
             ret = None
             try:
@@ -181,7 +184,7 @@ def process_event(
                 ret = execute_payload(payload=payload, state=state)
 
                 # Will handle cleanup for successful records later, if necessary.
-                successful_records.append(record)
+                successful_records.append(encoded_record)
             except lpipe.exceptions.FailButContinue as e:
                 """Drop poisoned records on the floor
 
