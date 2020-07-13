@@ -88,15 +88,14 @@ def parse_record(
     state: State, record: Any, event_source: str, default_path: Union[str, Enum] = None
 ) -> Payload:
     try:
+        kwargs = {"event_source": event_source}
         if not default_path:
             for field in ["path", "kwargs"]:
                 assert field in record
-        payload = Payload(
-            path=default_path if default_path else record["path"],
-            kwargs=record if default_path else record["kwargs"],
-            event_source=event_source,
-        ).validate(state.path_enum)
-        return payload
+            kwargs.update({"path": record["path"], "kwargs": record["kwargs"]})
+        else:
+            kwargs.update({"path": default_path, "kwargs": record})
+        return Payload(**kwargs).validate(state.path_enum)
     except AssertionError as e:
         raise lpipe.exceptions.InvalidPayloadError(
             "'path' or 'kwargs' missing from payload."
