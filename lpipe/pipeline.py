@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from enum import Enum, EnumMeta
 from types import FunctionType
-from typing import Any, NamedTuple, Union
+from typing import Any, Generator, NamedTuple, Tuple, Union
 
 import lpipe.exceptions
 import lpipe.logging
@@ -15,6 +15,12 @@ from lpipe.payload import Payload
 from lpipe.queue import Queue, QueueType
 
 RESERVED_KEYWORDS = set(["logger", "state", "payload"])
+
+
+class EventSourceType(Enum):
+    RAW = 1  # This may be a Cloudwatch or manually triggered event
+    KINESIS = 2
+    SQS = 3
 
 
 class State(NamedTuple):
@@ -55,10 +61,51 @@ def log_exception(state: State, e: BaseException):
         state.exception_handler(e)
 
 
+def parse_event(
+    event: Any, event_source_type: EventSourceType
+) -> Generator[Tuple[dict, str], None, None]:
+    try:
+        records = get_records_from_event(event_source_type, event)
+        assert isinstance(records, list)
+    except AssertionError as e:
+        raise lpipe.exceptions.InvalidPayloadError(
+            f"Failed to extract records from event: {event}"
+        ) from e
+    for record in records:
+        try:
+            yield (
+                get_payload_from_record(event_source_type, record),
+                get_event_source(event_source_type, record),
+            )
+        except TypeError as e:
+            raise lpipe.exceptions.InvalidPayloadError(
+                f"Bad record provided for event source type {event_source_type}. {record} {utils.exception_to_str(e)}"
+            ) from e
+
+
+def parse_record(
+    state: State, record: Any, event_source: str, default_path: Union[str, Enum] = None
+) -> Payload:
+    try:
+        if not default_path:
+            for field in ["path", "kwargs"]:
+                assert field in record
+        payload = Payload(
+            path=default_path if default_path else record["path"],
+            kwargs=record if default_path else record["kwargs"],
+            event_source=event_source,
+        ).validate(state.path_enum)
+        return payload
+    except AssertionError as e:
+        raise lpipe.exceptions.InvalidPayloadError(
+            "'path' or 'kwargs' missing from payload."
+        ) from e
+
+
 def process_event(
     event: Any,
     context: Any,
-    queue_type: QueueType,
+    event_source_type: EventSourceType,
     paths: dict = None,
     path_enum: EnumMeta = None,
     default_path: Union[str, Enum] = None,
@@ -72,7 +119,7 @@ def process_event(
     Args:
         event: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
         context: https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html
-        queue_type (QueueType): The event source type.
+        event_source_type (EventSourceType): The event source type.
         paths (dict): Keys are path names / enums and values are a list of Action objects
         path_enum (EnumMeta): An Enum class which define the possible paths available in this lambda.
         default_path (Union[str, Enum]): The path to be run for every message received.
@@ -82,13 +129,15 @@ def process_event(
         exception_handler (FunctionType): A function which will be used to capture exceptions (e.g. contrib.sentry.capture)
     """
     logger = lpipe.logging.setup(logger=logger, context=context, debug=debug)
-    logger.debug(f"Event received. queue: {queue_type}, event: {event}")
+    logger.debug(
+        f"Event received. event_source_type: {event_source_type}, event: {event}"
+    )
 
     try:
-        assert isinstance(queue_type, QueueType)
+        assert isinstance(event_source_type, EventSourceType)
     except AssertionError as e:
         raise lpipe.exceptions.InvalidConfigurationError(
-            f"Invalid queue type '{queue_type}'"
+            f"Invalid event source type '{event_source_type}'"
         ) from e
 
     if isinstance(call, FunctionType):
@@ -97,7 +146,7 @@ def process_event(
             paths = {default_path: [call]}
         else:
             raise lpipe.exceptions.InvalidConfigurationError(
-                "If you initialize lpipe with a function/callable, you cannot define paths, as you have disabled the directed-graph interface."
+                "If you initialize lpipe with a function/callable, you may not define paths, as you have disabled the directed-graph interface."
             )
 
     paths, path_enum = normalize.normalize_path_enum(path_enum=path_enum, paths=paths)
@@ -110,78 +159,64 @@ def process_event(
         path_enum=path_enum,
         exception_handler=exception_handler,
     )
-
+    n_records = 0
     successful_records = []
-    records = get_records_from_event(queue_type, state.event)
-    try:
-        assert isinstance(records, list)
-    except AssertionError as e:
-        state.logger.error(f"'records' is not a list {utils.exception_to_str(e)}")
-        return build_event_response(0, 0, state.logger)
-
     _output = []
     _exceptions = []
-    for encoded_record in records:
-        ret = None
-        try:
+    try:
+        for record, event_source in parse_event(event, event_source_type):
+            n_records += 1
+            ret = None
             try:
-                decoded_record = get_payload_from_record(
-                    queue_type=queue_type,
-                    record=encoded_record,
-                    validate=False if default_path else True,
+                payload = parse_record(
+                    state=state,
+                    record=record,
+                    event_source=event_source,
+                    default_path=default_path,
                 )
-                payload = Payload(
-                    path=default_path if default_path else decoded_record["path"],
-                    kwargs=decoded_record if default_path else decoded_record["kwargs"],
-                    event_source=get_event_source(queue_type, encoded_record),
-                ).validate(state.path_enum)
-            except AssertionError as e:
-                raise lpipe.exceptions.InvalidPayloadError(
-                    "'path' or 'kwargs' missing from payload."
-                ) from e
-            except TypeError as e:
-                raise lpipe.exceptions.InvalidPayloadError(
-                    f"Bad record provided for queue type {queue_type}. {encoded_record} {utils.exception_to_str(e)}"
-                ) from e
+                with logger.context(bind={"payload": payload.to_dict()}):
+                    logger.log("Record received.")
 
-            with state.logger.context(bind={"payload": payload.to_dict()}):
-                state.logger.log("Record received.")
+                # Run your path/action/functions against the payload found in this record.
+                ret = execute_payload(payload=payload, state=state)
 
-            # Run your path/action/functions against the payload found in this record.
-            ret = execute_payload(payload=payload, state=state)
+                # Will handle cleanup for successful records later, if necessary.
+                successful_records.append(record)
+            except lpipe.exceptions.FailButContinue as e:
+                """Drop poisoned records on the floor
 
-            # Will handle cleanup for successful records later, if necessary.
-            successful_records.append(encoded_record)
-        except lpipe.exceptions.FailButContinue as e:
-            # CAPTURES:
-            #    lpipe.exceptions.InvalidPayloadError
-            #    lpipe.exceptions.InvalidPathError
-            log_exception(state, e)
-            continue  # User can say "bad thing happened but keep going." This drops poisoned records on the floor.
-        except lpipe.exceptions.FailCatastrophically as e:
-            # CAPTURES:
-            #    lpipe.exceptions.InvalidConfigurationError
-            # raise (later)
-            log_exception(state, e)
-            _exceptions.append({"exception": e, "record": encoded_record})
-        _output.append(ret)
+                Captures:
+                    InvalidPayloadError
+                    InvalidPathError
+                """
+                log_exception(state, e)
+                continue
+            except lpipe.exceptions.FailCatastrophically as e:
+                """Preserve poisoned records, trigger redrive
+
+                Captures:
+                    InvalidConfigurationError
+                """
+                log_exception(state, e)
+                _exceptions.append({"exception": e, "record": record})
+            _output.append(ret)
+    except AssertionError as e:
+        logger.error(f"'records' is not a list {utils.exception_to_str(e)}")
+        return build_event_response(0, 0, logger)
 
     response = build_event_response(
-        n_records=len(records), n_ok=len(successful_records), logger=state.logger
+        n_records=n_records, n_ok=len(successful_records), logger=logger
     )
 
+    # Handle cleanup for successful records, if necessary, before creating an error state.
     if _exceptions:
-        # Handle cleanup for successful records, if necessary, before creating an error state.
-        advanced_cleanup(queue_type, successful_records, state.logger)
+        advanced_cleanup(event_source_type, successful_records, logger)
         raise lpipe.exceptions.FailCatastrophically(
             f"Encountered catastrophic exceptions while handling one or more records: {response}"
         )
 
     if any(_output):
         response["output"] = _output
-    if state.debug:
-        response["debug"] = json.dumps({"records": records}, cls=utils.AutoEncoder)
-
     return response
 
 
@@ -337,15 +372,17 @@ def return_handler(ret: Any, state: State) -> Any:
     return ret
 
 
-def advanced_cleanup(queue_type: QueueType, records: list, logger, **kwargs):
+def advanced_cleanup(
+    event_source_type: EventSourceType, records: list, logger, **kwargs
+):
     """If exceptions were raised, cleanup all successful records before raising.
 
     Args:
-        queue_type (QueueType):
+        event_source_type (EventSourceType):
         records (list): records which we succesfully executed
         logger:
     """
-    if queue_type == QueueType.SQS:
+    if event_source_type == EventSourceType.SQS:
         cleanup_sqs_records(records, logger)
     # If the queue type was not handled, no cleanup was necessary by lpipe.
 
@@ -460,37 +497,38 @@ def get_sqs_payload(record) -> dict:
     return json.loads(record["body"])
 
 
-def get_records_from_event(queue_type: QueueType, event):
-    if queue_type == QueueType.RAW:
+def get_records_from_event(event_source_type: EventSourceType, event):
+    if event_source_type == EventSourceType.RAW:
         return event
-    if queue_type == QueueType.KINESIS:
+    if event_source_type == EventSourceType.KINESIS:
         return event["Records"]
-    if queue_type == QueueType.SQS:
+    if event_source_type == EventSourceType.SQS:
         return event["Records"]
 
 
-def get_event_source(queue_type: QueueType, record):
-    if queue_type in (QueueType.RAW, QueueType.KINESIS, QueueType.SQS):
+def get_event_source(event_source_type: EventSourceType, record):
+    if event_source_type in (
+        EventSourceType.RAW,
+        EventSourceType.KINESIS,
+        EventSourceType.SQS,
+    ):
         return mindictive.get_nested(record, ["event_source_arn"], None)
-    warnings.warn(f"Unable to fetch event_source for {queue_type} record.")
+    warnings.warn(f"Unable to fetch event_source for {event_source_type} record.")
     return None
 
 
-def get_payload_from_record(queue_type: QueueType, record, validate=True) -> dict:
+def get_payload_from_record(event_source_type: EventSourceType, record) -> dict:
     try:
-        if queue_type == QueueType.RAW:
+        if event_source_type == EventSourceType.RAW:
             payload = get_raw_payload(record)
-        if queue_type == QueueType.KINESIS:
+        if event_source_type == EventSourceType.KINESIS:
             payload = get_kinesis_payload(record)
-        if queue_type == QueueType.SQS:
+        if event_source_type == EventSourceType.SQS:
             payload = get_sqs_payload(record)
     except json.JSONDecodeError as e:
         raise lpipe.exceptions.InvalidPayloadError(
             f"Payload contained invalid json. {utils.exception_to_str(e)}"
         ) from e
-    if validate:
-        for field in ["path", "kwargs"]:
-            assert field in payload
     return payload
 
 

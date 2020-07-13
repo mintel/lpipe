@@ -4,9 +4,8 @@ from lpipe import queue, utils
 
 
 class QueueType(Enum):
-    RAW = 1  # This may be a Cloudwatch or manually triggered event
-    KINESIS = 2
-    SQS = 3
+    KINESIS = 1
+    SQS = 2
 
 
 class Queue:
