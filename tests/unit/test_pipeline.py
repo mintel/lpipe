@@ -11,6 +11,7 @@ from lpipe.action import Action
 from lpipe.contrib.sqs import get_queue_url
 from lpipe.payload import Payload
 from lpipe.pipeline import (
+    EventSourceType,
     get_event_source,
     get_kinesis_payload,
     get_payload_from_record,
@@ -55,18 +56,33 @@ def test_encode_payload(fixture_name, fixture):
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "sqs",
+            {
+                "encode_func": testing.sqs_payload,
+                "event_source_type": EventSourceType.SQS,
+            },
+        ),
         (
             "kinesis",
-            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+            {
+                "encode_func": testing.kinesis_payload,
+                "event_source_type": EventSourceType.KINESIS,
+            },
         ),
-        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
+        (
+            "raw",
+            {
+                "encode_func": testing.raw_payload,
+                "event_source_type": EventSourceType.RAW,
+            },
+        ),
     ],
 )
 def test_get_records_from_event(fixture_name, fixture):
     records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
     payload = fixture["encode_func"](records)
-    event_records = get_records_from_event(fixture["queue_type"], payload)
+    event_records = get_records_from_event(fixture["event_source_type"], payload)
     assert len(records) == len(event_records)
 
 
@@ -79,27 +95,42 @@ def test_get_event_source_invalid():
 @pytest.mark.parametrize(
     "fixture_name,fixture",
     [
-        ("sqs", {"encode_func": testing.sqs_payload, "queue_type": QueueType.SQS}),
+        (
+            "sqs",
+            {
+                "encode_func": testing.sqs_payload,
+                "event_source_type": EventSourceType.SQS,
+            },
+        ),
         (
             "kinesis",
-            {"encode_func": testing.kinesis_payload, "queue_type": QueueType.KINESIS},
+            {
+                "encode_func": testing.kinesis_payload,
+                "event_source_type": EventSourceType.KINESIS,
+            },
         ),
-        ("raw", {"encode_func": testing.raw_payload, "queue_type": QueueType.RAW}),
+        (
+            "raw",
+            {
+                "encode_func": testing.raw_payload,
+                "event_source_type": EventSourceType.RAW,
+            },
+        ),
     ],
 )
 def test_get_payload_from_record(fixture_name, fixture):
     records = [{"path": "foo", "kwargs": {}}, {"path": "foo", "kwargs": {}}]
     payload = fixture["encode_func"](records)
-    event_records = get_records_from_event(fixture["queue_type"], payload)
+    event_records = get_records_from_event(fixture["event_source_type"], payload)
     payload_records = [
-        get_payload_from_record(fixture["queue_type"], r) for r in event_records
+        get_payload_from_record(fixture["event_source_type"], r) for r in event_records
     ]
     assert payload_records == records
 
 
 def test_get_payload_from_record_invalid():
     with pytest.raises(exceptions.InvalidPayloadError):
-        get_payload_from_record(QueueType.RAW, "badjsonstring")
+        get_payload_from_record(EventSourceType.RAW, "badjsonstring")
 
 
 @pytest.mark.parametrize(
@@ -180,7 +211,7 @@ def test_invalid_queue(set_environment):
             event=None,
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=None,
-            queue_type="badqueue",
+            event_source_type="badqueue",
         )
 
 
@@ -193,7 +224,7 @@ def test_fail_catastrophically(set_environment):
             event=[{"foo": "bar"}],
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths={"FAIL": [Action(functions=[_fail])]},
-            queue_type=QueueType.RAW,
+            event_source_type=EventSourceType.RAW,
             default_path="FAIL",
         )
 
@@ -201,22 +232,17 @@ def test_fail_catastrophically(set_environment):
 @pytest.mark.usefixtures("sqs", "kinesis")
 class TestProcessEvents:
     @pytest.mark.parametrize(
-        "queue_name,queue",
+        "event",
         [
-            ("raw", {"type": QueueType.RAW, "encoder": testing.raw_payload}),
-            ("sqs", {"type": QueueType.SQS, "encoder": testing.sqs_payload}),
-            (
-                "kinesis",
-                {"type": QueueType.KINESIS, "encoder": testing.kinesis_payload},
-            ),
+            {"type": EventSourceType.RAW, "encoder": testing.raw_payload},
+            {"type": EventSourceType.SQS, "encoder": testing.sqs_payload},
+            {"type": EventSourceType.KINESIS, "encoder": testing.kinesis_payload},
         ],
     )
     @pytest.mark.parametrize(
         "fixture_name,fixture", [(k, v) for k, v in fixtures.DATA.items()]
     )
-    def test_process_event(
-        self, set_environment, fixture_name, fixture, queue_name, queue
-    ):
+    def test_process_event(self, set_environment, fixture_name, fixture, event):
         from dummy_lambda.func.main import PATHS, Path
 
         kwargs = {}
@@ -224,11 +250,11 @@ class TestProcessEvents:
             kwargs["default_path"] = fixture["path"]
 
         response = process_event(
-            event=queue["encoder"](fixture["payload"]),
+            event=event["encoder"](fixture["payload"]),
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             path_enum=Path,
             paths=PATHS,
-            queue_type=queue["type"],
+            event_source_type=event["type"],
             debug=True,
             exception_handler=exception_handler,
             **kwargs
@@ -261,7 +287,7 @@ class TestProcessEvents:
             event=testing.raw_payload(fixture["payload"]),
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             paths=_PATHS,
-            queue_type=QueueType.RAW,
+            event_source_type=EventSourceType.RAW,
             debug=True,
             **kwargs
         )
@@ -270,24 +296,21 @@ class TestProcessEvents:
             assert response[k] == v
 
     @pytest.mark.parametrize(
-        "queue_name,queue",
+        "event",
         [
-            ("raw", {"type": QueueType.RAW, "encoder": testing.raw_payload}),
-            ("sqs", {"type": QueueType.SQS, "encoder": testing.sqs_payload}),
-            (
-                "kinesis",
-                {"type": QueueType.KINESIS, "encoder": testing.kinesis_payload},
-            ),
+            {"type": EventSourceType.RAW, "encoder": testing.raw_payload},
+            {"type": EventSourceType.SQS, "encoder": testing.sqs_payload},
+            {"type": EventSourceType.KINESIS, "encoder": testing.kinesis_payload},
         ],
     )
-    def test_process_event_fixed_function(self, set_environment, queue_name, queue):
+    def test_process_event_fixed_function(self, set_environment, event):
         from dummy_lambda.func.main import test_func
 
         response = process_event(
-            event=queue["encoder"]([{"foo": "bar"}]),
+            event=event["encoder"]([{"foo": "bar"}]),
             context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
             call=test_func,
-            queue_type=queue["type"],
+            event_source_type=event["type"],
             debug=True,
         )
         b3f.utils.emit_logs(response)
