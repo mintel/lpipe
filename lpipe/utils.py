@@ -10,7 +10,8 @@ from lpipe.contrib import mindictive
 
 
 def hash(encoded_data):
-    return hashlib.sha1(encoded_data.encode("utf-8")).hexdigest()
+    # Flagging this as nosec for bandit because this function is for hashing, not security
+    return hashlib.sha1(encoded_data.encode("utf-8")).hexdigest()  # nosec
 
 
 def batch(iterable, n=1):
