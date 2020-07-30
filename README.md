@@ -3,7 +3,7 @@
 
 **lpipe** provides a simple set of tools for writing clearly defined, multi-function AWS Lambdas in Python.
 
-This project was borne out of a desire to support directed-graph workflows on FAAS. **lpipe** is designed to handle batched events from CloudWatch, Kinesis, or SQS.
+This project was born out of a desire to support directed-graph workflows on FAAS. **lpipe** is designed to handle batched events from CloudWatch, Kinesis, or SQS.
 
 #### Features
 
