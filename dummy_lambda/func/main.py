@@ -5,10 +5,18 @@ from enum import Enum
 from decouple import config
 
 from lpipe import Action, Payload, Queue, QueueType, process_event
-from lpipe.exceptions import FailButContinue
+from lpipe.exceptions import FailButContinue, FailCatastrophically
 
 # from lpipe.contrib import sentry
 # sentry.init()
+
+
+class MyCustomException(FailCatastrophically):
+    pass
+
+
+class MyCustomExceptionContinue(FailButContinue):
+    pass
 
 
 def test_func(foo: str, logger, state, payload, **kwargs):
@@ -50,7 +58,7 @@ def test_func_multi_trigger(logger, **kwargs):
 
 
 def test_func_trigger_error(logger, **kwargs):
-    return Payload(path=Path.TEST_RAISE, kwargs={})
+    return Payload(path=Path.TEST_RAISE_CUSTOM_CONTINUE, kwargs={})
 
 
 def return_foobar(**kwargs):
@@ -73,6 +81,22 @@ def test_kwargs_passed_to_default_path(foo, logger, state, **kwargs):
 
 def throw_exception(**kwargs):
     raise Exception()
+
+
+def throw_custom_exception(**kwargs):
+    raise MyCustomException("error message")
+
+
+def throw_custom_exception_continue(**kwargs):
+    raise MyCustomExceptionContinue("error message (continue)")
+
+
+def return_payload_throw_custom_exception(**kwargs):
+    return Payload(path=Path.TEST_RAISE_CUSTOM, kwargs={})
+
+
+def return_payload_throw_custom_exception_continue(**kwargs):
+    return Payload(path=Path.TEST_RAISE_CUSTOM_CONTINUE, kwargs={})
 
 
 #     try:
@@ -106,6 +130,10 @@ class Path(Enum):
     TEST_DEFAULT_PATH_INCLUDE_ALL = 21
     TEST_BARE_FUNCS = 22
     TEST_RAISE = 23
+    TEST_RAISE_CUSTOM = 24
+    TEST_RAISE_CUSTOM_CONTINUE = 25
+    TEST_RETURN_PAYLOAD_RAISES = 26
+    TEST_RETURN_PAYLOAD_RAISES_CONTINUE = 27
 
 
 PATHS = {
@@ -181,6 +209,12 @@ PATHS = {
     ],
     Path.TEST_TRIGGER_ERROR: [test_func_trigger_error],
     Path.TEST_RAISE: [throw_exception],
+    Path.TEST_RAISE_CUSTOM: [throw_custom_exception],
+    Path.TEST_RAISE_CUSTOM_CONTINUE: [throw_custom_exception_continue],
+    Path.TEST_RETURN_PAYLOAD_RAISES: [return_payload_throw_custom_exception],
+    Path.TEST_RETURN_PAYLOAD_RAISES_CONTINUE: [
+        return_payload_throw_custom_exception_continue
+    ],
 }
 
 

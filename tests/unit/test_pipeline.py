@@ -229,6 +229,21 @@ def test_fail_catastrophically(set_environment):
         )
 
 
+def test_returned_payload_execution_error(set_environment):
+    from dummy_lambda.func.main import PATHS, Path
+
+    with pytest.raises(exceptions.FailCatastrophically):
+        response = process_event(
+            event=[{"foo": "bar"}],
+            context=b3f.awslambda.MockContext(function_name=config("FUNCTION_NAME")),
+            path_enum=Path,
+            paths=PATHS,
+            event_source_type=EventSourceType.RAW,
+            default_path=Path.TEST_RETURN_PAYLOAD_RAISES,
+        )
+        b3f.utils.emit_logs(response)
+
+
 @pytest.mark.usefixtures("sqs", "kinesis")
 class TestProcessEvents:
     @pytest.mark.parametrize(
@@ -255,7 +270,7 @@ class TestProcessEvents:
             path_enum=Path,
             paths=PATHS,
             event_source_type=event["type"],
-            debug=True,
+            debug=False,
             exception_handler=exception_handler,
             **kwargs
         )
