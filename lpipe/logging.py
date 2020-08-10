@@ -13,6 +13,14 @@ from lpipe import utils
 
 class LPLogger:
     def __init__(self, level=logging.INFO, **kwargs):
+        structlog.configure(
+            processors=[
+                structlog.processors.StackInfoRenderer(),
+                structlog.dev.set_exc_info,
+                structlog.processors.format_exc_info,
+                structlog.dev.ConsoleRenderer(),
+            ]
+        )
         self._logger = wrap_logger(
             structlog.get_logger(),
             processors=[TimeStamper(fmt="iso"), JSONRenderer(sort_keys=True)],
