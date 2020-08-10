@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
+## [] - 2020-08-10
+- Simplify exception capture inside return_handler to avoid unique, unexpected behavior. Remove debug=True cast of unknown exceptions to FailCatastrophically
+- Prevent structlogger from prepending timestamp
+
 ## [4.1.0] - 2020-07-10
 - Log FailCatastrophically exceptions as they happen instead of all at once
 - Change default parameter passed to functions from `event` to `state`
