@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 
-## [] - 2020-08-10
+## [4.2.0] - 2020-08-10
 - Simplify exception capture inside return_handler to avoid unique, unexpected behavior. Remove debug=True cast of unknown exceptions to FailCatastrophically
 - Prevent structlogger from prepending timestamp
 
