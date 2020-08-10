@@ -317,8 +317,6 @@ def execute_action(payload: Payload, action: Action, state: State) -> Any:
                 f"Skipped {payload.path.name} {f.__name__} due to unhandled Exception {e.__class__.__name__}. This is very serious; please update your function to handle this."
             )
             log_exception(state, e)
-            if state.debug:
-                raise lpipe.exceptions.FailCatastrophically() from e
 
     payloads = []
     for _path in action.paths:
@@ -366,11 +364,9 @@ def return_handler(ret: Any, state: State) -> Any:
         state.logger.debug(f"executing dynamic payload: {p}")
         try:
             ret = execute_payload(payload=p, state=state)
-        except Exception as e:
-            state.logger.debug(utils.exception_to_str(e))
-            raise lpipe.exceptions.FailButContinue(
-                f"Failed to execute returned Payload: {p}"
-            ) from e
+        except Exception:
+            state.logger.error(f"Failed to execute returned {p}")
+            raise
     return ret
 
 
