@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         event=event,
         context=context,
         call=test_func,
-        queue_type=lpipe.QueueType.SQS,
+        event_source_type=lpipe.EventSourceType.SQS,
     )
 ```
 
@@ -55,7 +55,7 @@ def lambda_handler(event, context):
         paths={
             "EXAMPLE": [test_func]
         },
-        queue_type=lpipe.QueueType.SQS,
+        event_source_type=lpipe.EventSourceType.SQS,
     )
 ```
 
@@ -357,7 +357,7 @@ def lambda_handler(event, context):
         event=event,
         context=context,
         paths=PATHS,
-        queue_type=lpipe.QueueType.SQS,
+        event_source_type=lpipe.EventSourceType.SQS,
     )
 ```
 
